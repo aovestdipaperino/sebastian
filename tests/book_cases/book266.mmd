@@ -1,0 +1,11 @@
+graph TB
+    subgraph Arena
+        S0["Scope 0 (Global)<br/>parent: None<br/>symbols: {main}"]
+        S1["Scope 1 (main body)<br/>parent: 0<br/>symbols: {x, y}"]
+        S2["Scope 2 (if block)<br/>parent: 1<br/>symbols: {z}"]
+        S3["Scope 3 (else block)<br/>parent: 1<br/>symbols: {w}"]
+    end
+
+    S1 -->|parent| S0
+    S2 -->|parent| S1
+    S3 -->|parent| S1

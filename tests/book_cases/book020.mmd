@@ -1,0 +1,8 @@
+flowchart TB
+    A[Locksmith<br/>program singleton, !Send] --> B[KeyVoucher<br/>transferable, Send]
+    B --> C[KeyHandle<br/>per-thread, !Send]
+    C --> D[MutexKey 'scope<br/>linear, consumed per lock]
+    D --> E[MutexGuard<br/>RAII data access]
+    style A fill:#cfe2ff
+    style D fill:#fff3cd
+    style E fill:#d1e7dd

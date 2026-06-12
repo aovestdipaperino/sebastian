@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant T1 as Task 1
+    participant S as Scheduler
+    participant T2 as Task 2
+
+    T1->>S: delay(30)
+    Note over S: Save T1 context<br/>Add to time queue
+    S->>T2: Resume (swap context)
+    Note over T2: Executes
+    T2->>S: get() on empty queue
+    Note over S: Save T2 context<br/>Block on queue
+    S->>T1: Resume (time reached)
+    Note over T1: Continues from delay()

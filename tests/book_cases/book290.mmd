@@ -1,0 +1,14 @@
+graph TB
+    subgraph "C++ Approach"
+        A1[TView*] --> B1[TWindow*]
+        B1 --> C1[TGroup*]
+        C1 --> D1[Raw pointer to children]
+        D1 --> E1[Pointer back to parent]
+    end
+
+    subgraph "Rust Approach"
+        A2[Box<dyn View>] --> B2[Window struct]
+        B2 --> C2[Contains Group]
+        C2 --> D2[Vec of trait objects]
+        D2 --> E2[Raw const ptr for palette only]
+    end

@@ -1,0 +1,17 @@
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '16px'}}}%%
+sequenceDiagram
+    participant Dev as You
+    participant GH as GitHub
+    participant API as Claude API
+    participant R as Remote Routine
+
+    Dev->>GH: push fmt violation
+    GH->>GH: CI fails
+    GH->>API: POST /triggers/.../run
+    API->>R: session starts
+    R->>GH: gh run list + log-failed
+    R->>R: classify: fmt
+    R->>R: cargo fmt, verify
+    R->>GH: git push fix commit
+    GH->>GH: CI passes
+    GH-->>Dev: green

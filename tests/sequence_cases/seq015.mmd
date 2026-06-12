@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant A as Thread A
+    participant M1 as alice (ID 3)
+    participant M2 as bob (ID 7)
+    participant B as Thread B
+
+    Note over A,B: Both threads want alice and bob
+    A->>M1: lock alice first
+    B->>M1: try alice — blocks
+    M1-->>A: acquired
+    A->>M2: lock bob
+    M2-->>A: acquired
+    Note over A: work done, release both
+    M1-->>B: acquired (unblocked)
+    B->>M2: lock bob
+    M2-->>B: acquired

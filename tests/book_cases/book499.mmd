@@ -1,0 +1,9 @@
+flowchart TD
+    A[User request] --> B{Estimated complexity}
+    B -->|Low| C[Minimal reasoning]
+    B -->|Medium| D[Moderate reasoning]
+    B -->|High| E[Extended reasoning]
+    C --> F[Response generation]
+    D --> F
+    E --> F
+    F --> G[Visible output]

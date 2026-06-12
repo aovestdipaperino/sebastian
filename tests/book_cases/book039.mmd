@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph "Without Newtype"
+        A1[String] --> F1[create_user]
+        A2[String] --> F1
+    end
+
+    subgraph "With Newtype"
+        B1[Email] --> F2[create_user]
+        B2[Password] --> F2
+        B1 -.->|"Cannot swap"| F2
+    end

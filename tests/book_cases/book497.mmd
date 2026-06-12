@@ -1,0 +1,15 @@
+flowchart TD
+    A[I need to customize<br>Claude Code's behavior] --> B{How deeply?}
+    B -->|Instructions and conventions| C[CLAUDE.md<br>Settings]
+    B -->|React to events| D[Hooks]
+    B -->|Connect external systems| E[MCP Server]
+    B -->|Reusable behaviors| F[Skills and Plugins]
+    B -->|Specialized agents<br>inside Claude Code| G[Custom subagents]
+    B -->|Autonomous applications<br>outside Claude Code| H[Agent SDK]
+
+    C --> I[Configuration]
+    D --> I
+    E --> J[Extension]
+    F --> J
+    G --> K[Construction]
+    H --> K

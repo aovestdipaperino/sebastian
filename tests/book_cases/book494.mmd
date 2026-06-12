@@ -1,0 +1,13 @@
+flowchart TD
+    A["Extension Mechanisms"] --> B["Hooks - zero context"]
+    A --> C["Skills - low context"]
+    A --> D["Plugins - medium context"]
+    A --> E["MCP Servers - high context"]
+    B --> F["execute pre/post tool, lifecycle"]
+    C --> G["assemble and inject instructions on demand"]
+    D --> H["bundle any of the above"]
+    E --> I["contribute tools to the model pool"]
+    style B fill:#a8dadc,color:#000
+    style C fill:#c8b6a6,color:#000
+    style D fill:#e9c46a,color:#000
+    style E fill:#e76f51,color:#fff

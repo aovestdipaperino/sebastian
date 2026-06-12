@@ -1,0 +1,14 @@
+classDiagram
+    direction LR
+    class Vehicle {
+        <<interface>>
+        +start() void
+        +stop() void
+    }
+    class Car {
+        -int wheels$
+        +start() void
+    }
+    Vehicle <|.. Car : implements
+    Car *-- Engine
+    Car o-- Wheel

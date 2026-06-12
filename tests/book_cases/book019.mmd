@@ -1,0 +1,10 @@
+flowchart TB
+    K0[Key: held = empty] --> L1[Lock Level 1]
+    L1 --> K1[Key: held = up to 1]
+    K1 --> L2[Lock Level 2]
+    L2 --> K2[Key: held = up to 2]
+    K2 --> L3[Lock Level 3]
+    L3 --> K3[Key: held = up to 3]
+    K1 -.->|attempt level 1 again| ERR[compile error]
+    K2 -.->|attempt level 1| ERR
+    style ERR fill:#ffcccc

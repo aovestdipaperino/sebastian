@@ -1,0 +1,16 @@
+flowchart TD
+    subgraph "Memory Models"
+        T[Tiny<br/>Code + Data < 64KB<br/>All near pointers]
+        S[Small<br/>Code < 64KB<br/>Data < 64KB<br/>Near pointers]
+        M[Medium<br/>Code > 64KB<br/>Data < 64KB<br/>Far code, near data]
+        C[Compact<br/>Code < 64KB<br/>Data > 64KB<br/>Near code, far data]
+        L[Large<br/>Code > 64KB<br/>Data > 64KB<br/>All far pointers]
+        H[Huge<br/>Code > 64KB<br/>Data > 64KB<br/>Far pointers + segment math]
+    end
+
+    T --> |"More memory needed"| S
+    S --> |"More code"| M
+    S --> |"More data"| C
+    M --> |"More data"| L
+    C --> |"More code"| L
+    L --> |"Arrays > 64KB"| H

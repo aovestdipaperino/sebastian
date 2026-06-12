@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph CP["Context Passing"]
+        direction TB
+        CP_P["Parent"] -->|"pushes resolved data"| CP_C["Child"]
+        CP_Note["No parent pointer\nData flows DOWN only\nResolution during traversal"]
+    end
+
+    subgraph TB2["Token-Based Access"]
+        direction TB
+        TB_P["Parent"] -->|"Rc child pointer"| TB_C["Child"]
+        TB_C -->|"Rc parent pointer"| TB_P
+        TB_T["Token/Owner\n(passed as parameter)"] -.->|"grants access"| TB_P
+        TB_T -.->|"grants access"| TB_C
+        TB_Note["Parent pointers exist\nData flows BOTH ways\nResolution on demand"]
+    end
+
+    style CP_P fill:#2d5a3d,color:#fff,font-size:16px
+    style CP_C fill:#2d5a3d,color:#fff,font-size:16px
+    style CP_Note fill:#1a1a1a,color:#aaa,font-size:14px
+    style TB_P fill:#3a4a6b,color:#fff,font-size:16px
+    style TB_C fill:#3a4a6b,color:#fff,font-size:16px
+    style TB_T fill:#6b5a2d,color:#fff,font-size:14px
+    style TB_Note fill:#1a1a1a,color:#aaa,font-size:14px

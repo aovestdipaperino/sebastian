@@ -1,0 +1,29 @@
+flowchart TB
+    subgraph IDE["Integrated Development Environment"]
+        Editor["Text Editor<br/>(WordStar-compatible)"]
+        Menu["Menu System<br/>E-dit C-ompile R-un"]
+    end
+
+    subgraph Compiler["Single-Pass Compiler"]
+        Lexer["Lexical Analyzer"]
+        Parser["Recursive Descent Parser"]
+        CodeGen["8086 Code Generator"]
+        SymTab["Symbol Table"]
+    end
+
+    subgraph Runtime["Runtime System"]
+        RTL["Runtime Library"]
+        ErrHandler["Error Handler"]
+        MemMgr["Memory Manager"]
+        FileIO["File I/O"]
+    end
+
+    Editor -->|Source Text| Lexer
+    Lexer -->|Tokens| Parser
+    Parser -->|AST nodes| CodeGen
+    Parser <-->|Lookup/Insert| SymTab
+    CodeGen -->|Machine Code| Memory["Memory / .COM file"]
+    Memory -->|Execute| RTL
+    RTL --> ErrHandler
+    RTL --> MemMgr
+    RTL --> FileIO

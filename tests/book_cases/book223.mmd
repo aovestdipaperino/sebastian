@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph Input
+        A[Token Stream]
+    end
+    subgraph "Proc Macro"
+        B[Rust Function]
+    end
+    subgraph Output
+        C[Token Stream]
+    end
+    A --> B --> C
+
+    style B fill:#4a9eff,color:#fff

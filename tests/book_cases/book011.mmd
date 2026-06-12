@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph "dBASE Workflow"
+        A1[Source Code<br/>.PRG] --> B1[dBASE<br/>Interpreter] --> C1[Execution]
+    end
+
+    subgraph "Clipper Workflow"
+        A2[Source Code<br/>.PRG] --> B2[Clipper<br/>Compiler] --> C2[Executable<br/>.EXE]
+        C2 --> D2[Distribution]
+    end
+
+    style B1 fill:#cc6666,color:#fff
+    style B2 fill:#66aa66,color:#fff
+    style C2 fill:#66aa66,color:#fff

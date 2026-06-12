@@ -1,0 +1,9 @@
+flowchart LR
+    A[Event arrives] --> B[PreProcess phase]
+    B --> C{Handled?}
+    C -->|No| D[Focused view phase]
+    D --> E{Handled?}
+    E -->|No| F[PostProcess phase]
+    F --> G[Event may be unhandled]
+    C -->|Yes| H[Event cleared]
+    E -->|Yes| H

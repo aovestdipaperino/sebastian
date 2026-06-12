@@ -1,0 +1,121 @@
+{
+ "spec": {
+  "graph": {
+   "rankdir": "TB",
+   "nodesep": 50,
+   "ranksep": 50,
+   "marginx": 8,
+   "marginy": 8
+  },
+  "nodes": [
+   {
+    "v": "A",
+    "width": 80,
+    "height": 40
+   },
+   {
+    "v": "B",
+    "width": 80,
+    "height": 40
+   },
+   {
+    "v": "X",
+    "width": 60,
+    "height": 30
+   },
+   {
+    "v": "Y",
+    "width": 60,
+    "height": 30
+   }
+  ],
+  "edges": [
+   {
+    "v": "A",
+    "w": "B",
+    "label": {}
+   },
+   {
+    "v": "X",
+    "w": "Y",
+    "label": {}
+   }
+  ]
+ },
+ "expected": {
+  "nodes": {
+   "A": {
+    "x": 48,
+    "y": 28,
+    "width": 80,
+    "height": 40
+   },
+   "B": {
+    "x": 48,
+    "y": 118,
+    "width": 80,
+    "height": 40
+   },
+   "X": {
+    "x": 168,
+    "y": 28,
+    "width": 60,
+    "height": 30
+   },
+   "Y": {
+    "x": 168,
+    "y": 118,
+    "width": 60,
+    "height": 30
+   }
+  },
+  "edges": [
+   {
+    "v": "A",
+    "w": "B",
+    "name": null,
+    "points": [
+     {
+      "x": 48,
+      "y": 48
+     },
+     {
+      "x": 48,
+      "y": 73
+     },
+     {
+      "x": 48,
+      "y": 98
+     }
+    ],
+    "x": null,
+    "y": null
+   },
+   {
+    "v": "X",
+    "w": "Y",
+    "name": null,
+    "points": [
+     {
+      "x": 168,
+      "y": 43
+     },
+     {
+      "x": 168,
+      "y": 73
+     },
+     {
+      "x": 168,
+      "y": 103
+     }
+    ],
+    "x": null,
+    "y": null
+   }
+  ],
+  "graph": {
+   "width": 206,
+   "height": 146
+  }
+ }
+}

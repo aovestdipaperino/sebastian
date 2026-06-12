@@ -1,0 +1,13 @@
+graph TB
+    BS[BiorhythmStore<br/>birth_date, target_date]
+
+    MW[Main Window<br/>ChartView]
+    IW[Input Window<br/>DateEditor]
+    PW[Preferences Window<br/>SettingsPanel]
+
+    MW -->|reads| BS
+    IW -->|reads, writes| BS
+    PW -->|reads, writes| BS
+
+    BS -->|notifies| MW
+    BS -->|notifies| IW

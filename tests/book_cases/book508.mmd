@@ -1,0 +1,8 @@
+flowchart TD
+    A[Developer proposes plugin] --> B[Pull request to marketplace]
+    B --> C{Team review}
+    C -->|Approved| D[Merge into main]
+    C -->|Changes requested| A
+    D --> E[Plugin available in marketplace]
+    E --> F[Team members install]
+    F --> G[Auto-update distributes fixes]

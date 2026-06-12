@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph "Queue Structure"
+        HEAD[head] --> S[Sentinel]
+        S --> N1[Node 1]
+        N1 --> N2[Node 2]
+        N2 --> N3[Node 3]
+        TAIL[tail] --> N3
+    end
+
+    P1[Producer 1] -.->|enqueue| TAIL
+    P2[Producer 2] -.->|enqueue| TAIL
+    C[Consumer] -.->|dequeue| HEAD

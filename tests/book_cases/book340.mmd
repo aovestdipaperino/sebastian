@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph CELL["Cell&lt;T&gt;"]
+        C1["T:&nbsp;Copy&nbsp;required"]
+        C2["Zero&nbsp;overhead"]
+        C3["get/set&nbsp;by&nbsp;value"]
+    end
+
+    subgraph REFCELL["RefCell&lt;T&gt;"]
+        R1["Any&nbsp;T"]
+        R2["Runtime&nbsp;borrow&nbsp;tracking"]
+        R3["borrow/borrow_mut"]
+    end
+
+    subgraph COMBO["Rc&lt;RefCell&lt;T&gt;&gt;"]
+        CO1["Shared&nbsp;ownership"]
+        CO2["Shared&nbsp;mutability"]
+        CO3["Single-threaded&nbsp;only"]
+    end

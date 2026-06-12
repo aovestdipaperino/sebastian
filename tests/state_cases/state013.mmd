@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Approaching
+    Approaching --> WaitingForRunway: approach complete
+    WaitingForRunway --> WaitingForRunway: runway busy (yield)
+    WaitingForRunway --> Landing: runway clear
+    Landing --> Clearing: touchdown
+    Clearing --> [*]: runway vacated

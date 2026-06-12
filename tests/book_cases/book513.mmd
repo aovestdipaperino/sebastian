@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph Surface[Surface layer]
+        direction LR
+        CLI[Interactive CLI]
+        HCLI[Headless CLI]
+        SDK[Agent SDK]
+        IDE[IDE / Desktop]
+    end
+    subgraph Core[Core layer]
+        direction LR
+        Loop[queryLoop generator]
+        Comp["Compaction pipeline: 5 shapers"]
+    end
+    subgraph Safety[Safety / action layer]
+        direction LR
+        Perm[Permission system]
+        Hooks["Hook pipeline: 27 events"]
+        Tools["Tool pool: up to 54"]
+        Sand[Shell sandbox]
+        Sub[Subagent spawning]
+    end
+    subgraph State[State layer]
+        direction LR
+        Ctx[Context assembly]
+        Sess[Session transcripts]
+        Mem[CLAUDE.md and memory]
+        Side[Sidechain transcripts]
+    end
+    subgraph Backend[Backend layer]
+        Shell[Shell / sandbox]
+        MCP[MCP servers]
+        Remote[Remote execution]
+    end
+    Surface --> Core
+    Core --> Safety
+    Safety --> Backend
+    Core <--> State
+    style Core fill:#a8dadc,color:#000
+    style Safety fill:#e9c46a,color:#000

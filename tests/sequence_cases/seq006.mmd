@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant App as GPUI App
+    participant ObjC as Objective-C Runtime
+    participant NS as NSApplication
+    participant Color as NSColor
+    participant Space as NSColorSpace
+
+    App->>ObjC: msg_send![class!(NSApplication), sharedApplication]
+    ObjC->>NS: Get shared instance
+    NS-->>App: NSApplication instance
+
+    App->>NS: msg_send![app, effectiveAppearance]
+    NS-->>App: NSAppearance (light/dark)
+
+    App->>NS: bestMatchFromAppearancesWithNames:[dark]
+    NS-->>App: Match result (null = light, non-null = dark)
+
+    App->>ObjC: msg_send![class!(NSColor), controlAccentColor]
+    ObjC->>Color: Get system accent color
+    Color-->>App: NSColor (in device color space)
+
+    App->>ObjC: msg_send![class!(NSColorSpace), sRGBColorSpace]
+    ObjC->>Space: Get sRGB color space
+    Space-->>App: NSColorSpace instance
+
+    App->>Color: msg_send![color, colorUsingColorSpace:sRGB]
+    Color-->>App: NSColor (in sRGB)
+
+    App->>Color: msg_send![rgb_color, getRed:g:b:a:]
+    Color-->>App: RGB components (0.0-1.0)
+
+    App->>App: Convert floats to hex (0xRRGGBB)
+
+    Note over App: Now have: is_dark + accent_color

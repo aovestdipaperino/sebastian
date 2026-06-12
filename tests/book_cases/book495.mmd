@@ -1,0 +1,8 @@
+flowchart TD
+    A[Input text] --> B[Tokenization]
+    B --> C[Vector lookup]
+    C --> D[Transformation layers]
+    D --> E[Token probabilities]
+    E --> F[Sampling]
+    F --> G[Output token]
+    G -.->|"Generated token goes back into context"| C

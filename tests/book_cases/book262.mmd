@@ -1,0 +1,13 @@
+flowchart TD
+    subgraph W1["Window 0:00-0:05"]
+        E1([Event]) --> E2([Event]) --> E3([Event])
+    end
+    subgraph W2["Window 0:05-0:10"]
+        E4([Event]) --> E5([Event])
+    end
+    subgraph W3["Window 0:10-0:15"]
+        E6([Event]) --> E7([Event]) --> E8([Event])
+    end
+    W1 --> R1[Result]
+    W2 --> R2[Result]
+    W3 --> R3[Result]

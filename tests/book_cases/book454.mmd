@@ -1,0 +1,14 @@
+flowchart TD
+    R[Repository Git] --> W1[Worktree: main]
+    R --> W2[Worktree: specialist-arch]
+    R --> W3[Worktree: specialist-test]
+    R --> W4[Worktree: specialist-security]
+
+    W1 --- TL[Team Lead]
+    W2 --- S1[Specialist Architettura]
+    W3 --- S2[Specialist Testing]
+    W4 --- S3[Specialist Security]
+
+    S1 -->|commit su branch| R
+    S2 -->|commit su branch| R
+    S3 -->|commit su branch| R

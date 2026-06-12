@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph OOP["Ereditarietà Multipla OOP"]
+        PA["Genitore A<br/>+ metodoA()"]
+        PB["Genitore B<br/>+ metodoB()"]
+        CHILD["Figlio"]
+        PA --> CHILD
+        PB --> CHILD
+    end
+
+    subgraph RUST["Equivalente Rust"]
+        TA["trait A<br/>+ method_a()"]
+        TB["trait B<br/>+ method_b()"]
+        IMPL["struct Impl<br/>impl A for Impl<br/>impl B for Impl"]
+        TA -.->|implementa| IMPL
+        TB -.->|implementa| IMPL
+    end
+
+    OOP ~~~ RUST

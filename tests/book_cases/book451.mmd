@@ -1,0 +1,19 @@
+graph TD
+    BL[Business Logic<br/>Rust]
+    CM[Components<br/>Render trait]
+    EH[Event Handlers<br/>cx.listener]
+
+    LE[Layout Engine<br/>Flexbox model]
+    ED[Event Dispatch]
+    RT[Render Tree]
+
+    WIN[Window Management]
+    GPU[GPU Rendering<br/>Metal / Vulkan / DX]
+
+    BL --> CM
+    CM --> RT
+    EH --> ED
+    RT --> LE
+    LE --> GPU
+    ED --> WIN
+    WIN --> GPU

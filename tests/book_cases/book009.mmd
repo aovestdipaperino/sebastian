@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph "Worker's Deque"
+        direction LR
+        A[Task A] --- B[Task B] --- C[Task C] --- D[Task D]
+    end
+
+    Owner[Owner Thread]
+    Thief[Stealing Thread]
+
+    Owner -->|push/pop| A
+    Thief -->|steal| D
+
+    style Owner fill:#2ecc71,color:#fff
+    style Thief fill:#e74c3c,color:#fff

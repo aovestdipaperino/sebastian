@@ -1,0 +1,8 @@
+%% State Diagram Example
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing: Start
+    Processing --> Success: Complete
+    Processing --> Error: Fail
+    Success --> [*]
+    Error --> Idle: Retry

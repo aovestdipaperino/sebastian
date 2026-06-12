@@ -1,0 +1,8 @@
+flowchart TD
+    A[Claude vuole eseguire un'azione] --> B{Corrisponde a una regola?}
+    B -->|deny| C[Azione bloccata]
+    B -->|allow| D[Azione eseguita]
+    B -->|ask o nessuna regola| E[Richiesta di conferma all'utente]
+    E -->|Consenti| D
+    E -->|Consenti sempre| F[Aggiunge regola allow] --> D
+    E -->|Nega| C

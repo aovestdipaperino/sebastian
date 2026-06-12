@@ -1,0 +1,8 @@
+graph TD
+    subgraph Hierarchy["Parsing Power Hierarchy"]
+        A["LR‹0›"] --> B["SLR‹1›"]
+        B --> C["LALR‹1›"]
+        C --> D["LR‹1›"]
+    end
+    E[Fewer states, less power] -.-> A
+    D -.-> F[More states, more power]

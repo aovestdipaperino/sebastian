@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph Static["Vec&lt;DataProcessor&gt;"]
+        direction LR
+        A1["[P1 data]"]
+        A2["[P2 data]"]
+        A3["[P3 data]"]
+        A4["[P4 data]"]
+    end
+
+    subgraph Dynamic["Vec&lt;Box&lt;dyn Processor&gt;&gt;"]
+        direction LR
+        B1["ptr"]
+        B2["ptr"]
+        B3["ptr"]
+        B4["ptr"]
+    end
+
+    subgraph Heap["Heap (scattered)"]
+        H1["P1"]
+        H2["P2"]
+        H3["P3"]
+        H4["P4"]
+    end
+
+    B1 -.-> H3
+    B2 -.-> H1
+    B3 -.-> H4
+    B4 -.-> H2
+
+    style Static fill:#e8f5e9,stroke:#2e7d32
+    style Dynamic fill:#fff3e0,stroke:#ef6c00
+    style Heap fill:#e3f2fd,stroke:#1565c0

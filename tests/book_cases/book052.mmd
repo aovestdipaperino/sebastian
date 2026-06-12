@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph box["Box&lt;T&gt; Alone"]
+        direction TB
+        B["Box at 0x1000"]
+        B -->|"DerefMut"| M["&mut T"]
+        M -->|"mem::swap"| SWAP["Content can be<br/>swapped out"]
+    end
+
+    subgraph pinbox["Pin&lt;Box&lt;T&gt;&gt;"]
+        direction TB
+        P["Pin wrapper"]
+        P -->|"blocks"| B2["Box at 0x1000"]
+        B2 -->|"no &mut T"| BLOCK["Content stays<br/>in place"]
+    end
+
+    style SWAP fill:#ffcccc
+    style BLOCK fill:#90EE90

@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph "Language Spectrum 1985"
+        A[COBOL] --- B[dBASE/Clipper] --- C[Pascal/C] --- D[Assembly]
+    end
+
+    E[Business Logic<br/>Accessible] -.-> B
+    F[Systems Programming<br/>Technical] -.-> C
+    G[Enterprise<br/>Institutional] -.-> A
+
+    style B fill:#66aa66,color:#fff
+    style A fill:#8888aa,color:#fff
+    style C fill:#aa8866,color:#fff
+    style D fill:#aa6666,color:#fff

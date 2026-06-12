@@ -1,0 +1,9 @@
+graph LR
+    A[Mouse Down] --> B{Movement > 2px?}
+    B --> |No| C[Normal Click]
+    B --> |Yes| D[Create Drag View]
+    D --> E[on_drag_move events]
+    E --> F[drag_over styling]
+    F --> G{can_drop?}
+    G --> |Yes| H[on_drop handler]
+    G --> |No| I[Cancel]

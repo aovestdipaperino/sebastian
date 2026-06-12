@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph TRAIT["trait&nbsp;Iterator"]
+        REQ["fn&nbsp;next(&mut&nbsp;self)&nbsp;->&nbsp;Option&lt;Item&gt;"]
+        DEF1["fn&nbsp;map&nbsp;(default)"]
+        DEF2["fn&nbsp;filter&nbsp;(default)"]
+        DEF3["fn&nbsp;fold&nbsp;(default)"]
+        DEF4["fn&nbsp;count&nbsp;(default)"]
+    end
+
+    subgraph IMPL["impl&nbsp;Iterator&nbsp;for&nbsp;MyType"]
+        IMPL_REQ["fn&nbsp;next&nbsp;(required)"]
+        IMPL_OPT["fn&nbsp;count&nbsp;(optional&nbsp;override)"]
+    end
+
+    REQ --> IMPL_REQ
+    DEF4 -.->|"override"| IMPL_OPT

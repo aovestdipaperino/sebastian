@@ -1,0 +1,10 @@
+flowchart TD
+    Start[Function Call] --> Check{Result?}
+    Check -->|Ok| Continue[Continue Execution]
+    Check -->|Err| QMark{Using ?}
+    QMark -->|Yes| Return[Return Early with Err]
+    QMark -->|No| Match[Pattern Match]
+    Match --> HandleOk[Handle Ok case]
+    Match --> HandleErr[Handle Err case]
+
+    Continue --> Next[Next Operation]

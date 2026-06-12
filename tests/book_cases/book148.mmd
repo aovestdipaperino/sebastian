@@ -1,0 +1,10 @@
+flowchart LR
+    A[plan] --> B[default]
+    B --> C[acceptEdits]
+    C --> D[auto]
+    D --> E[dontAsk]
+    E --> F[bypassPermissions]
+    G[bubble] -.internal.-> B
+    style A fill:#a8dadc,color:#000
+    style F fill:#e76f51,color:#fff
+    style G fill:#c8b6a6,color:#000

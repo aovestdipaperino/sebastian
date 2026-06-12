@@ -1,0 +1,12 @@
+flowchart TD
+    A[Stack + Input] --> B{Can reduce?}
+    B -->|Yes| C{Should shift instead?}
+    B -->|No| D{Input remaining?}
+    C -->|No| E[Reduce]
+    C -->|Yes| F[Shift-Reduce Conflict]
+    D -->|Yes| G[Shift]
+    D -->|No| H{Stack = Start symbol?}
+    H -->|Yes| I[Accept]
+    H -->|No| J[Error]
+    E --> A
+    G --> A

@@ -1,0 +1,11 @@
+flowchart LR
+    A[Joystick right] --> B[LFSR shift forward]
+    A2[Joystick left] --> B2[LFSR shift backward]
+    B --> C[New 8-bit state]
+    B2 --> C
+    C --> D[Decode bits: trees, obstacle, vine, treasure]
+    D --> E[Render screen via TIA kernel]
+    E --> F[Player sees jungle]
+
+    style C fill:#cfe8d4,stroke:#2a7a3a,color:#000
+    style D fill:#d6e0f5,stroke:#3a5aa2,color:#000

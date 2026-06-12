@@ -1,0 +1,21 @@
+flowchart TD
+    A[Utente invia prompt] --> B[Hook UserPromptSubmit]
+    B --> C{Hook blocca?}
+    C -->|Sì| D[Prompt annullato]
+    C -->|No| E[Contesto arricchito dagli hook]
+    E --> F[Claude elabora il prompt]
+    F --> G{Claude usa un tool?}
+    G -->|No| H[Claude produce risposta finale]
+    G -->|Sì| I[Hook PreToolUse]
+    I --> J{Hook blocca?}
+    J -->|Sì| K[Tool annullato, Claude riceve errore]
+    J -->|No| L[Tool eseguito]
+    L --> M{Tool è MCP?}
+    M -->|Sì| N[Server MCP esegue operazione esterna]
+    M -->|No| O[Tool locale eseguito]
+    N --> P[Hook PostToolUse]
+    O --> P
+    P --> Q{Claude ha finito?}
+    Q -->|No| G
+    Q -->|Sì| R[Hook Stop]
+    R --> H

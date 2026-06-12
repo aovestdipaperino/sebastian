@@ -1,0 +1,10 @@
+graph TD
+    A[Start] --> B[Setup: Enable Raw Mode]
+    B --> C[Setup: Enter Alternate Screen]
+    C --> D[Setup: Create Terminal]
+    D --> E[Execute: Event Loop]
+    E --> F{Exit Requested?}
+    F -->|No| E
+    F -->|Yes| G[Cleanup: Disable Raw Mode]
+    G --> H[Cleanup: Leave Alternate Screen]
+    H --> I[End]

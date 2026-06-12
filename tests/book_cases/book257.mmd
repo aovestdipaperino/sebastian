@@ -1,0 +1,8 @@
+flowchart TD
+    A[Source Code] --> B[Lexer]
+    B --> C[Parser]
+    C --> D[AST]
+    D --> E[Semantic Analysis]
+    E --> F[Symbol Table]
+    E --> G[Typed AST]
+    G --> H[Code Generation]

@@ -1,0 +1,13 @@
+flowchart TB
+    ROOT["Directory: project"]
+    README["File: README.md"]
+    SRC["Directory: src"]
+    MAIN["File: main.rs"]
+    LIB["File: lib.rs"]
+    CARGO["File: Cargo.toml"]
+
+    ROOT --> README
+    ROOT --> SRC
+    ROOT --> CARGO
+    SRC --> MAIN
+    SRC --> LIB

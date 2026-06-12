@@ -1,0 +1,33 @@
+flowchart TB
+    subgraph S1["Step 1: Normal Generation"]
+        direction TB
+        A1["Context: '...the ATN line is'"] --> B1["P('directly') = 0.15<br/>Highest among candidates"]
+        B1 --> C1["Output: 'directly'"]
+    end
+
+    subgraph S2["Step 2: Probability Rises"]
+        direction TB
+        A2["Context: '...ATN line is directly'"] --> B2["P('directly') = 0.22<br/>Semantic overlap boosts it"]
+        B2 --> C2["Output: 'directly'"]
+    end
+
+    subgraph S3["Step 3: Pattern Lock"]
+        direction TB
+        A3["Context: '...is directly directly'"] --> B3["P('directly') = 0.45<br/>Repetition pattern detected"]
+        B3 --> C3["Output: 'directly'"]
+    end
+
+    subgraph S4["Step 4: Runaway"]
+        direction TB
+        A4["Context: '...directly directly directly'"] --> B4["P('directly') = 0.71<br/>Pattern dominates context"]
+        B4 --> C4["Output: 'directly'"]
+    end
+
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+
+    style S1 fill:#1a3a1a,stroke:#555,color:#fff,font-size:16px
+    style S2 fill:#3a3a1a,stroke:#555,color:#fff,font-size:16px
+    style S3 fill:#5a2a1a,stroke:#555,color:#fff,font-size:16px
+    style S4 fill:#6a1a1a,stroke:#555,color:#fff,font-size:16px

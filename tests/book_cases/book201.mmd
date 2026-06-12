@@ -1,0 +1,20 @@
+graph TB
+    subgraph Window["Application Window"]
+        subgraph Left["Info Panel (200-300px)"]
+            L1[Cycle Explanations]
+            L2[Current Values]
+            L3[Legend]
+        end
+        subgraph Right["Main Area (flex)"]
+            subgraph Top["Chart Panel"]
+                T1[Biorhythm Visualization]
+            end
+            subgraph Bottom["History Panel"]
+                B1[Scrollable History List]
+            end
+        end
+    end
+
+    style Left fill:#e3f2fd
+    style Top fill:#fff9c4
+    style Bottom fill:#c8e6c9

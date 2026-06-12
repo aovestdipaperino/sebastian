@@ -1,0 +1,13 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px'}}}%%
+flowchart TD
+    C1["Load Read Index"]
+    C2["Check: read != write<br/>(ensure data available)"]
+    C3["Read Data from Buffer[read]"]
+    C4["Advance Read Index<br/>(atomic operation)"]
+
+    C1 --> C2 --> C3 --> C4
+
+    style C1 fill:#c8e6c9
+    style C2 fill:#c8e6c9
+    style C3 fill:#c8e6c9
+    style C4 fill:#c8e6c9

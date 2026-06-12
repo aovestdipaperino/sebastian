@@ -1,0 +1,25 @@
+graph TD
+    subgraph "Compile Time"
+        A["Source code with<br/>lifetime annotations"] --> B["Compiler analyzes<br/>lifetimes"]
+        B --> C["Validates all<br/>references"]
+        C --> D{Valid?}
+        D -->|Yes| E["✅ Compilation succeeds"]
+        D -->|No| F["❌ Compilation fails<br/>with error"]
+    end
+
+    subgraph "Runtime"
+        E --> G["Machine code<br/>No lifetime overhead"]
+        G --> H["No GC pauses"]
+        G --> I["No reference counting"]
+        G --> J["No runtime checks"]
+    end
+
+    style A fill:#E3F2FD
+    style B fill:#90CAF9
+    style C fill:#64B5F6
+    style E fill:#4CAF50
+    style F fill:#f44336
+    style G fill:#4CAF50
+    style H fill:#C8E6C9
+    style I fill:#C8E6C9
+    style J fill:#C8E6C9

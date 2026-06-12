@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph Kernel["Kernel Space"]
+        NIC["Network Interface"]
+        KBuf["Kernel Buffer"]
+        BPF["BPF Filter"]
+    end
+    subgraph User["User Space"]
+        UBuf["User Buffer"]
+        App["Your Application"]
+    end
+    NIC -->|"packet arrives"| KBuf
+    KBuf -->|"filter check"| BPF
+    BPF -->|"copy if match"| UBuf
+    UBuf -->|"read"| App

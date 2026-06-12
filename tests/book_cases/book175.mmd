@@ -1,0 +1,17 @@
+graph LR
+    subgraph "Memory Ownership"
+        A["Buffer owns data<br/>lifetime 'b"] -->|contains| B["data: char*"]
+    end
+
+    subgraph "Borrowed Reference"
+        C["slice: char*<br/>lifetime 'b"]
+    end
+
+    B -.->|borrows from| C
+
+    D["slice lifetime 'b ≤ buffer lifetime 'b"]
+
+    style A fill:#4CAF50
+    style B fill:#2196F3
+    style C fill:#FF5722
+    style D fill:#FFF9C4

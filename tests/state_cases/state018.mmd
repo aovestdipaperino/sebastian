@@ -1,0 +1,9 @@
+stateDiagram-v2
+    direction TB
+    [*] --> Draft: new()
+    Draft --> Draft: edit()
+    Draft --> PendingReview: submit()
+    PendingReview --> Approved: approve()
+    PendingReview --> Rejected: reject()
+    Approved --> [*]
+    Rejected --> [*]

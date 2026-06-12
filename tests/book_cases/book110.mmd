@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph Stage1["Reader Thread"]
+        A[File] --> B[BufReader<br/>64KB]
+        B --> C[Parse Lines]
+    end
+
+    subgraph Channel1["Bounded Channel<br/>500 items max"]
+        D[sync_channel]
+    end
+
+    subgraph Stage2["Transform Thread"]
+        E[Receive] --> F[Transform]
+    end
+
+    subgraph Channel2["Bounded Channel<br/>500 items max"]
+        G[sync_channel]
+    end
+
+    subgraph Stage3["Writer Thread"]
+        H[Receive] --> I[BufWriter<br/>64KB]
+        I --> J[File]
+    end
+
+    C --> D
+    D --> E
+    F --> G
+    G --> H
+
+    style Channel1 fill:#ffd43b,stroke:#fab005
+    style Channel2 fill:#ffd43b,stroke:#fab005

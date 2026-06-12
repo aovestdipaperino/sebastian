@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Listening : listen()
+    Closed --> Connected : connect()
+    Listening --> Established : accept()
+    Listening --> Closed : close()
+    Connected --> Established : complete_handshake()
+    Connected --> Closed : close()
+    Established --> Closed : close()
+
+    note right of Established
+        send() and receive()
+        available here
+    end note

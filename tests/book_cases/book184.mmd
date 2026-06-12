@@ -1,0 +1,33 @@
+graph TD
+    A[Application Starts] --> B{Detect Platform}
+    B -->|macOS| C[Query NSAppearance]
+    B -->|Windows| D[Query DWM]
+    B -->|Linux| E[Query GTK]
+
+    C --> F[Read Accent Color<br/>NSColor.controlAccentColor]
+    D --> G[Read Accent Color<br/>DwmGetColorizationColor]
+    E --> H[Read Theme Name<br/>gtk-theme-name]
+
+    F --> I{Dark Mode?}
+    G --> J{Dark Mode?}
+    H --> K{Dark Mode?}
+
+    I -->|Yes| L[Build Dark Theme<br/>with System Accent]
+    I -->|No| M[Build Light Theme<br/>with System Accent]
+    J -->|Yes| N[Build Dark Theme<br/>with System Accent]
+    J -->|No| O[Build Light Theme<br/>with System Accent]
+    K -->|Yes| P[Build Dark Theme<br/>with System Accent]
+    K -->|No| Q[Build Light Theme<br/>with System Accent]
+
+    L --> R[Apply Theme to UI]
+    M --> R
+    N --> R
+    O --> R
+    P --> R
+    Q --> R
+
+    style A fill:#e1f5ff
+    style R fill:#c8e6c9
+    style C fill:#fff9c4
+    style D fill:#fff9c4
+    style E fill:#fff9c4

@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted : submit()
+    Draft --> Cancelled : cancel()
+    Submitted --> Paid : pay()
+    Submitted --> Cancelled : cancel()
+    Paid --> Shipped : ship()
+    Shipped --> Delivered : deliver()
+    Delivered --> [*]
+    Cancelled --> [*]

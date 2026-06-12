@@ -1,0 +1,16 @@
+flowchart TB
+    A[50 Hz raster IRQ] --> B[Music driver wakes]
+    B --> C{Is this voice playing a chord?}
+    C -- yes --> D[Read arp_step]
+    D --> E[Load note from 3-entry table]
+    E --> F[Write to D400 / D401]
+    F --> G[Advance arp_step mod 3]
+    C -- no --> H[Hold current note]
+    G --> I[Move to next voice]
+    H --> I
+    I --> J[Return from IRQ]
+    J --> A
+
+    style F fill:#cfe8d4,stroke:#2a7a3a,color:#000
+    style E fill:#d6e0f5,stroke:#3a5aa2,color:#000
+    style G fill:#f7d6cf,stroke:#a23a2a,color:#000

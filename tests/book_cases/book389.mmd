@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph INH["Approccio con Ereditarietà"]
+        BASE["StyledElement<br/>- style: Style<br/>+ applyStyle()"]
+        PARA_I["Paragraph<br/>- text: String"]
+        HEAD_I["Heading<br/>- text: String<br/>- level: int"]
+        BASE --> PARA_I
+        BASE --> HEAD_I
+    end
+
+    subgraph COMP["Approccio con Composizione"]
+        STYLE["Style<br/>- fontSize: u16<br/>- color: String"]
+        PARA_C["Paragraph<br/>- text: String<br/>- style: Style"]
+        HEAD_C["Heading<br/>- text: String<br/>- level: u8<br/>- style: Style"]
+        STYLE -.->|"contiene"| PARA_C
+        STYLE -.->|"contiene"| HEAD_C
+    end
+
+    INH ~~~ COMP

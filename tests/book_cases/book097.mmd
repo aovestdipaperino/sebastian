@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph Request["1 MB Request Buffer"]
+        direction LR
+        A["Key<br/>(36 bytes)"]
+        B["Value<br/>(~1 MB)"]
+    end
+
+    subgraph Index["In-Memory Index (kept forever)"]
+        C["HashMap entry<br/>key: slice → A"]
+    end
+
+    subgraph Disk["Disk Storage"]
+        D["value bytes<br/>(independent copy)"]
+    end
+
+    A -.->|"slice reference"| C
+    B -->|"written & dropped"| D
+
+    style Request fill:#ff6b6b,color:#fff
+    style Index fill:#4ecdc4,color:#fff
+    style Disk fill:#95a5a6,color:#fff

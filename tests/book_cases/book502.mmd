@@ -1,0 +1,14 @@
+flowchart TD
+    A[User sends request<br/>with Plan Mode active] --> B[Claude explores the codebase<br/>Read, Grep, Glob]
+    B --> C{Need clarifications?}
+    C -->|Yes| D[Claude asks questions<br/>Question Tool]
+    D --> E[User responds]
+    E --> B
+    C -->|No| F[Claude formulates the plan<br/>with approach and steps]
+    F --> G{User approves?}
+    G -->|Change requested| H[Claude revises the plan]
+    H --> G
+    G -->|Rejects| I[Claude rethinks<br/>the approach]
+    I --> B
+    G -->|Approves| J[Plan execution<br/>writing tools reactivated]
+    J --> K[Implementation<br/>with the plan as guide]

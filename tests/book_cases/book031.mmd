@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph Compile Time
+        MT["Marker Trait Bounds"]
+        TC["Type Checking"]
+        MO["Monomorphization"]
+        MT --> TC --> MO
+    end
+    subgraph Runtime
+        ZC["Zero-Cost: No trait overhead"]
+        MC["Machine code identical to manual implementation"]
+        ZC --> MC
+    end
+    MO --> ZC
+    style MT fill:#4a9eff,color:#fff,font-size:16px
+    style TC fill:#4a9eff,color:#fff,font-size:16px
+    style MO fill:#4a9eff,color:#fff,font-size:16px
+    style ZC fill:#2ecc71,color:#fff,font-size:16px
+    style MC fill:#2ecc71,color:#fff,font-size:16px

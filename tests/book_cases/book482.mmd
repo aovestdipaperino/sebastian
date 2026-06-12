@@ -1,0 +1,20 @@
+flowchart TD
+    A[User Prompt] --> B[Settings Resolution]
+    B --> C[State Initialization]
+    C --> D[Context Assembly]
+    D --> E[Five Shapers]
+    E --> F[Model Call]
+    F --> G{Has tool_use?}
+    G -->|no| H[Turn Complete]
+    G -->|yes| I[Tool Dispatch]
+    I --> J[Permission Gate]
+    J -->|allow| K[Tool Execution]
+    J -->|deny| L[Deny Feedback]
+    K --> M[Result Collection]
+    L --> M
+    M --> N{Continue?}
+    N -->|yes| D
+    N -->|no| H
+    style E fill:#a8dadc,color:#000
+    style J fill:#e9c46a,color:#000
+    style F fill:#c8b6a6,color:#000

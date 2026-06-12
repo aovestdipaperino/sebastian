@@ -1,0 +1,14 @@
+graph LR
+    E[BiorhythmData<br/>birth_date, calculations]
+
+    W1[Chart Window]
+    W2[Input Dialog]
+    W3[Table View]
+
+    W1 -.->|Entity Handle| E
+    W2 -.->|Entity Handle| E
+    W3 -.->|Entity Handle| E
+
+    W2 -->|update birth_date| E
+    E -->|triggers re-render| W1
+    E -->|triggers re-render| W3

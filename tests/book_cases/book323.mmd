@@ -1,0 +1,14 @@
+flowchart TB
+    START(["Shared&nbsp;Mutable&nbsp;State?"]) --> Q1{"Latency-critical?"}
+
+    Q1 -->|Yes| LOCKFREE["Lock-Free&nbsp;Structures<br/>(crossbeam&nbsp;queues)"]
+    Q1 -->|No| Q2{"High&nbsp;contention&nbsp;on&nbsp;map?"}
+
+    Q2 -->|Yes| CONCURRENT["Concurrent&nbsp;Collections<br/>(dashmap,&nbsp;flurry)"]
+    Q2 -->|No| Q3{"Producer-consumer?"}
+
+    Q3 -->|Yes| CHANNELS["Channels<br/>(crossbeam-channel)"]
+    Q3 -->|No| Q4{"Parallel&nbsp;computation?"}
+
+    Q4 -->|Yes| WORKSTEAL["Work-Stealing<br/>(rayon,&nbsp;crossbeam-deque)"]
+    Q4 -->|No| MUTEX["Mutex&nbsp;/&nbsp;RwLock<br/>(std::sync)"]

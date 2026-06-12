@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph "The Ecosystem Problem"
+        A["Thousands of<br/>DOS Applications"]
+        B["BIOS Services<br/>(Real Mode Only)"]
+        C["DOS Functions<br/>(Real Mode Only)"]
+        D["Hardware Drivers<br/>(Real Mode Only)"]
+    end
+
+    E["Protected Mode<br/>Application"] -->|"Needs"| A
+    E -->|"Needs"| B
+    E -->|"Needs"| C
+    E -->|"Needs"| D
+
+    style A fill:#e74c3c,color:#fff
+    style B fill:#e74c3c,color:#fff
+    style C fill:#e74c3c,color:#fff
+    style D fill:#e74c3c,color:#fff
+    style E fill:#27ae60,color:#fff

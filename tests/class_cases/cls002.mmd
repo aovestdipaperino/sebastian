@@ -1,0 +1,7 @@
+classDiagram
+    Customer "1" --> "*" Order : places
+    Order "*" --o "1" Product : contains
+    class Customer {
+        +String name
+        +order() void
+    }

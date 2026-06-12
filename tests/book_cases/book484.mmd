@@ -1,0 +1,16 @@
+flowchart TD
+    A[Main Conversation] -->|delegate| B[Agent Tool]
+    B --> C[Explore Subagent]
+    B --> D[Plan Subagent]
+    B --> E[General-purpose Subagent]
+    B --> F[Custom Subagent]
+    C -.summary only.-> A
+    D -.summary only.-> A
+    E -.summary only.-> A
+    F -.summary only.-> A
+    G[Subagent Transcript .jsonl] -.sidechain.-> C
+    H[Subagent Transcript .jsonl] -.sidechain.-> D
+    I[Subagent Transcript .jsonl] -.sidechain.-> E
+    J[Subagent Transcript .jsonl] -.sidechain.-> F
+    style A fill:#a8dadc,color:#000
+    style B fill:#e9c46a,color:#000

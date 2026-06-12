@@ -1,0 +1,12 @@
+%%{init: {"flowchart": {"htmlLabels": false}} }%%
+flowchart TB
+    subgraph RUST["Rust:&nbsp;Capability&nbsp;Composition"]
+        WALK["CanWalk"]
+        SPEAK["CanSpeak"]
+        STRUCT_D["struct&nbsp;Dog"]
+        STRUCT_C["struct&nbsp;Cat"]
+        WALK --> STRUCT_D
+        WALK --> STRUCT_C
+        SPEAK --> STRUCT_D
+        SPEAK --> STRUCT_C
+    end

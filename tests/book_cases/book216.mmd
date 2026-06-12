@@ -1,0 +1,20 @@
+flowchart TD
+    subgraph "What You Write"
+        A["#[get('/users/:id')]<br/>async fn get_user(id: u32) -> Response"]
+    end
+
+    subgraph "What Gets Generated"
+        B[Original handler function]
+        C[Route registration]
+        D[Parameter extraction]
+        E[Type conversion]
+        F[Async wrapper]
+    end
+
+    A --> B
+    A --> C
+    A --> D
+    A --> E
+    A --> F
+
+    C --> G[Router collects all routes at startup]

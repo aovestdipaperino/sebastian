@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph EXECUTOR["Executor"]
+        QUEUE["Task&nbsp;Queue"]
+        SCHEDULER["Scheduler"]
+    end
+
+    subgraph TASKS["Active&nbsp;Tasks"]
+        T1["Task&nbsp;1<br/>(reading&nbsp;file)"]
+        T2["Task&nbsp;2<br/>(network&nbsp;request)"]
+        T3["Task&nbsp;3<br/>(timer)"]
+    end
+
+    subgraph IO["I/O&nbsp;Subsystem"]
+        REACTOR["Event&nbsp;Loop&nbsp;/<br/>Reactor"]
+    end
+
+    QUEUE --> SCHEDULER
+    SCHEDULER -->|"poll"| T1
+    SCHEDULER -->|"poll"| T2
+    SCHEDULER -->|"poll"| T3
+    T1 -->|"Pending&nbsp;+<br/>waker"| REACTOR
+    T2 -->|"Pending&nbsp;+<br/>waker"| REACTOR
+    T3 -->|"Pending&nbsp;+<br/>waker"| REACTOR
+    REACTOR -->|"wake"| QUEUE

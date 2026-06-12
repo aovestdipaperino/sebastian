@@ -1,0 +1,17 @@
+flowchart TD
+    Root["Current Position"] --> M1["Move to Col 0"]
+    Root --> M2["Move to Col 1"]
+    Root --> M3["..."]
+    Root --> M7["Move to Col 6"]
+
+    M1 --> M1a["7 responses"]
+    M2 --> M2a["7 responses"]
+    M7 --> M7a["7 responses"]
+
+    M1a --> D3["7 responses each"]
+    M2a --> D3b["7 responses each"]
+
+    D3 --> D4["..."]
+    D3b --> D4b["..."]
+
+    D4 --> D5["7^5 = 16,807 leaf nodes"]

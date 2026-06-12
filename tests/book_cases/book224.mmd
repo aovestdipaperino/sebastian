@@ -1,0 +1,9 @@
+flowchart TD
+    A[proc_macro::TokenStream] -->|".into()"| B[proc_macro2::TokenStream]
+    B -->|"syn::parse2()"| C[Structured AST]
+    C -->|"Your Logic"| D[Modified/New Data]
+    D -->|"quote!"| E[proc_macro2::TokenStream]
+    E -->|".into()"| F[proc_macro::TokenStream]
+
+    style C fill:#22c55e,color:#fff
+    style D fill:#22c55e,color:#fff

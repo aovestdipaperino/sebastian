@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph Logical["Logical View: One Frame"]
+        direction LR
+        H["Header (4 bytes)\nu32 big-endian length N"]
+        P["Payload (N bytes)\napplication data"]
+        H --> P
+    end
+
+    subgraph Physical["Physical View: TCP Delivery"]
+        direction TB
+        S["Sender: one write_all(4+N bytes)"]
+        R1["Receiver read #1: 2 bytes (partial header)"]
+        R2["Receiver read #2: 2 bytes (header complete)"]
+        R3["Receiver read #3: N bytes (payload)"]
+        S --> R1 --> R2 --> R3
+    end
+
+    style Logical fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style Physical fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style H fill:#fff,stroke:#999,font-size:16px
+    style P fill:#fff,stroke:#999,font-size:16px
+    style S fill:#fff,stroke:#999,font-size:16px
+    style R1 fill:#fff,stroke:#999,font-size:16px
+    style R2 fill:#fff,stroke:#999,font-size:16px
+    style R3 fill:#fff,stroke:#999,font-size:16px

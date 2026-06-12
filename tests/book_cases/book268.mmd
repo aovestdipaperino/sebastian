@@ -1,0 +1,9 @@
+flowchart TD
+    A[New DSL Project] --> B{Grammar complexity?}
+    B -->|Simple, regular| C[Parser Combinators]
+    B -->|Moderate, expression-heavy| D[Recursive Descent + Pratt]
+    B -->|Complex, from specification| E{Rust only?}
+    E -->|Yes| F{Prefer external grammar?}
+    E -->|No| G[ANTLR]
+    F -->|Yes| H[pest or lalrpop]
+    F -->|No| I[Recursive Descent]

@@ -1,0 +1,26 @@
+graph TD
+    AL[Application Logic]
+    AR[Application Render]
+
+    IC[Input Components<br/>Button, Input, Select]
+    DC[Display Components<br/>Label, Badge, Progress]
+    CC[Container Components<br/>Dialog, Tabs, Table]
+    TH[Theme System]
+
+    LE[Layout Engine]
+    ED[Event Dispatch]
+    GPU[GPU Rendering]
+
+    AL --> AR
+    AR --> IC
+    AR --> DC
+    AR --> CC
+    IC --> TH
+    DC --> TH
+    CC --> TH
+    IC --> LE
+    DC --> LE
+    CC --> LE
+    TH --> LE
+    LE --> ED
+    ED --> GPU

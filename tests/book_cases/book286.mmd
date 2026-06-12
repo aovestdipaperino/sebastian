@@ -1,0 +1,9 @@
+flowchart TD
+    A["Instrumented .ll"] --> B["llc or clang"]
+    B --> C["Instrumented .o"]
+    C --> D[Link]
+    E["Rust stdlib rlibs"] --> D
+    F["Dependency rlibs"] --> D
+    G["profiler_runtime.a"] --> D
+    H["System libraries"] --> D
+    D --> I["Final executable"]

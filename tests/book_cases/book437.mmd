@@ -1,0 +1,12 @@
+graph LR
+    O[Ownership System] --> MS[Memory Safety]
+    O --> NR[No Runtime Overhead]
+    B[Borrow Checker] --> DR[No Data Races]
+    B --> CT[Compile-Time Verification]
+    T[Type System] --> NP[No Null Pointers]
+    T --> EH[Explicit Error Handling]
+
+    MS --> Native[Native Performance]
+    NR --> Native
+    DR --> Safe[Safe Concurrency]
+    CT --> Safe

@@ -1,0 +1,21 @@
+graph TD
+    CC[Custom Component]
+    LC[Library Components]
+
+    AT[ActiveTheme Trait]
+    TP[Theme Provider]
+    TC[Theme Colors]
+
+    RT[Render Trait]
+    IE[IntoElement]
+    CX[Context]
+
+    CC --> AT
+    LC --> AT
+    AT --> TP
+    TP --> TC
+    CC --> RT
+    LC --> RT
+    RT --> IE
+    CC --> CX
+    LC --> CX

@@ -1,0 +1,16 @@
+flowchart TD
+    A[Scan IR line] --> B{Function definition?}
+    B -->|Yes| C[Track function start]
+    B -->|No| D{Entry label?}
+    D -->|Yes| E[Mark ready for enter call]
+    D -->|No| F{Phi or alloca?}
+    F -->|Yes| G[Skip, continue scanning]
+    F -->|No| H{First real instruction?}
+    H -->|Yes| I[Insert enter call]
+    H -->|No| J{Return instruction?}
+    J -->|Yes| K[Insert exit call before return]
+    J -->|No| L{Has debug location?}
+    L -->|Yes| M{Safe to instrument?}
+    M -->|Yes| N[Insert line call]
+    M -->|No| O[Skip]
+    L -->|No| O

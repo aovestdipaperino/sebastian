@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant UI as Main Thread
+    participant BG as Background Task
+    participant FS as File System
+
+    UI->>UI: User clicks "Load"
+    UI->>UI: Show loading indicator
+    UI->>BG: Spawn async task
+    BG->>FS: Read file (async)
+    UI->>UI: Handle other events
+    UI->>UI: Render frames
+    FS-->>BG: File contents
+    BG->>BG: Parse data
+    BG->>UI: Update with results
+    UI->>UI: Hide loading indicator
+    UI->>UI: Render data

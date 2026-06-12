@@ -1,0 +1,12 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px'}}}%%
+flowchart TD
+    ARRAY["Fixed Size Array<br/>Data[0..N]"]
+    WRITE["Write Index<br/>(atomic pointer)"]
+    READ["Read Index<br/>(atomic pointer)"]
+
+    WRITE -.->|points to next<br/>write position| ARRAY
+    READ -.->|points to next<br/>read position| ARRAY
+
+    style ARRAY fill:#e3f2fd
+    style WRITE fill:#fff3e0
+    style READ fill:#c8e6c9

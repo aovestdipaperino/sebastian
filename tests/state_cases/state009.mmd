@@ -1,0 +1,5 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> RequestSent : send_request()
+    RequestSent --> ResponseReceived : receive_response()
+    ResponseReceived --> Idle : reset()

@@ -1,0 +1,13 @@
+flowchart TB
+    A((draft)) -->|writes s.draft| B((review))
+    B -->|writes s.critique| C{{interrupt}}
+    C -->|user approves| D((revise))
+    D --> E(((halt)))
+    C -->|user declines| F[(checkpoint kept)]
+
+    style A fill:#bbdefb,stroke:#1565c0,color:#000
+    style B fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style C fill:#ffe0b2,stroke:#ef6c00,color:#000
+    style D fill:#d1c4e9,stroke:#4527a0,color:#000
+    style E fill:#f8bbd0,stroke:#ad1457,color:#000
+    style F fill:#cfd8dc,stroke:#37474f,color:#000

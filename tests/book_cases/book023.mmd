@@ -1,0 +1,7 @@
+flowchart LR
+    K0["Key(nothing held)"] -->|"lock Level 1"| K1["Key(max: level 1)"]
+    K1 -->|"lock Level 2"| K2["Key(max: level 2)"]
+    K2 -->|"lock Level 3"| K3["Key(max: level 3)"]
+    K1 -.->|"lock Level 1 again"| ERR["compile error"]
+    K2 -.->|"lock Level 1"| ERR
+    style ERR fill:#ffcccc

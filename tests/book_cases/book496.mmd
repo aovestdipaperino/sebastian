@@ -1,0 +1,10 @@
+flowchart TD
+    A[Receive task] --> B[Observe current state]
+    B --> C["Reason: what to do?"]
+    C --> D{Need tools?}
+    D -->|Yes| E[Select and execute tool]
+    E --> F[Observe result]
+    F --> C
+    D -->|No| G{Task complete?}
+    G -->|No| C
+    G -->|Yes| H[Return result]

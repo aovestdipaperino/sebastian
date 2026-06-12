@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph BOX["Box&lt;T&gt;"]
+        B1["Owner singolo"]
+        B2["Allocazione heap"]
+        B3["Tipi ricorsivi"]
+    end
+
+    subgraph RC["Rc&lt;T&gt;"]
+        R1["Owner multipli"]
+        R2["Single-threaded"]
+        R3["Immutabile condiviso"]
+    end
+
+    subgraph ARC["Arc&lt;T&gt;"]
+        A1["Owner multipli"]
+        A2["Thread-safe"]
+        A3["Immutabile condiviso"]
+    end

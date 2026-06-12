@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Does your type contain self-references?"]
+    Start -->|No| Unpin["Implements Unpin automatically"]
+    Start -->|Yes| NoUnpin["Add PhantomPinned to opt out"]
+
+    Unpin --> Safe["Pin::new works safely"]
+    Safe --> Escape["Can unpin and move freely"]
+
+    NoUnpin --> Unsafe["Must use Pin::new_unchecked (unsafe)"]
+    Unsafe --> Stuck["Cannot get &mut T through safe code"]
+    Stuck --> Guarantee["Value stays in place"]

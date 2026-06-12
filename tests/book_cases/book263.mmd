@@ -1,0 +1,13 @@
+graph TD
+    subgraph Parse1["Parse Tree 1: else binds to inner if"]
+        A1[stmt] --> B1["if"]
+        A1 --> C1[expr: e1]
+        A1 --> D1["then"]
+        A1 --> E1[stmt]
+        E1 --> F1["if"]
+        E1 --> G1[expr: e2]
+        E1 --> H1["then"]
+        E1 --> I1[stmt: s1]
+        E1 --> J1["else"]
+        E1 --> K1[stmt: s2]
+    end

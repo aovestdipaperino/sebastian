@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph "tuple(a, b, c)"
+        A1[a] --> A2[b] --> A3[c]
+        A3 --> AR["Returns (a, b, c)"]
+    end
+
+    subgraph "preceded(a, b)"
+        B1[a] --> B2[b]
+        B2 --> BR["Returns b"]
+    end
+
+    subgraph "terminated(a, b)"
+        C1[a] --> C2[b]
+        C2 --> CR["Returns a"]
+    end
+
+    subgraph "delimited(a, b, c)"
+        D1[a] --> D2[b] --> D3[c]
+        D3 --> DR["Returns b"]
+    end

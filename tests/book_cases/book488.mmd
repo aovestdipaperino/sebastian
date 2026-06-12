@@ -1,0 +1,8 @@
+flowchart LR
+    A[Base tools] --> B[Mode filter]
+    B --> C[Deny-rule filter]
+    C --> D[Merge MCP tools]
+    D --> E[Deduplicate]
+    E --> F[Final pool]
+    style A fill:#c8b6a6,color:#000
+    style F fill:#a8dadc,color:#000

@@ -1,0 +1,10 @@
+flowchart TD
+    A[Messaggio dell'utente] --> B[Aggiunge al contesto]
+    B --> C[Invia al modello]
+    C --> D{Il modello chiede uno strumento?}
+    D -->|No| E[Mostra la risposta] --> F[Attende l'utente]
+    D -->|Si| G{Permesso necessario?}
+    G -->|Si| H[Chiede conferma]
+    G -->|No| I[Esegue lo strumento]
+    H --> I
+    I --> J[Aggiunge il risultato al contesto] --> C

@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph OOP["OOP&nbsp;Multiple&nbsp;Inheritance"]
+        PA["Parent&nbsp;A<br/>+&nbsp;methodA()"]
+        PB["Parent&nbsp;B<br/>+&nbsp;methodB()"]
+        CHILD["Child"]
+        PA --> CHILD
+        PB --> CHILD
+    end
+
+    subgraph RUST["Rust&nbsp;Equivalent"]
+        TA["trait&nbsp;A<br/>+&nbsp;method_a()"]
+        TB["trait&nbsp;B<br/>+&nbsp;method_b()"]
+        IMPL["struct&nbsp;Impl<br/>impl&nbsp;A&nbsp;for&nbsp;Impl<br/>impl&nbsp;B&nbsp;for&nbsp;Impl"]
+        TA -.->|implements| IMPL
+        TB -.->|implements| IMPL
+    end
+
+    OOP ~~~ RUST

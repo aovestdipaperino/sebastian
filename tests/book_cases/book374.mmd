@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph MAIN["Thread Principale"]
+        DATA["T: Send + Sync"]
+    end
+
+    subgraph T1["Thread 1"]
+        REF1["&T (via Arc)"]
+    end
+
+    subgraph T2["Thread 2"]
+        REF2["&T (via Arc)"]
+    end
+
+    DATA -->|"Arc::new + clone<br/>(richiede Send)"| T1
+    DATA -->|"Arc::new + clone<br/>(richiede Send)"| T2
+    REF1 <-.->|"lettura condivisa<br/>(richiede Sync)"| REF2

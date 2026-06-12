@@ -1,0 +1,10 @@
+flowchart TD
+    A["Start: a*b vs 'aaac'"] --> B["a* matches 'aaa'"]
+    B --> C["b vs 'c' - FAIL"]
+    C --> D["Backtrack: a* matches 'aa'"]
+    D --> E["b vs 'a' - FAIL"]
+    E --> F["Backtrack: a* matches 'a'"]
+    F --> G["b vs 'a' - FAIL"]
+    G --> H["Backtrack: a* matches ''"]
+    H --> I["b vs 'a' - FAIL"]
+    I --> J["No more options: NO MATCH"]

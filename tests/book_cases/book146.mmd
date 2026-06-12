@@ -1,0 +1,13 @@
+flowchart LR
+    U[User] --> I[Interfaces]
+    I --> L[Agent Loop]
+    L --> P[Permission System]
+    P -->|allow| T[Tools]
+    P -->|deny| L
+    T --> E[Execution Environment]
+    E --> T
+    T --> L
+    L <--> S[State and Persistence]
+    style L fill:#a8dadc,color:#000
+    style P fill:#e9c46a,color:#000
+    style S fill:#c8b6a6,color:#000

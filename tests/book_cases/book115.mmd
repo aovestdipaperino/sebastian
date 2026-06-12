@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph Ownership["Ownership Direction"]
+        direction TB
+        P["Parent\n(Rc strong)"] -->|"Rc owns"| C1["Child A\n(Rc strong)"]
+        P -->|"Rc owns"| C2["Child B\n(Rc strong)"]
+    end
+
+    subgraph References["Back References"]
+        direction TB
+        C1B["Child A"] -.->|"Weak ref"| PB["Parent"]
+        C2B["Child B"] -.->|"Weak ref"| PB
+    end
+
+    style P fill:#2d5a3d,color:#fff,font-size:16px
+    style C1 fill:#3a4a6b,color:#fff,font-size:16px
+    style C2 fill:#3a4a6b,color:#fff,font-size:16px
+    style PB fill:#2d5a3d,color:#fff,font-size:16px
+    style C1B fill:#3a4a6b,color:#fff,font-size:16px
+    style C2B fill:#3a4a6b,color:#fff,font-size:16px

@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph Epoll["Readiness Model (epoll)"]
+        direction TB
+        E1["epoll_wait()<br/>syscall #1"] --> E2["Kernel checks<br/>fd readiness"]
+        E2 --> E3["Returns ready fds"]
+        E3 --> E4["read(fd)<br/>syscall #2"]
+        E4 --> E5["Kernel copies<br/>data to buffer"]
+        E5 --> E6["Returns bytes read"]
+    end
+
+    subgraph IoUring["Completion Model (io_uring)"]
+        direction TB
+        U1["Push Read SQE<br/>to submission queue"] --> U2["io_uring_enter()<br/>single syscall"]
+        U2 --> U3["Kernel reads data<br/>directly into buffer"]
+        U3 --> U4["CQE appears on<br/>completion queue"]
+        U4 --> U5["App reads result<br/>no syscall needed"]
+    end
+
+    style Epoll fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style IoUring fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style E1 fill:#fff,stroke:#999,font-size:16px
+    style E2 fill:#fff,stroke:#999,font-size:16px
+    style E3 fill:#fff,stroke:#999,font-size:16px
+    style E4 fill:#fff,stroke:#999,font-size:16px
+    style E5 fill:#fff,stroke:#999,font-size:16px
+    style E6 fill:#fff,stroke:#999,font-size:16px
+    style U1 fill:#fff,stroke:#999,font-size:16px
+    style U2 fill:#fff,stroke:#999,font-size:16px
+    style U3 fill:#fff,stroke:#999,font-size:16px
+    style U4 fill:#fff,stroke:#999,font-size:16px
+    style U5 fill:#fff,stroke:#999,font-size:16px

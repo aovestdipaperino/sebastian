@@ -1,0 +1,8 @@
+flowchart TD
+    A[Testo in ingresso] --> B[Tokenizzazione]
+    B --> C[Lookup vettori]
+    C --> D[Strati di trasformazione]
+    D --> E[Probabilita token]
+    E --> F[Campionamento]
+    F --> G[Token in uscita]
+    G -.->|Token generato torna nel contesto| C

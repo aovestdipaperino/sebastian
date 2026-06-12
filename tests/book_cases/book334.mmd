@@ -1,0 +1,20 @@
+%%{init: {"flowchart": {"htmlLabels": false}} }%%
+flowchart TB
+    subgraph VALID["Valid:&nbsp;Struct&nbsp;outlived&nbsp;by&nbsp;data"]
+        direction TB
+        V1["let&nbsp;data&nbsp;=&nbsp;String::from(...)"]
+        V2["let&nbsp;holder&nbsp;=&nbsp;Holder&nbsp;{&nbsp;data:&nbsp;&data&nbsp;}"]
+        V3["use&nbsp;holder"]
+        V4["holder&nbsp;dropped"]
+        V5["data&nbsp;dropped"]
+        V1 --> V2 --> V3 --> V4 --> V5
+    end
+
+    subgraph INVALID["Invalid:&nbsp;Data&nbsp;dropped&nbsp;while&nbsp;struct&nbsp;exists"]
+        direction TB
+        I1["let&nbsp;holder"]
+        I2["{&nbsp;let&nbsp;data&nbsp;=&nbsp;...;&nbsp;holder&nbsp;=&nbsp;Holder&nbsp;{&nbsp;data:&nbsp;&data&nbsp;}&nbsp;}"]
+        I3["data&nbsp;dropped&nbsp;here"]
+        I4["use&nbsp;holder:&nbsp;DANGLING"]
+        I1 --> I2 --> I3 --> I4
+    end

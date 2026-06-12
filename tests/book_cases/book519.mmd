@@ -1,0 +1,15 @@
+flowchart TD
+    A[Developer goes to sleep] --> B[Nightly pipelines kick off]
+    B --> C[Code quality analysis]
+    B --> D[Dependency review]
+    B --> E[Automated refactoring]
+    B --> F[Security scan]
+    C --> G[Report generated]
+    D --> H[Update PR]
+    E --> I[Refactoring branch]
+    F --> J[Alert on vulnerabilities]
+    G --> K["Morning: review the results"]
+    H --> K
+    I --> K
+    J --> K
+    K --> L[Developer starts with decisions, not tasks]

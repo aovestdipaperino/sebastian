@@ -1,0 +1,9 @@
+flowchart LR
+    subgraph NFA["NFA for a|b"]
+        S((start)) --> A((q1))
+        S --> B((q2))
+        A -->|a| C((q3))
+        B -->|b| D((q4))
+        C --> E((accept))
+        D --> E
+    end

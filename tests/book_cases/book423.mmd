@@ -1,0 +1,11 @@
+graph LR
+    A[Event] --> B[Update State]
+    B --> C[Compute Layout]
+    C --> D[Render All Widgets]
+    D --> E[Display Frame]
+    E --> A
+
+    F[Event] --> G[Route to View]
+    G --> H[View Updates Self]
+    H --> I[Framework Redraws Changed Views]
+    I --> F

@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant UI as Main Thread<br/>(UI Updates)
+    participant Entity as Shared Entity
+    participant BG1 as Background Task 1
+    participant BG2 as Background Task 2
+
+    UI->>Entity: Start processing
+    Entity->>BG1: Spawn task (file loading)
+    Entity->>BG2: Spawn task (computation)
+
+    Note over UI,Entity: UI stays responsive
+
+    BG1-->>Entity: update(): Progress 25%
+    Entity->>UI: cx.notify()
+
+    BG2-->>Entity: update(): Progress 50%
+    Entity->>UI: cx.notify()
+
+    BG1-->>Entity: update(): Loading complete
+    Entity->>UI: cx.notify()
+
+    BG2-->>Entity: update(): Computation complete
+    Entity->>UI: cx.notify()
+
+    Note over UI,Entity: Multiple windows see updates<br/>via shared entity handle

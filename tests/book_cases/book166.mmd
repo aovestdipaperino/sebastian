@@ -1,0 +1,5 @@
+graph LR
+    A[Action Handler] --> |push_notification| B[NotificationList]
+    B --> |renders| C[Notification Stack]
+    C --> |after 5s| D[Auto-dismiss]
+    D --> |animation| E[Remove from stack]

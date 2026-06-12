@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph Decision["What Are You Building?"]
+        A[Application Type] --> B{Graphical UI?}
+        B -->|No| C[Terminal UI]
+        B -->|Yes| D{Web Tech OK?}
+        D -->|Yes| E[Tauri]
+        D -->|No| F{Need Designer Tools?}
+        F -->|Yes| G[Slint]
+        F -->|No| H{Rapid Prototyping?}
+        H -->|Yes| I[egui]
+        H -->|No| J[GPUI]
+        C --> K{Retained Mode?}
+        K -->|Yes| L[Turbo Vision]
+        K -->|No| M[Ratatui]
+    end
+
+    style A fill:#4a9eff
+    style C fill:#22c55e
+    style E fill:#f59e0b
+    style G fill:#a855f7
+    style I fill:#ec4899
+    style J fill:#06b6d4
+    style L fill:#22c55e
+    style M fill:#22c55e

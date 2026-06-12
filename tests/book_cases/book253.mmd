@@ -1,0 +1,7 @@
+flowchart TD
+    S[Source] --> L[Lexer]
+    L --> P[Parser]
+    P --> A[Analyzer]
+    A --> O[Optimizer]
+    O --> C[Codegen]
+    C --> B[Bytecode]

@@ -1,0 +1,19 @@
+graph TB
+    Router[Router & Middleware]
+    Auth[Authentication]
+    API[API Handlers]
+    DB[Database Access]
+    Jobs[Job Processing]
+
+    Router --> Auth
+    Router --> API
+    API --> Auth
+    API --> DB
+    Jobs --> DB
+    Auth --> DB
+
+    style Router fill:#f9f,stroke:#333
+    style Auth fill:#bbf,stroke:#333
+    style API fill:#bfb,stroke:#333
+    style DB fill:#ffb,stroke:#333
+    style Jobs fill:#fbb,stroke:#333

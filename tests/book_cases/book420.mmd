@@ -1,0 +1,12 @@
+graph TD
+    TITLE[Title Bar]
+    TABS[Tab Bar]
+    SIDE[Sidebar]
+    MAIN[Main View]
+    STATUS[Status Bar]
+
+    TITLE --> TABS
+    TABS --> SIDE
+    TABS --> MAIN
+    SIDE --- MAIN
+    MAIN --> STATUS

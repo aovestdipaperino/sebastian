@@ -1,0 +1,29 @@
+flowchart TB
+    subgraph PERF["Performance Prompts<br/>(Previous Article)"]
+        P1["Critical path analysis"]
+        P2["Clone audits"]
+        P3["String type optimization"]
+        P4["Memory layout"]
+        P5["Iterator chains"]
+        P6["Zero-copy patterns"]
+    end
+
+    subgraph QUAL["Quality & Maintenance Prompts<br/>(This Article)"]
+        Q1["Flaky test detection"]
+        Q2["Regression test proposals"]
+        Q3["Magic number cleanup"]
+        Q4["Const organization"]
+        Q5["Invariant analysis"]
+        Q6["Settings documentation"]
+        Q7["Crate evaluation"]
+        Q8["Lock-free opportunities"]
+        Q9["Dead code removal"]
+    end
+
+    PERF --- FASTER["Faster Binaries"]
+    QUAL --- HEALTHIER["Healthier Codebases"]
+
+    style PERF fill:#e3f2fd,stroke:#1565c0
+    style QUAL fill:#e8f5e9,stroke:#2e7d32
+    style FASTER fill:#e3f2fd,stroke:#1565c0
+    style HEALTHIER fill:#e8f5e9,stroke:#2e7d32

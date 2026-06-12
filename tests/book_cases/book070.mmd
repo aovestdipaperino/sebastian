@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph Static["Static Dispatch"]
+        direction TB
+        S1["process&lt;TypeA&gt;()"]
+        S2["process&lt;TypeB&gt;()"]
+        S3["process&lt;TypeC&gt;()"]
+        S1 --> SA["TypeA::process()"]
+        S2 --> SB["TypeB::process()"]
+        S3 --> SC["TypeC::process()"]
+    end
+
+    subgraph Dynamic["Dynamic Dispatch"]
+        direction TB
+        D1["process(dyn)"]
+        D1 --> VT["vtable lookup"]
+        VT --> DA["TypeA::process()"]
+        VT --> DB["TypeB::process()"]
+        VT --> DC["TypeC::process()"]
+    end
+
+    style Static fill:#e8f5e9,stroke:#2e7d32
+    style Dynamic fill:#fff3e0,stroke:#ef6c00
+    style VT fill:#ffccbc,stroke:#d84315

@@ -1,0 +1,10 @@
+graph LR
+    A[Frame 1<br/>0-499ms<br/>visible] --> B[Frame N<br/>500-999ms<br/>hidden]
+    B --> C[Frame N+1<br/>1000-1499ms<br/>visible]
+    C --> D[Frame N+2<br/>1500-1999ms<br/>hidden]
+    D --> A
+
+    style A fill:#4a9eff,stroke:#333,color:#fff
+    style B fill:#2a2a2a,stroke:#333,color:#fff
+    style C fill:#4a9eff,stroke:#333,color:#fff
+    style D fill:#2a2a2a,stroke:#333,color:#fff

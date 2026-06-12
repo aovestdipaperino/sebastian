@@ -1,0 +1,8 @@
+flowchart TD
+    A[CLAUDE.md] --> E[Working context]
+    B[Auto-memory] --> E
+    C[Episodic memory] --> E
+    D[Codebase] --> E
+    E --> F[Claude works]
+    F -->|New observations| B
+    F -->|Indexed conversations| C

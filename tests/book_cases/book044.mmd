@@ -1,0 +1,15 @@
+flowchart TB
+    A["Context Window<br/>(system prompt + conversation + output so far)"]
+    B["Model Forward Pass<br/>Compute probability for every token in vocabulary"]
+    C["Sample Next Token<br/>Pick one token from the distribution"]
+    D["Append to Context<br/>Token becomes part of the input"]
+    
+    A --> B
+    B --> C
+    C --> D
+    D --> A
+
+    style A fill:#2d5016,stroke:#333,color:#fff,font-size:16px
+    style B fill:#1a3a5c,stroke:#333,color:#fff,font-size:16px
+    style C fill:#5c1a1a,stroke:#333,color:#fff,font-size:16px
+    style D fill:#4a3520,stroke:#333,color:#fff,font-size:16px

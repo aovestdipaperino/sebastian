@@ -1,0 +1,11 @@
+stateDiagram-v2
+    direction LR
+    [*] --> S0
+    S0 --> S1 : ε
+    S0 --> S3 : ε
+    S1 --> S2 : a
+    S2 --> Accept1 : b
+    S3 --> S4 : c
+    S4 --> Accept2 : d
+    Accept1 --> [*]
+    Accept2 --> [*]

@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph STATIC["Dispatch Statico (generic)"]
+        S1["fn notify&lt;T: Summary&gt;(item: &T)"]
+        S2["Il compilatore genera codice specializzato"]
+        S3["Chiamate dirette, nessun overhead"]
+        S1 --> S2 --> S3
+    end
+
+    subgraph DYNAMIC["Dispatch Dinamico<br/>(trait object)"]
+        D1["fn notify(item: &dyn Summary)"]
+        D2["Lookup vtable a runtime"]
+        D3["Indirezione a ogni chiamata"]
+        D1 --> D2 --> D3
+    end
+
+    STATIC ~~~ DYNAMIC

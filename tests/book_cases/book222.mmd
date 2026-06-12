@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph Techniques["DSL Techniques Spectrum"]
+        A["Macros<br/>(compile-time)"]
+        B["Embedded DSLs<br/>(host language)"]
+        C["Parser Combinators<br/>(runtime parsing)"]
+        D["Grammar Generators<br/>(external tools)"]
+        E["Full Compilers<br/>(new languages)"]
+    end
+
+    A --> B --> C --> D --> E
+
+    style A fill:#e8f5e9
+    style E fill:#fff3e0

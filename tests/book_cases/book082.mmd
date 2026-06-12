@@ -1,0 +1,33 @@
+flowchart TB
+    Root["Root Token"]
+    DB["Database Token"]
+    HTTP["HTTP Token"]
+    BG["Background Jobs Token"]
+
+    DB1["Connection Pool"]
+    DB2["Migration Runner"]
+    HTTP1["Request Handler A"]
+    HTTP2["Request Handler B"]
+    BG1["Email Sender"]
+    BG2["Report Generator"]
+
+    Root --> DB
+    Root --> HTTP
+    Root --> BG
+    DB --> DB1
+    DB --> DB2
+    HTTP --> HTTP1
+    HTTP --> HTTP2
+    BG --> BG1
+    BG --> BG2
+
+    style Root fill:#2c3e50,color:#fff,font-size:16px
+    style DB fill:#2d8a4e,color:#fff,font-size:16px
+    style HTTP fill:#2d8a4e,color:#fff,font-size:16px
+    style BG fill:#c0392b,color:#fff,font-size:16px
+    style DB1 fill:#2d8a4e,color:#fff,font-size:16px
+    style DB2 fill:#2d8a4e,color:#fff,font-size:16px
+    style HTTP1 fill:#2d8a4e,color:#fff,font-size:16px
+    style HTTP2 fill:#2d8a4e,color:#fff,font-size:16px
+    style BG1 fill:#c0392b,color:#fff,font-size:16px
+    style BG2 fill:#c0392b,color:#fff,font-size:16px

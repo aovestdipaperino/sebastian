@@ -1,0 +1,18 @@
+flowchart TD
+    A{Application type?} --> B[Batch processor]
+    A --> C[Long-running service]
+
+    B --> D[System allocator]
+
+    C --> E{Fragmentation<br/>concerns?}
+
+    E -->|No| F{Memory critical?}
+    E -->|Yes| G[jemalloc with<br/>aggressive decay]
+
+    F -->|No| H[mimalloc]
+    F -->|Yes| I[Capped allocator]
+
+    style D fill:#90EE90,stroke:#228B22
+    style G fill:#87CEEB,stroke:#4169E1
+    style H fill:#90EE90,stroke:#228B22
+    style I fill:#DDA0DD,stroke:#8B008B

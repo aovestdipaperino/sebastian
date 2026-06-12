@@ -1,0 +1,13 @@
+flowchart TD
+    A[Richiesta utente] --> B{Contesto necessario?}
+    B -->|Sì| C[Hook inietta info]
+    B -->|No| D[Procedi direttamente]
+    C --> E{Serve ricerca?}
+    D --> E
+    E -->|Sì| F[MCP cerca frammenti]
+    E -->|No| G[Genera risposta]
+    F --> G
+    G --> H{Task complesso?}
+    H -->|Sì| I[Subagent in contesto isolato]
+    H -->|No| J[Output finale]
+    I --> J

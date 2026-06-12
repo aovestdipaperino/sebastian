@@ -1,0 +1,24 @@
+graph LR
+    subgraph App["Application"]
+        E1[Entity: BiorhythmChart]
+        E2[Entity: Settings]
+    end
+
+    subgraph Windows["Multiple Windows"]
+        W1[Chart Window<br/>holds Entity handle]
+        W2[Input Dialog<br/>holds Entity handle]
+        W3[Preferences<br/>holds Entity handle]
+    end
+
+    W1 -.->|clone handle| E1
+    W2 -.->|clone handle| E1
+    W3 -.->|clone handle| E2
+    W2 -.->|clone handle| E2
+
+    W2 -->|update| E1
+    W3 -->|update| E2
+
+    style E1 fill:#e1f5ff
+    style E2 fill:#e1f5ff
+    style W2 fill:#c8e6c9
+    style W3 fill:#c8e6c9

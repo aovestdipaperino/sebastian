@@ -1,0 +1,12 @@
+flowchart TD
+    A[Prompt dell'utente] --> B[Hook: arricchisce il prompt]
+    B --> C[Skill: inietta istruzioni pertinenti]
+    C --> D[Claude ragiona]
+    D --> E{Servono dati esterni?}
+    E -->|Si| F[Server MCP recupera frammenti]
+    E -->|No| G{Sotto-task voluminoso?}
+    F --> G
+    G -->|Si| H[Subagent in contesto isolato]
+    G -->|No| I[Hook: valida l'azione]
+    H --> I
+    I --> J[Risultato]

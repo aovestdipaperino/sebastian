@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph APP["Tokio Application"]
+        CS[console-subscriber]
+        RT[Tokio Runtime]
+        RT --> CS
+    end
+
+    subgraph MCP["MCP Server"]
+        GC[gRPC Client]
+        SM[State Model]
+        TL[Tool Layer]
+        GC --> SM
+        SM --> TL
+    end
+
+    subgraph AGENT["AI Agent"]
+        TC[Tool Calls]
+    end
+
+    CS -->|"gRPC Stream"| GC
+    TL -->|"MCP Protocol"| TC
+
+    style APP fill:#e8f5e9,stroke:#2e7d32
+    style MCP fill:#e3f2fd,stroke:#1565c0
+    style AGENT fill:#fff3e0,stroke:#ef6c00

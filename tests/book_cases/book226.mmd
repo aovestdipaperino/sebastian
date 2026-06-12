@@ -1,0 +1,10 @@
+flowchart TD
+    A[Network Packet Arrives] --> B[Kernel Buffer]
+    B --> C[Bytes::from copies data]
+    C --> D[Application holds Bytes]
+    D --> E{Need Mutation?}
+    E -->|Safe Rust| F[Copy to Vec, Modify, Convert Back]
+    E -->|Unsafe Rust| G[Verify Exclusive Access]
+    G --> H[Mutate In-Place]
+    F --> I[Extra Allocation + Copy]
+    H --> J[Zero-Copy Processing]

@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph VecBuffer["Vec buffer (can move freely)"]
+        direction LR
+        P0["Box ptr"]
+        P1["Box ptr"]
+        P2["Box ptr"]
+    end
+
+    subgraph Heap["Independent heap allocations (pinned, never move)"]
+        T0["Task0 at 0x1000"]
+        T1["Task1 at 0x2000"]
+        T2["Task2 at 0x3000"]
+    end
+
+    P0 --> T0
+    P1 --> T1
+    P2 --> T2

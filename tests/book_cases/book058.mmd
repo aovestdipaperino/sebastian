@@ -1,0 +1,16 @@
+flowchart LR
+    subgraph TOOLS["MCP Tool Interface"]
+        direction TB
+        LT["list_tasks\n(sorted, filtered)"]
+        HT["hottest_tasks\n(CPU consumers)"]
+        BT["find_blocked_tasks\n(stalled work)"]
+        TD["task_details\n(single task)"]
+        LR["list_resources\n(sync primitives)"]
+        SH["scheduler_health\n(overview)"]
+        CS["connection_status\n(diagnostics)"]
+    end
+
+    TOOLS --> |"Bounded\nResponses"| OUT["Agent-Ready\nData"]
+
+    style TOOLS fill:#f3e5f5,stroke:#7b1fa2
+    style OUT fill:#e8f5e9,stroke:#2e7d32

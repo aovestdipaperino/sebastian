@@ -1,0 +1,6 @@
+flowchart TD
+    O[Orchestratore<br/>assegna e ricompone] --> E[Esploratore<br/>cerca e riferisce]
+    O --> I[Implementatore<br/>scrive il codice]
+    O --> R[Revisore<br/>verifica con occhio critico]
+    E -.messaggi.-> I
+    I -.messaggi.-> R

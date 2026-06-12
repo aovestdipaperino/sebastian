@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Need value in multiple places?"] --> No["No: Move it (zero cost)"]
+    Start --> Yes["Yes: Consider alternatives"]
+    Yes --> ReadOnly["Read-only access?<br/>Use references"]
+    Yes --> Independent["Need independent copies?<br/>Clone explicitly"]
+    Yes --> Shared["Shared ownership?<br/>Use Rc or Arc"]

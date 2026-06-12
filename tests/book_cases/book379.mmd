@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph COMPILE["Fase di Compilazione"]
+        direction TB
+        CODE[Codice con Mutazione Condivisa]
+        BORROW[Borrow Checker]
+        REJECT[Rifiutato: Reference Mutabili Multipli]
+        ACCEPT[Accettato: Pattern di Accesso Sicuro]
+
+        CODE --> BORROW
+        BORROW --> REJECT
+        BORROW --> ACCEPT
+    end
+
+    subgraph RUNTIME["Runtime"]
+        direction TB
+        SAFE[Esecuzione Concorrente Sicura]
+        NORACE[Nessuna Data Race Possibile]
+
+        SAFE --> NORACE
+    end
+
+    ACCEPT --> SAFE

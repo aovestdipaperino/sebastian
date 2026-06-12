@@ -1,0 +1,21 @@
+flowchart LR
+    subgraph Input
+        A["#[my_attr(args)]"]
+        B["fn handler() { ... }"]
+    end
+
+    subgraph "Attribute Macro"
+        C[Parse attr args]
+        D[Parse item]
+        E[Transform/Generate]
+    end
+
+    subgraph Output
+        F["fn handler() { ... }<br/>fn __wrapper() { ... }<br/>inventory::submit!{...}"]
+    end
+
+    A --> C
+    B --> D
+    C --> E
+    D --> E
+    E --> F

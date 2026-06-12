@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph "Modern x86 Boot Sequence"
+        A["Power On"] --> B["Real Mode<br/>(16-bit)"]
+        B --> C["Protected Mode<br/>(32-bit)"]
+        C --> D["Long Mode<br/>(64-bit)"]
+    end
+
+    style A fill:#666,color:#fff
+    style B fill:#e74c3c,color:#fff
+    style C fill:#f39c12,color:#fff
+    style D fill:#27ae60,color:#fff

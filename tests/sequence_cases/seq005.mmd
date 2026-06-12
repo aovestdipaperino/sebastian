@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant E as Executor
+    participant D as DAL118
+    participant S as SWA723
+    participant U as UAL492
+    participant R as Runway
+
+    Note over E: T=0: Poll all tasks
+    D->>E: Pending (approaching)
+    S->>E: Pending (preparing)
+    U->>E: Pending (approaching)
+
+    Note over E: T=2: SWA723 ready
+    S->>R: Request runway
+    R-->>S: Cleared (runway clear)
+
+    Note over E: T=4: SWA723 airborne
+    S->>R: Release runway
+
+    Note over E: T=5: DAL118 requests
+    D->>R: Request runway
+    R-->>D: Cleared

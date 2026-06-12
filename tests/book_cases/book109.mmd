@@ -1,0 +1,11 @@
+flowchart TD
+    subgraph "386+ Protected Mode"
+        VP[Virtual Address<br/>32 bits] --> MMU[Memory Management Unit]
+        MMU --> PT[Page Tables]
+        PT --> PA[Physical Address<br/>32 bits]
+    end
+
+    subgraph "Comparison"
+        OLD[Old Way<br/>Segment + Offset<br/>Manual boundary checking]
+        NEW[New Way<br/>Flat pointer<br/>Hardware translation]
+    end

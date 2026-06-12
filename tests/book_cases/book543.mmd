@@ -1,0 +1,17 @@
+graph TD
+    CLI["cli.tsx<br/>(entry point)"] --> Main["main.tsx<br/>(4,700 lines)"]
+    Main --> REPL["REPL.tsx<br/>(5,000 lines)"]
+    Main --> Doctor["Doctor.tsx"]
+    Main --> Resume["ResumeConversation.tsx"]
+    
+    REPL --> QE["QueryEngine<br/>(conversation engine)"]
+    REPL --> Tools["Tool system<br/>(~40 tools)"]
+    REPL --> Components["Ink components<br/>(~113 React components)"]
+    
+    QE --> API["Anthropic API"]
+    QE --> Compact["Compaction service"]
+    
+    Tools --> Bash["BashTool"]
+    Tools --> Files["File Read/Edit/Write"]
+    Tools --> Agent["AgentTool"]
+    Tools --> Others["Grep, Glob, Web, MCP, ..."]

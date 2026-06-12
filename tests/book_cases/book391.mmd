@@ -1,0 +1,30 @@
+flowchart TB
+    START["Analizza Gerarchia OOP"]
+    Q1{"Scopo primario?"}
+    SHARE["Condivide dati e implementazione"]
+    IFACE["Definisce interfacce"]
+    FIXED["Modella varianti fisse"]
+    DISTINCT["Crea distinzioni di tipo"]
+    Q2{"Insieme dei tipi estensibile?"}
+    Q3{"Nuove operazioni più frequenti?"}
+    Q4{"Servono collezioni di tipi misti?"}
+    COMP["Usa Composizione"]
+    TRAIT["Usa Trait con Generics"]
+    DYN["Usa dyn Trait"]
+    ENUM["Usa Enum"]
+    NEWTYPE["Usa Newtype"]
+    START --> Q1
+    Q1 --> SHARE
+    Q1 --> IFACE
+    Q1 --> FIXED
+    Q1 --> DISTINCT
+    SHARE --> COMP
+    IFACE --> Q2
+    Q2 -->|"Sì"| Q4
+    Q2 -->|"No"| Q3
+    Q4 -->|"Sì"| DYN
+    Q4 -->|"No"| TRAIT
+    Q3 -->|"Sì"| ENUM
+    Q3 -->|"No"| TRAIT
+    FIXED --> Q3
+    DISTINCT --> NEWTYPE

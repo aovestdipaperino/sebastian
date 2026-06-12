@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph App["Application Code"]
+        I1["tracing::info!(...)"]
+        I2["tracing::span!(...)"]
+        I3["tracing::error!(...)"]
+    end
+
+    subgraph Sub["Subscriber"]
+        E["enabled()"]
+        N["new_span()"]
+        R["record()"]
+        EV["event()"]
+        EN["enter()"]
+        EX["exit()"]
+    end
+
+    subgraph Out["Output"]
+        C["Console"]
+        F["File"]
+        N2["Network"]
+        M["Metrics"]
+    end
+
+    I1 --> E
+    I2 --> E
+    I3 --> E
+    E --> N
+    E --> EV
+    N --> EN
+    EN --> EX
+    EV --> C
+    EV --> F
+    EV --> N2
+    EV --> M
+
+    style App fill:#e8f5e9,stroke:#2e7d32
+    style Sub fill:#e3f2fd,stroke:#1565c0
+    style Out fill:#fff3e0,stroke:#ef6c00

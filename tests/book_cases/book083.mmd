@@ -1,0 +1,17 @@
+flowchart TB
+    SIG["Signal Received<br/>SIGINT / SIGTERM"]
+    P1["Phase 1: Drain<br/>Stop accepting new work"]
+    P2["Phase 2: Cancel<br/>Signal all tasks to stop"]
+    P3["Phase 3: Grace Period<br/>Wait for in-flight completion"]
+    P4["Phase 4: Force Exit<br/>Drop everything, terminate"]
+
+    SIG --> P1
+    P1 --> P2
+    P2 --> P3
+    P3 --> P4
+
+    style SIG fill:#c0392b,color:#fff,font-size:16px
+    style P1 fill:#d4a017,color:#fff,font-size:16px
+    style P2 fill:#d4a017,color:#fff,font-size:16px
+    style P3 fill:#2d8a4e,color:#fff,font-size:16px
+    style P4 fill:#2c3e50,color:#fff,font-size:16px

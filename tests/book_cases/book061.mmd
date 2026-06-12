@@ -1,0 +1,10 @@
+flowchart TD
+    A[Method call: next&lpar;&mut self&rpar;] --> B[Creates temporary borrow]
+    B --> C{Where does lifetime come from?}
+    C -->|Pre-GAT| D[Must be declared on impl]
+    C -->|With GAT| E[Can flow from method signature]
+    D --> F[All items share one lifetime]
+    E --> G[Each item gets fresh lifetime]
+
+    style D fill:#f96,stroke:#333
+    style E fill:#6f9,stroke:#333

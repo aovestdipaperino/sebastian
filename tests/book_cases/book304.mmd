@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph STATIC["Static&nbsp;Dispatch<br/>(Generics)"]
+        aspace["-"]:::hidden
+        S1["Concrete&nbsp;type&nbsp;known&nbsp;at&nbsp;compile&nbsp;time"]
+        S2["Direct&nbsp;function&nbsp;calls"]
+        S3["Compiler&nbsp;can&nbsp;inline&nbsp;and&nbsp;optimize"]
+        S4["Binary&nbsp;size&nbsp;grows&nbsp;with&nbsp;instantiations"]
+    end
+
+    subgraph DYNAMIC["Dynamic&nbsp;Dispatch<br/>(Trait&nbsp;Objects)"]
+        bspace["-"]:::hidden
+        D1["Concrete&nbsp;type&nbsp;unknown&nbsp;until&nbsp;runtime"]
+        D2["Vtable&nbsp;lookup&nbsp;on&nbsp;each&nbsp;call"]
+        D3["Limited&nbsp;optimization&nbsp;opportunities"]
+        D4["Single&nbsp;code&nbsp;path&nbsp;for&nbsp;all&nbsp;types"]
+    end
+    
+    classDef hidden fill:none,stroke:none

@@ -1,0 +1,10 @@
+flowchart TD
+    A[Richiesta utente] --> B{Tipo di estensione?}
+    B -->|Delegare lavoro| C[Subagent]
+    B -->|Modificare comportamento| D[Skill]
+    C --> E[Contesto isolato]
+    C --> F[Output riassunto]
+    C --> G[Parallelizzabile]
+    D --> H[Stesso contesto]
+    D --> I[Piena visibilità]
+    D --> J[Comportamento modificato]

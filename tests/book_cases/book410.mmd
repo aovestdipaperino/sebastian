@@ -1,0 +1,15 @@
+flowchart TD
+    A[Source Code] --> B[cargo build --release]
+    B --> C{Platform}
+    C -->|macOS| D[Create .app Bundle]
+    C -->|Windows| E[Embed Resources]
+    C -->|Linux| F[Create AppDir]
+    D --> G[Code Sign]
+    G --> H[Notarize]
+    H --> I[Create DMG]
+    E --> J[Create MSI/ZIP]
+    F --> K[Create AppImage/DEB]
+    I --> L[Upload to Distribution]
+    J --> L
+    K --> L
+    L --> M[Users Download]

@@ -1,0 +1,15 @@
+flowchart TD
+    A[Packet Arrives] --> B{IPv4?}
+    B -->|No| C[XDP_PASS]
+    B -->|Yes| D[Extract Source IP]
+    D --> E[Get Current Time]
+    E --> F{State Exists?}
+    F -->|No| G["Create State\ncount = 1"]
+    G --> C
+    F -->|Yes| H{Window Expired?}
+    H -->|Yes| I["Reset Window\ncount = 1"]
+    I --> C
+    H -->|No| J{Count >= Limit?}
+    J -->|Yes| K[XDP_DROP]
+    J -->|No| L[Increment Count]
+    L --> C

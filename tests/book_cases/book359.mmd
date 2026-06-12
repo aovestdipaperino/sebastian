@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph VALID["Pattern Validi"]
+        direction TB
+        V1["Multipli &T (letture condivise)"]
+        V2["Singolo &mut T (scrittura esclusiva)"]
+    end
+
+    subgraph INVALID["Pattern Invalidi"]
+        direction TB
+        I1["&T + &mut T (lettura durante scrittura)"]
+        I2["Multipli &mut T (scritture concorrenti)"]
+    end
+
+    OWNER[Owner] --> V1
+    OWNER --> V2
+    OWNER -.->|"Rifiutato"| I1
+    OWNER -.->|"Rifiutato"| I2

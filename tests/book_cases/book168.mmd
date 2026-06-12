@@ -1,0 +1,25 @@
+graph TB
+    subgraph Viewport["Visible Viewport"]
+        V1[Row 10]
+        V2[Row 11]
+        V3[Row 12]
+        V4[Row 13]
+        V5[Row 14]
+    end
+
+    subgraph Data["Full Dataset (365 rows)"]
+        D1[Rows 0-9<br/>Not rendered]
+        D2[Rows 10-14<br/>Rendered]
+        D3[Rows 15-364<br/>Not rendered]
+    end
+
+    D2 --> Viewport
+
+    style V1 fill:#c8e6c9
+    style V2 fill:#c8e6c9
+    style V3 fill:#c8e6c9
+    style V4 fill:#c8e6c9
+    style V5 fill:#c8e6c9
+    style D1 fill:#ffcdd2
+    style D3 fill:#ffcdd2
+    style D2 fill:#c8e6c9

@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph "Allocation Strategies"
+        direction TB
+        G[Global Allocator]
+        A[Arena Allocator]
+        T[Typed Arena]
+    end
+
+    subgraph "Use Cases"
+        direction TB
+        U1[Tracking & Debugging]
+        U2[Batch Processing]
+        U3[Graph Structures]
+    end
+
+    G --> U1
+    A --> U2
+    T --> U3
+
+    style G fill:#3498db,color:#fff
+    style A fill:#2ecc71,color:#fff
+    style T fill:#9b59b6,color:#fff

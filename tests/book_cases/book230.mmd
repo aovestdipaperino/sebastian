@@ -1,0 +1,14 @@
+flowchart TD
+    EXPR["Filter Expression\n'tcp port 80'"] --> PARSE[Parse Expression]
+    PARSE --> AST[Abstract Syntax Tree]
+    AST --> COMPILE[Compile to Bytecode]
+    COMPILE --> OPT[Optimize]
+    OPT --> BPF[BPF Program]
+    BPF --> KERNEL[Install in Kernel]
+
+    subgraph "Filter Execution"
+        PKT[Incoming Packet] --> EXEC[Execute BPF Program]
+        EXEC --> ACCEPT{Accept?}
+        ACCEPT -->|Yes| USER[Copy to Userspace]
+        ACCEPT -->|No| DROP[Discard]
+    end

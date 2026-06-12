@@ -1,0 +1,41 @@
+flowchart TD
+    subgraph Strategies["Testing Strategies"]
+        direction TB
+        PT[Property-Based Tests]
+        ST[Snapshot Tests]
+        GF[Golden File Tests]
+        FUZZ[Fuzzing]
+        DIFF[Differential Testing]
+    end
+
+    subgraph Components["Compiler Components"]
+        direction TB
+        LEX[Lexer]
+        PARSE[Parser]
+        SEM[Semantic Analysis]
+        GEN[Code Generation]
+    end
+
+    subgraph Targets["What They Test"]
+        direction TB
+        INV[Invariants]
+        OUT[Complex Output]
+        REG[Regression Prevention]
+        CRASH[Crash Discovery]
+        SEM2[Semantic Correctness]
+    end
+
+    PT --> INV
+    ST --> OUT
+    GF --> REG
+    FUZZ --> CRASH
+    DIFF --> SEM2
+
+    LEX --> PT
+    PARSE --> PT
+    PARSE --> ST
+    SEM --> ST
+    GEN --> GF
+    LEX --> FUZZ
+    PARSE --> FUZZ
+    GEN --> DIFF

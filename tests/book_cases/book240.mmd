@@ -1,0 +1,13 @@
+graph TD
+    A["Source: match x with Nil/Cons patterns"] --> B[Parser]
+    B --> C[AST with Match node]
+    C --> D[Type Inference]
+    D --> E{Generate constraints}
+    E --> F["x : List α"]
+    E --> G["h : α"]
+    E --> H["t : List α"]
+    F --> I[Unification]
+    G --> I
+    H --> I
+    I --> J[Typed AST]
+    J --> K[Code Generation]

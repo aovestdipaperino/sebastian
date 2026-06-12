@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Core["Core Engine"]
+        Board["Board State"]
+        MoveGen["Move Generator"]
+        WinCheck["Win Detection"]
+    end
+
+    subgraph AI["AI System"]
+        Random["Random AI"]
+        Simple["Simple AI"]
+        Minimax["Minimax AI"]
+    end
+
+    subgraph UI["Terminal UI"]
+        Render["Renderer"]
+        Input["Input Handler"]
+        Loop["Game Loop"]
+    end
+
+    Board --> MoveGen
+    MoveGen --> WinCheck
+    MoveGen --> AI
+    WinCheck --> AI
+    Board --> Render
+    Input --> Loop
+    Loop --> Board

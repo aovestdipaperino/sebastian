@@ -1,0 +1,17 @@
+flowchart TB
+    A["stop() called"] --> B["Send SIGTERM"]
+    B --> C{"Process exited?"}
+    C -->|Yes| D["Remove PID file<br/>Done"]
+    C -->|No| E["Wait 100ms"]
+    E --> F{"5s elapsed?"}
+    F -->|No| C
+    F -->|Yes| G["Send SIGKILL"]
+    G --> D
+
+    style A fill:#2d4a2d,stroke:#4a7a4a,color:#e0e0e0
+    style B fill:#4a4a2d,stroke:#7a7a4a,color:#e0e0e0
+    style C fill:#2d2d4a,stroke:#4a4a7a,color:#e0e0e0
+    style D fill:#2d4a2d,stroke:#4a7a4a,color:#e0e0e0
+    style E fill:#3a3a3a,stroke:#5a5a5a,color:#e0e0e0
+    style F fill:#2d2d4a,stroke:#4a4a7a,color:#e0e0e0
+    style G fill:#4a2d2d,stroke:#7a4a4a,color:#e0e0e0

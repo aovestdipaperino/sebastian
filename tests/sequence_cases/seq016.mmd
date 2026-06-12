@@ -1,0 +1,10 @@
+%% Sequence Diagram Example
+sequenceDiagram
+    participant Client
+    participant Server
+    participant Database
+
+    Client->>Server: Request Data
+    Server->>Database: Query
+    Database-->>Server: Results
+    Server-->>Client: Response

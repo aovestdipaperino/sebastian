@@ -1,0 +1,8 @@
+graph TD
+    A["content_view.into()"] --> B{Which Into?}
+    B --> C["Into&lt;AnyView&gt;"]
+    B --> D["Into&lt;Entity&lt;T&gt;&gt;"]
+    B --> E["...other blanket impls"]
+    C --> F["Ambiguous!"]
+    D --> F
+    E --> F

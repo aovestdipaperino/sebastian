@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph RUST["Lato Rust"]
+        SAFE["Codice Rust sicuro"]
+        UNSAFE["blocco unsafe"]
+        DECL["dichiarazioni extern C"]
+    end
+
+    subgraph CSIDE["Lato C"]
+        CLIB["Libreria C"]
+    end
+
+    SAFE --> UNSAFE
+    UNSAFE --> DECL
+    DECL -->|"confine FFI"| CLIB

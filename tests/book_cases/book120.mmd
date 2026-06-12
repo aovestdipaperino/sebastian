@@ -1,0 +1,21 @@
+flowchart LR
+    subgraph T1["Time 0: Initial State"]
+        A1["64B"] --- A2["128B"] --- A3["64B"] --- A4["256B"]
+    end
+
+    subgraph T2["Time 1: After Frees"]
+        B1["FREE<br/>64B"] --- B2["128B"] --- B3["FREE<br/>64B"] --- B4["256B"]
+    end
+
+    subgraph T3["Time 2: New 128B Allocation"]
+        C1["FREE<br/>64B"] --- C2["128B"] --- C3["FREE<br/>64B"] --- C4["256B"] --- C5["NEW<br/>128B"]
+    end
+
+    T1 --> T2
+    T2 --> T3
+
+    style B1 fill:#90EE90,stroke:#228B22
+    style B3 fill:#90EE90,stroke:#228B22
+    style C1 fill:#90EE90,stroke:#228B22
+    style C3 fill:#90EE90,stroke:#228B22
+    style C5 fill:#87CEEB,stroke:#4169E1

@@ -1,0 +1,10 @@
+flowchart TB
+    A["Tool call completes"] --> B["Handler returns touched file paths"]
+    B --> C["Look up each path in token map"]
+    C --> D["Sum: src/db/queries.rs = 2400\nsrc/codegraph.rs = 1100\nsrc/main.rs = 800"]
+    D --> E["Add 4300 to atomic counter"]
+    E --> F["Flush new total to metadata table"]
+    F --> G["codegraph status shows cumulative total"]
+
+    style E fill:#2d6a4f,color:#fff
+    style G fill:#40916c,color:#fff

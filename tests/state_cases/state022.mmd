@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> DragRecognition: Mouse down on draggable
+    DragRecognition --> Idle: Mouse up (click)
+    DragRecognition --> Dragging: Movement exceeds threshold
+    Dragging --> DragOver: Cursor enters drop target
+    DragOver --> Dragging: Cursor leaves drop target
+    DragOver --> Dropped: Mouse up on valid target
+    Dragging --> Cancelled: Mouse up outside targets
+    Dropped --> Idle: Drop handled
+    Cancelled --> Idle: Cancel handled

@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph API["Unified API"]
+        direction LR
+        A["DaemonConfig"] --> B["Daemon"]
+        B --> C["start / stop / status"]
+        B --> D["install / uninstall service"]
+    end
+
+    subgraph Platforms["Platform Backends"]
+        direction LR
+        E["macOS<br/>daemonize2 + launchd"]
+        F["Linux<br/>daemonize2 + systemd"]
+        G["Windows<br/>SCM + windows-service"]
+    end
+
+    API --> Platforms
+
+    style API fill:#2d4a2d,stroke:#4a7a4a,color:#e0e0e0
+    style Platforms fill:#2d2d4a,stroke:#4a4a7a,color:#e0e0e0
+    style A fill:#3a5a3a,stroke:#5a8a5a,color:#e0e0e0
+    style B fill:#3a5a3a,stroke:#5a8a5a,color:#e0e0e0
+    style C fill:#3a5a3a,stroke:#5a8a5a,color:#e0e0e0
+    style D fill:#3a5a3a,stroke:#5a8a5a,color:#e0e0e0
+    style E fill:#3a3a5a,stroke:#5a5a8a,color:#e0e0e0
+    style F fill:#3a3a5a,stroke:#5a5a8a,color:#e0e0e0
+    style G fill:#3a3a5a,stroke:#5a5a8a,color:#e0e0e0

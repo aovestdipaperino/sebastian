@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph VecMove["Vec: External Heap Pointer"]
+        V1["Vec on stack"] --> H["Heap data"]
+        V2["Vec moved"] --> H
+    end
+
+    subgraph SelfRefMove["Self-Ref: Internal Pointer"]
+        S1["struct + data at 0x1000"]
+        S1P["ptr: 0x1000"] -.-> S1
+        S2["struct + data at 0x2000"]
+        S2P["ptr: 0x1000"] -.->|"Dangling!"| X["(nothing)"]
+    end

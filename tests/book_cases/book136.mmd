@@ -1,0 +1,18 @@
+flowchart TB
+    A[Agent generates command] --> D{Denylist}
+    D -->|match| R[Refused]
+    D -->|no match| S[LocalSandbox]
+    S --> C[tokio::process::Command]
+    C -->|env_clear, current_dir| P[Subprocess]
+    P --> T[Wall-clock timeout]
+    P --> O[Output cap]
+    T -->|deadline| K[kill_on_drop]
+    O -->|cap hit| TR[truncated]
+    P --> X[exit code]
+    X --> ER[ExecResult]
+    K --> ER
+    TR --> ER
+
+    style D fill:#ffcdd2,stroke:#c62828,color:#000
+    style S fill:#bbdefb,stroke:#1565c0,color:#000
+    style ER fill:#c8e6c9,stroke:#2e7d32,color:#000

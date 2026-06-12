@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph Buffer["Original Buffer (owns the bytes)"]
+        direction LR
+        H["Header<br/>2 bytes"]
+        S["Sender<br/>N bytes"]
+        T["Topic<br/>M bytes"]
+        P["Payload<br/>K bytes"]
+    end
+
+    subgraph Parsed["Message&lt;'a&gt; (borrows the bytes)"]
+        direction LR
+        MT["msg_type: u8"]
+        SR["sender: &'a str"]
+        TR["topic: &'a str"]
+        PR["payload: &'a [u8]"]
+    end
+
+    S -.-> SR
+    T -.-> TR
+    P -.-> PR
+
+    style Buffer fill:#e8f4ea,stroke:#2d5a3d
+    style Parsed fill:#e8eef4,stroke:#2d3d5a

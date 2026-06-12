@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph CCODE["Applicazione C"]
+        CMAIN["main"]
+        CCALL["chiamata funzione"]
+    end
+
+    subgraph RUSTLIB["Libreria Rust cdylib"]
+        EXTERN["no_mangle extern C fn"]
+        IMPL["Implementazione Rust sicura"]
+    end
+
+    CMAIN --> CCALL
+    CCALL -->|"confine FFI"| EXTERN
+    EXTERN --> IMPL

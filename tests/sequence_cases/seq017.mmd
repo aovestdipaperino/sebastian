@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Main
+    participant Application
+    participant Desktop
+    participant Dialog
+    participant Button
+
+    Main->>Application: run()
+    Application->>Desktop: handle_event()
+    Desktop->>Dialog: execute()
+    Note over Dialog: ENTERS EVENT LOOP HERE
+    loop Until end_state != 0
+        Dialog->>Dialog: get_event()
+        Dialog->>Button: handle_event()
+        Button->>Dialog: broadcast(CM_OK)
+        Dialog->>Dialog: end_modal(CM_OK)
+    end
+    Dialog-->>Desktop: return CM_OK
+    Desktop-->>Application: continue

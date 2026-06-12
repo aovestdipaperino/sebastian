@@ -1,0 +1,27 @@
+graph TB
+    subgraph Global["Global State"]
+        T[Theme]
+        T --> TC[ThemeColor]
+        T --> TM[ThemeMode]
+        T --> LT[Light ThemeConfig]
+        T --> DT[Dark ThemeConfig]
+    end
+
+    subgraph Access["Component Access"]
+        CX[Context] --> AT[ActiveTheme trait]
+        AT --> T
+    end
+
+    subgraph Colors["Semantic Colors"]
+        TC --> BG[background]
+        TC --> FG[foreground]
+        TC --> PR[primary]
+        TC --> SC[secondary]
+        TC --> DN[danger]
+        TC --> MU[muted]
+        TC --> MORE[...100+ more]
+    end
+
+    style T fill:#e3f2fd
+    style TC fill:#c8e6c9
+    style TM fill:#fff9c4

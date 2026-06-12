@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph PinLayer["Pin<Box<Task>>"]
+        P["Pin wrapper"]
+        B["Box (pointer)"]
+        P -->|"restricts access"| B
+    end
+
+    subgraph Heap
+        T["Task at 0x1000"]
+    end
+
+    B -->|"points to"| T
+
+    X["&mut Task"]
+    P -.->|"blocked"| X
+
+    style X fill:#ffcccc,stroke:#ff0000

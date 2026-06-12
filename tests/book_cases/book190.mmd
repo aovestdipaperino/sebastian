@@ -1,0 +1,21 @@
+graph TD
+    subgraph Reactive["Automatic Reactivity (React, Vue, Solid)"]
+        R1[Change State] --> R2[Framework Tracks Dependencies]
+        R2 --> R3[Framework Determines What Updates]
+        R3 --> R4[Automatic Rerender]
+        R2 -.->|Hidden| R5[Dependency Graph]
+        R5 -.->|Hidden| R3
+    end
+
+    subgraph GPUI["Explicit Updates (GPUI)"]
+        G1[Change State] --> G2[Call cx.notify]
+        G2 --> G3[render Method Runs]
+        G3 --> G4[Build Element Tree]
+        G4 --> G5[Diff Against Previous]
+        G5 --> G6[Update Changed Elements]
+    end
+
+    style R2 fill:#fff9c4
+    style R5 fill:#ffebee
+    style G2 fill:#c8e6c9
+    style G5 fill:#e1f5ff

@@ -1,0 +1,10 @@
+flowchart TD
+    A[Main conversation] --> B[Claude identifies delegable task]
+    B --> C[Launches subagent via Task tool]
+    C --> D[New isolated context created]
+    D --> E[Subagent receives: system prompt + task]
+    E --> F[Subagent works autonomously]
+    F --> G[Subagent produces result]
+    G --> H[Only result returns to main]
+    H --> I[Main context receives summary]
+    I --> J[Conversation continues]

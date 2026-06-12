@@ -1,0 +1,11 @@
+flowchart TB
+    SIGNAL["Shutdown&nbsp;Signal<br/>(SIGTERM/SIGINT)"]
+    REJECT["Stop&nbsp;Accepting<br/>New&nbsp;Work"]
+    DRAIN["Wait&nbsp;for&nbsp;In-Flight<br/>(with&nbsp;timeout)"]
+    CLEANUP["Cleanup&nbsp;Resources"]
+    EXIT["Exit&nbsp;Process"]
+
+    SIGNAL --> REJECT
+    REJECT --> DRAIN
+    DRAIN --> CLEANUP
+    CLEANUP --> EXIT

@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph "Arena Memory Block"
+        direction LR
+        A1[Alloc 1] --> A2[Alloc 2] --> A3[Alloc 3] --> F[Free Space]
+    end
+
+    P[Bump Pointer]
+    P --> F
+
+    style A1 fill:#2ecc71,color:#fff
+    style A2 fill:#2ecc71,color:#fff
+    style A3 fill:#2ecc71,color:#fff
+    style F fill:#95a5a6,color:#fff
+    style P fill:#e74c3c,color:#fff

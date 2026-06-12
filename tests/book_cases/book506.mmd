@@ -1,0 +1,10 @@
+flowchart TD
+    A[Claude works] --> B{Recurring problem?}
+    B -->|No| A
+    B -->|Yes| C[Claude identifies pattern]
+    C --> D[Proposes configuration]
+    D --> E{User approves?}
+    E -->|No| A
+    E -->|Yes| F[Claude creates/modifies config]
+    F --> G[Problem solved structurally]
+    G --> A

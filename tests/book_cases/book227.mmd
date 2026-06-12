@@ -1,0 +1,7 @@
+flowchart LR
+    A[Original Bytes] --> B[Clone 1]
+    A --> C[Clone 2]
+    A --> D[ExclusiveBytes::from_bytes_unchecked]
+    D --> E[Mutation]
+    B --> F[Concurrent Read]
+    E -.->|Data Race!| F

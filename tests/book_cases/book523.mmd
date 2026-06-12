@@ -1,0 +1,10 @@
+flowchart TD
+    A[Claude propone modifica] --> B{Interfaccia?}
+    B -->|Terminale| C[Diff testuale sequenziale]
+    B -->|VS Code| D[Diff inline nell'editor]
+    C --> E[Review manuale del testo]
+    D --> F[Review visiva con contesto]
+    F --> G[Accetta/Rifiuta per chunk]
+    F --> H[Vedi il file completo attorno]
+    F --> I[Navigazione tra modifiche]
+    E --> J[Accetta tutto o rivedi file]

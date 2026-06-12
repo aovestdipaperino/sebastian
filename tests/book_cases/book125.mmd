@@ -1,0 +1,31 @@
+flowchart TB
+    Start["What are you doing<br/>with this atomic?"]
+
+    Start --> Q1{"Does this operation<br/>need to synchronize<br/>with other threads?"}
+
+    Q1 -->|"No, just need<br/>atomicity"| Relaxed["**Relaxed**<br/>Counters, statistics,<br/>progress tracking"]
+
+    Q1 -->|"Yes"| Q2{"Is this a store<br/>that publishes data<br/>for other threads?"}
+
+    Q2 -->|"Yes"| Release["**Release**<br/>Channel send, mutex unlock,<br/>lazy init completion"]
+
+    Q2 -->|"No"| Q3{"Is this a load that<br/>consumes data from<br/>another thread?"}
+
+    Q3 -->|"Yes"| Acquire["**Acquire**<br/>Channel receive, mutex lock,<br/>checking initialization"]
+
+    Q3 -->|"No"| Q4{"Is this a read-modify-write<br/>that both consumes and<br/>publishes?"}
+
+    Q4 -->|"Yes"| AcqRel["**AcqRel**<br/>Lock-free push/pop,<br/>reference counting"]
+
+    Q4 -->|"No"| Q5{"Do multiple threads need<br/>to agree on a global<br/>order of operations?"}
+
+    Q5 -->|"Yes"| SeqCst["**SeqCst**<br/>When in doubt,<br/>complex coordination"]
+
+    Q5 -->|"No, release-acquire<br/>is sufficient"| Pair["Use **Release/Acquire**<br/>pair on synchronizing<br/>variable"]
+
+    style Relaxed fill:#2d5a3d,color:#fff
+    style Release fill:#4a5568,color:#fff
+    style Acquire fill:#4a5568,color:#fff
+    style AcqRel fill:#5a4a6a,color:#fff
+    style SeqCst fill:#6a3d3d,color:#fff
+    style Pair fill:#4a5568,color:#fff

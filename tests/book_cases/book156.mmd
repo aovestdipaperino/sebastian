@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph Before["Vec capacity=2, len=2"]
+        direction LR
+        B["Buffer at 0x1000"]
+        B --> T0["Task0<br/>0x1000-0x10FF"]
+        B --> T1["Task1<br/>0x1100-0x11FF"]
+    end
+
+    subgraph After["Vec capacity=4, len=3 (after push)"]
+        direction LR
+        A["NEW buffer at 0x5000"]
+        A --> AT0["Task0 copy<br/>0x5000-0x50FF"]
+        A --> AT1["Task1 copy<br/>0x5100-0x51FF"]
+        A --> AT2["Task2<br/>0x5200-0x52FF"]
+    end
+
+    Before -->|"push(Task2)<br/>capacity exceeded<br/>allocate new buffer<br/>copy all elements"| After

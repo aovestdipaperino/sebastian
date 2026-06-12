@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph Forth["Forth Execution"]
+        F1["3 → Stack: [3]"]
+        F2["4 → Stack: [3, 4]"]
+        F3["+ → Stack: [7]"]
+        F1 --> F2 --> F3
+    end
+
+    subgraph Wasm["WebAssembly Execution"]
+        W1["i64.const 3 → Stack: [3]"]
+        W2["i64.const 4 → Stack: [3, 4]"]
+        W3["i64.add → Stack: [7]"]
+        W1 --> W2 --> W3
+    end
+
+    style Forth fill:#fff3e0
+    style Wasm fill:#e8f5e9

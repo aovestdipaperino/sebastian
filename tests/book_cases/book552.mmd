@@ -1,0 +1,18 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'18px'}}}%%
+flowchart TD
+    APP["Your Rust<br/>Application"]
+
+    API["shared_memory Crate<br/>Cross-Platform API"]
+
+    BACKENDS["OS-Specific Backend<br/>━━━━━━━━━━━━━<br/>POSIX shm (Linux/BSD/macOS)<br/>System V shm (Legacy Unix)<br/>File Mapping (Windows)"]
+
+    MEMORY["Physical Memory Pages<br/>(Kernel)"]
+
+    APP --> API
+    API --> BACKENDS
+    BACKENDS --> MEMORY
+
+    style APP fill:#e1f5ff
+    style API fill:#fff4e1
+    style BACKENDS fill:#e8f5e9
+    style MEMORY fill:#f3e5f5

@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph MOVE["Move (String, Vec, ecc.)"]
+        direction TB
+        M_A["a: String"]
+        M_A -->|"let b = a"| M_B["b: String"]
+        M_B --> M_A_AFTER["a diventa invalido"]
+    end
+
+    MOVE ~~~ COPY
+
+    subgraph COPY["Copy (i32, f64, bool, ecc.)"]
+        direction TB
+        C_A["a: i32 = 5"]
+        C_A -->|"let b = a"| C_B["b: i32 = 5"]
+        C_B --> C_A_AFTER["a: i32 = 5 (ancora valido)"]
+    end

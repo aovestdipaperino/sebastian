@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Unauthenticated
+    Unauthenticated --> Authenticated : login() succeeds
+    Unauthenticated --> Unauthenticated : login() fails
+    Authenticated --> Unauthenticated : logout()
+
+    note right of Authenticated
+        Protected operations
+        available only here
+    end note

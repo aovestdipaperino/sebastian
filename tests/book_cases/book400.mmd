@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph Web["Web Approach"]
+        direction TB
+        W1[HTML/CSS/JS]
+        W2[Browser Engine]
+        W3[OS Graphics]
+        W1 --> W2 --> W3
+    end
+
+    subgraph Native["Native Rust Approach"]
+        direction TB
+        N1[Rust Code]
+        N2[Framework Primitives]
+        N3[OS Graphics]
+        N1 --> N2 --> N3
+    end
+
+    style Web fill:#7c2d12,color:#fff
+    style Native fill:#166534,color:#fff

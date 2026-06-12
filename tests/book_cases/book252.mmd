@@ -1,0 +1,15 @@
+flowchart TD
+    subgraph "Initial Parse"
+        S1[Source v1] --> T1[Tree v1]
+    end
+
+    subgraph "Edit Applied"
+        E[Edit] --> S2[Source v2]
+        T1 --> |identify affected nodes| A[Affected Subtrees]
+        A --> |reparse only these| T2[Tree v2]
+        T1 --> |reuse unchanged| T2
+    end
+
+    subgraph "Result"
+        T2 --> |shares structure| T1
+    end

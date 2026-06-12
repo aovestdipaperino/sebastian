@@ -1,0 +1,13 @@
+graph TD
+    A[DialogBox Window] --> B[Outer Container<br/>flex, center]
+    B --> C[Dialog Container<br/>rounded, shadow]
+    C --> D[Titlebar<br/>22px, gray bg]
+    C --> E[Content Area<br/>flex-col, light gray]
+    D --> F[Red Button]
+    D --> G[Yellow Button]
+    D --> H[Green Button]
+    E --> I[Text Container<br/>flex-1, centered]
+    E --> J[Button Row<br/>right-aligned]
+    I --> K["Hello World!"]
+    J --> L[Cancel Button<br/>white, bordered]
+    J --> M[OK Button<br/>blue accent]

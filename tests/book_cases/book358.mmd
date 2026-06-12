@@ -1,0 +1,7 @@
+flowchart TB
+    START["Valore necessario in posti multipli?"]
+    START -->|"No"| MOVE["Trasferiscilo (costo zero)"]
+    START -->|"Sì"| CONSIDER["Considera alternative"]
+    CONSIDER --> READ["Solo accesso in lettura?<br/>Usa reference"]
+    CONSIDER --> INDEPENDENT["Servono copie indipendenti?<br/>Clona esplicitamente"]
+    CONSIDER --> SHARED["Ownership condivisa?<br/>Usa Rc o Arc"]

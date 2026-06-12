@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph SOURCES["Data&nbsp;Sources"]
+        S1["Source&nbsp;1"]
+        S2["Source&nbsp;2"]
+    end
+
+    subgraph PROCESSING["Processing&nbsp;Pipeline"]
+        PARSE["Parser<br/>Thread"]
+        VALIDATE["Validator<br/>Thread"]
+        TRANSFORM["Transformer<br/>Thread"]
+    end
+
+    subgraph OUTPUT["Output"]
+        STORE["Storage<br/>Thread"]
+    end
+
+    S1 -->|"channel"| PARSE
+    S2 -->|"channel"| PARSE
+    PARSE -->|"channel"| VALIDATE
+    VALIDATE -->|"channel"| TRANSFORM
+    TRANSFORM -->|"channel"| STORE

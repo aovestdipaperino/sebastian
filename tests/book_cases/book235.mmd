@@ -1,0 +1,18 @@
+flowchart LR
+    subgraph Production["Production System"]
+        NIC[Network Interface] --> XDP[XDP Filter]
+        XDP -->|Drop| D[Dropped]
+        XDP -->|Pass| KS[Kernel Stack]
+        XDP -->|Redirect| TAP[Tap Interface]
+    end
+
+    subgraph Analysis["Analysis Layer"]
+        TAP --> PCAP[libpcap Capture]
+        PCAP --> FILE[pcap Files]
+        KS --> APP[Application]
+    end
+
+    subgraph Dev["Developer Workstation"]
+        CLI[CLI Tool] -->|libpcap| LOCAL[Local Analysis]
+        CLI -->|Remote| APP
+    end

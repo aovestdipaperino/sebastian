@@ -1,0 +1,5 @@
+graph LR
+    S((start)) -->|ε| S1((N start))
+    S -->|ε| A((accept))
+    A1((N accept)) -->|ε| S1
+    A1 -->|ε| A

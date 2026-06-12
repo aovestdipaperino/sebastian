@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph "Access Pattern Analysis"
+        Q1{How often do<br/>writes occur?}
+        Q2{Do reads need<br/>to see each other?}
+        Q3{Is read performance<br/>critical?}
+    end
+
+    subgraph "Recommendations"
+        AS[ArcSwap<br/>Lock-free reads]
+        RW[RwLock<br/>Multiple readers OR one writer]
+        MX[Mutex<br/>Simple exclusive access]
+    end
+
+    Q1 -->|Rarely| Q3
+    Q1 -->|Frequently| Q2
+    Q2 -->|Yes| MX
+    Q2 -->|No| RW
+    Q3 -->|Yes| AS
+    Q3 -->|Not critical| RW
+
+    style AS fill:#4a9,stroke:#333,stroke-width:2px
+    style RW fill:#69b,stroke:#333
+    style MX fill:#b86,stroke:#333

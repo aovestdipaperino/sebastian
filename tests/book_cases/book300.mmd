@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph PARENT["Parent&nbsp;Task"]
+        P["Request&nbsp;Handler"]
+    end
+
+    subgraph CHILDREN["Child&nbsp;Tasks"]
+        C1["Database&nbsp;Query"]
+        C2["Cache&nbsp;Lookup"]
+        C3["API&nbsp;Call"]
+    end
+
+    P --> C1
+    P --> C2
+    P --> C3
+
+    CANCEL(("Cancel")) -.->|"propagates"| P
+    P -.-> C1
+    P -.-> C2
+    P -.-> C3

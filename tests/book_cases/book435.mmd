@@ -1,0 +1,11 @@
+graph LR
+    A[Direct Hardware Access] --> B[Manual Memory Management]
+    B --> C[Memory Safety Bugs]
+    C --> D[Security Vulnerabilities]
+    C --> E[Crashes and Corruption]
+    C --> F[Debugging Complexity]
+
+    G[Static Analyzers] -.->|Partial| C
+    H[Smart Pointers] -.->|Partial| C
+    I[Code Review] -.->|Partial| C
+    J[Coding Standards] -.->|Partial| C

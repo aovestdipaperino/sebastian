@@ -1,0 +1,6 @@
+flowchart LR
+    A[Input Tokens] --> B{Head Token}
+    B -->|Process| C[Recursive Call]
+    C -->|Remaining Tokens| B
+    B -->|No Tokens| D[Base Case]
+    D --> E[Return Result]

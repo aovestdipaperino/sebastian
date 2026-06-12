@@ -1,0 +1,33 @@
+graph TD
+    CLI[src/entrypoints/cli.tsx] --> Main[src/main.tsx]
+    Main --> REPL[src/screens/REPL.tsx]
+    Main --> Doctor[src/screens/Doctor.tsx]
+    Main --> Resume[src/screens/ResumeConversation.tsx]
+
+    REPL --> QE[QueryEngine]
+    REPL --> Components[Components Layer]
+    REPL --> Commands[Slash Commands]
+
+    QE --> API[API Service]
+    QE --> Tools[Tool System]
+    QE --> Compact[Compaction Service]
+
+    Tools --> BashTool
+    Tools --> FileTools[File Read/Edit/Write]
+    Tools --> AgentTool
+    Tools --> MCPTool
+    Tools --> OtherTools[Grep, Glob, Web, Tasks, ...]
+
+    Components --> InkRuntime[Ink Terminal UI Runtime]
+    InkRuntime --> YogaLayout[Yoga Layout Engine]
+
+    subgraph Services
+        API
+        Compact
+        MCP[MCP Client]
+        Analytics
+        Hooks[Hook System]
+        Permissions
+        Plugins[Plugin System]
+        SessionMem[Session Memory]
+    end

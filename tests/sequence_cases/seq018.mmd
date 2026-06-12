@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant App as Application
+    participant XPC as XPC Subsystem
+    participant MTL as MTLCompilerService
+
+    App->>XPC: Initialize (implicit)
+    XPC->>MTL: Establish connection
+    MTL-->>XPC: Connection ready
+
+    Note over App: fork() called
+
+    App->>App: Parent exits
+    App->>App: Child continues
+
+    Note over App,XPC: XPC connection now invalid in child
+
+    App->>XPC: Create render pipeline
+    XPC->>MTL: Compile shader request
+    MTL--xXPC: Connection invalid
+    XPC-->>App: Error 3 - No such process

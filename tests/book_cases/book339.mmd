@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph BOX["Box&lt;T&gt;"]
+        B1["Single&nbsp;owner"]
+        B2["Heap&nbsp;allocation"]
+        B3["Recursive&nbsp;types"]
+    end
+
+    subgraph RC["Rc&lt;T&gt;"]
+        R1["Multiple&nbsp;owners"]
+        R2["Single-threaded"]
+        R3["Shared&nbsp;immutable"]
+    end
+
+    subgraph ARC["Arc&lt;T&gt;"]
+        A1["Multiple&nbsp;owners"]
+        A2["Thread-safe"]
+        A3["Shared&nbsp;immutable"]
+    end

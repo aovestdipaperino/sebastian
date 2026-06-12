@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph INV["Invariant Analysis Process"]
+        A["Identify coupled state"] --> B["Document the invariant"]
+        B --> C["Trace maintenance points"]
+        C --> D["Find violation risks"]
+        D --> E["Propose enforcement"]
+    end
+
+    subgraph TYPES["Common Invariant Categories"]
+        T1["Structural: field relationships"]
+        T2["Temporal: valid state transitions"]
+        T3["Capacity: bounds and limits"]
+        T4["Safety: unsafe code preconditions"]
+    end
+
+    INV --> TYPES
+
+    style INV fill:#e3f2fd,stroke:#1565c0
+    style TYPES fill:#fff3e0,stroke:#ef6c00

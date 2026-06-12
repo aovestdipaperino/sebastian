@@ -1,0 +1,9 @@
+graph TD
+    App[Application] --> MB[Menu Bar]
+    App --> DT[Desktop]
+    App --> SL[Status Line]
+    DT --> BG[Background Pattern]
+    DT --> Win1[Window 1]
+    DT --> Win2[Window 2]
+    DT --> Win3[Window 3]
+    Win2 -.-> |focused| DT

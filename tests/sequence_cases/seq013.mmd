@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant Thread A
+    participant Atomic Value
+    participant Thread B
+
+    Note over Atomic Value: value = 5
+
+    Thread A->>Atomic Value: load() → 5
+    Thread B->>Atomic Value: load() → 5
+
+    Note over Thread A: compute: 5 + 1 = 6
+    Note over Thread B: compute: 5 + 2 = 7
+
+    Thread A->>Atomic Value: CAS(5, 6) → Success
+    Note over Atomic Value: value = 6
+
+    Thread B->>Atomic Value: CAS(5, 7) → Fails (actual = 6)
+    Note over Thread B: retry with new value
+
+    Thread B->>Atomic Value: load() → 6
+    Note over Thread B: compute: 6 + 2 = 8
+    Thread B->>Atomic Value: CAS(6, 8) → Success
+    Note over Atomic Value: value = 8

@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Uninitialized: Declaration
+    Uninitialized --> Valid: Initialization
+    Valid --> Moved: Move occurs
+    Moved --> Valid: Reinitialization
+    Valid --> [*]: Scope ends, drop
+    Moved --> [*]: Scope ends, no drop

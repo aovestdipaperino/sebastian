@@ -1,0 +1,16 @@
+flowchart TD
+    subgraph If["If-Else Lowering"]
+        I1[Evaluate Condition] --> I2{cond != 0?}
+        I2 -->|Yes| I3[Then Block]
+        I2 -->|No| I4[Else Block]
+        I3 --> I5[End Label]
+        I4 --> I5
+    end
+
+    subgraph While["While Loop Lowering"]
+        W1[Loop Start Label] --> W2[Evaluate Condition]
+        W2 --> W3{cond != 0?}
+        W3 -->|Yes| W4[Loop Body]
+        W4 --> W1
+        W3 -->|No| W5[Loop End Label]
+    end

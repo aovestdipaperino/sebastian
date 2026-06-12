@@ -1,0 +1,15 @@
+graph TD
+    A[Window] --> B[Root Container]
+    B --> C[Panel A]
+    B --> D[Panel B]
+    C --> E[Button 1]
+    C --> F[Input Field]
+    D --> G[Button 2]
+    D --> H[List]
+
+    style F fill:#4a9eff,stroke:#333,stroke-width:2px
+
+    subgraph Focus Chain
+        direction LR
+        F --> |bubble| C --> |bubble| B --> |bubble| A
+    end

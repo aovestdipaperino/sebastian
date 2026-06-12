@@ -1,0 +1,26 @@
+graph TD
+    Start[Component Needs State] --> Q1{Multiple windows<br/>need access?}
+    Q1 -->|Yes| Entity1[Use Entity]
+    Q1 -->|No| Q2{Background tasks<br/>update state?}
+
+    Q2 -->|Yes| Entity2[Use Entity]
+    Q2 -->|No| Q3{Parent-child<br/>relationship only?}
+
+    Q3 -->|Yes| Plain1[Use Plain Type<br/>pass props down]
+    Q3 -->|No| Q4{Need handle for<br/>communication?}
+
+    Q4 -->|Yes| Entity3[Use Entity]
+    Q4 -->|No| Plain2[Use Plain Type]
+
+    Entity1 --> Note1[Clone handles<br/>share state]
+    Entity2 --> Note1
+    Entity3 --> Note1
+
+    Plain1 --> Note2[Simpler code<br/>local state]
+    Plain2 --> Note2
+
+    style Entity1 fill:#e1f5ff
+    style Entity2 fill:#e1f5ff
+    style Entity3 fill:#e1f5ff
+    style Plain1 fill:#c8e6c9
+    style Plain2 fill:#c8e6c9

@@ -1,0 +1,34 @@
+graph TD
+    subgraph "Single Input - Elision Works"
+        A1["input: char with lifetime 'a"]
+        B1["output inherits 'a"]
+        C1["return: char with lifetime 'a"]
+        A1 --> B1 --> C1
+    end
+
+    subgraph "Multiple Inputs - Explicit"
+        A2["s1: char with lifetime 'a"]
+        A3["s2: char with lifetime 'a"]
+        B2["both must live at least 'a"]
+        C2["return: char with lifetime 'a"]
+        A2 --> B2
+        A3 --> B2
+        B2 --> C2
+    end
+
+    subgraph "Multiple Inputs - Ambiguous"
+        A4["s1: char with unknown lifetime"]
+        A5["s2: char with unknown lifetime"]
+        B3["which lifetime?"]
+        C3["return: unknown lifetime<br/>❌ compiler error"]
+        A4 -.-> B3
+        A5 -.-> B3
+        B3 -.-> C3
+    end
+
+    style A1 fill:#4CAF50
+    style C1 fill:#4CAF50
+    style B2 fill:#2196F3
+    style C2 fill:#4CAF50
+    style B3 fill:#f44336
+    style C3 fill:#f44336,stroke:#000,stroke-width:3px

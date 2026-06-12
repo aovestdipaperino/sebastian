@@ -1,0 +1,5 @@
+graph LR
+    A[Broker Metrics] -->|HTTP /metrics| B[Prometheus Scraper]
+    B -->|Store Time Series| C[Prometheus TSDB]
+    C -->|PromQL Queries| D[Grafana]
+    D -->|Render Dashboards| E[User Browser]

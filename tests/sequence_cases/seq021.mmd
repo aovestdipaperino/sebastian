@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant G as Group
+    participant P as Pre-process View
+    participant F as Focused View
+    participant O as Post-process View
+
+    G->>P: Phase 1: Pre-process
+    Note over P: Not handled
+    G->>F: Phase 2: Focused
+    Note over F: Not handled
+    G->>O: Phase 3: Post-process
+    Note over O: Handle or pass

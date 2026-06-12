@@ -1,0 +1,18 @@
+flowchart LR
+    subgraph "Thread 1"
+        HP1[Hazard Pointer: 0xABC]
+    end
+
+    subgraph "Thread 2"
+        HP2[Hazard Pointer: null]
+    end
+
+    subgraph "Thread 3 wants to free 0xABC"
+        S[Scan all hazard pointers]
+        S --> C{0xABC in use?}
+        C -->|Yes| D[Defer to later]
+        C -->|No| F[Free immediately]
+    end
+
+    HP1 --> C
+    HP2 --> C

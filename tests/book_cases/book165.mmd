@@ -1,0 +1,32 @@
+graph TB
+    subgraph Application["Application Code"]
+        UI[UI Components]
+        Custom[Custom Rendering]
+    end
+
+    subgraph Component["gpui-component Layer"]
+        Button[Button]
+        Input[Input]
+        Panel[Resizable Panel]
+        Theme[Theme System]
+    end
+
+    subgraph Primitive["GPUI Primitive Layer"]
+        Canvas[canvas]
+        Path[PathBuilder]
+        Paint[paint_path / paint_quad]
+        Element[Element trait]
+    end
+
+    UI --> Button
+    UI --> Input
+    UI --> Panel
+    UI --> Theme
+    Custom --> Canvas
+    Custom --> Path
+    Canvas --> Paint
+    Button --> Element
+    Input --> Element
+
+    style Component fill:#c8e6c9
+    style Primitive fill:#e3f2fd

@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph "Source Code"
+        F1["src/db/connection.rs"]
+        F2["src/db/queries.rs"]
+        F3["src/codegraph.rs"]
+    end
+
+    subgraph "Knowledge Graph"
+        N1["Database (struct)"]
+        N2["initialize (method)"]
+        N3["get_node_by_id (method)"]
+        N4["CodeGraph (struct)"]
+        N5["get_node (method)"]
+
+        N1 -->|Contains| N2
+        N1 -->|Contains| N3
+        N4 -->|Contains| N5
+        N5 -->|Calls| N3
+    end
+
+    F1 -.->|extracts| N1
+    F1 -.->|extracts| N2
+    F2 -.->|extracts| N3
+    F3 -.->|extracts| N4
+    F3 -.->|extracts| N5
+
+    style N1 fill:#2d6a4f,color:#fff
+    style N4 fill:#2d6a4f,color:#fff
+    style N2 fill:#40916c,color:#fff
+    style N3 fill:#40916c,color:#fff
+    style N5 fill:#40916c,color:#fff

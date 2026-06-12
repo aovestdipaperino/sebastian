@@ -1,0 +1,12 @@
+flowchart TB
+    U[User] --> C[Crew]
+    C --> R[Researcher agent]
+    C --> S[Skeptic agent]
+    R --> RS[ Part 3 skills: read_file, list_files, web_search ]
+    S --> RS
+    C --> SY[Synthesizer agent]
+    SY --> G[Part 4 Graph: draft, review, revise]
+
+    style C fill:#bbdefb,stroke:#1565c0,color:#000
+    style RS fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style G fill:#d1c4e9,stroke:#4527a0,color:#000

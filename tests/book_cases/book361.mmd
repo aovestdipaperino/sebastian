@@ -1,0 +1,20 @@
+%%{init: {"flowchart": {"htmlLabels": false}} }%%
+flowchart TB
+    subgraph VALID["Valido: Struct sopravvissuta dai dati"]
+        direction TB
+        V1["let data = String::from(...)"]
+        V2["let holder = Holder { data: &data }"]
+        V3["usa holder"]
+        V4["holder droppato"]
+        V5["data droppato"]
+        V1 --> V2 --> V3 --> V4 --> V5
+    end
+
+    subgraph INVALID["Invalido: Dati droppati mentre la struct esiste"]
+        direction TB
+        I1["let holder"]
+        I2["{ let data = ...; holder = Holder { data: &data } }"]
+        I3["data droppato qui"]
+        I4["usa holder: DANGLING"]
+        I1 --> I2 --> I3 --> I4
+    end

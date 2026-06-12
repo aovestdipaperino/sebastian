@@ -1,0 +1,21 @@
+graph TD
+    A[Need a Dialog?] --> B{Standard<br/>Interaction?}
+    B -->|Yes| C{Simple<br/>Content?}
+    B -->|No| D[Use Custom<br/>GPUI View]
+
+    C -->|Yes| E{Accessibility<br/>Critical?}
+    C -->|No| D
+
+    E -->|Yes| F[Use Native<br/>Dialog]
+    E -->|Not Critical| G{Brand<br/>Consistency<br/>Required?}
+
+    G -->|Yes| D
+    G -->|No| F
+
+    F --> H[Examples:<br/>• About Box<br/>• File Picker<br/>• Simple Alert<br/>• Confirmation]
+
+    D --> I[Examples:<br/>• Complex Forms<br/>• Rich Content<br/>• Custom Controls<br/>• Branded UI]
+
+    style F fill:#c8e6c9
+    style D fill:#fff9c4
+    style A fill:#e1f5ff

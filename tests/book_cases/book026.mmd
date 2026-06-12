@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph Sequential["Sequential Processing"]
+        direction TB
+        R1["Read buffer"]
+        P1["Parse (zero-copy)"]
+        H1["Handle message"]
+        D1["Discard"]
+        R1 --> P1 --> H1 --> D1
+        D1 -->|"reuse buffer"| R1
+    end
+
+    subgraph Async["Async/Queued Processing"]
+        direction TB
+        R2["Read buffer"]
+        P2["Parse (zero-copy)"]
+        C2["Copy to owned"]
+        Q2["Enqueue"]
+        R2 --> P2 --> C2 --> Q2
+    end
+
+    style Sequential fill:#e8f4e8,stroke:#2d5a2d
+    style Async fill:#f4f4e8,stroke:#5a5a2d

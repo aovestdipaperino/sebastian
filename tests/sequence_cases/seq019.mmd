@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant U as User
+    participant A as Application
+    participant D as Desktop
+    participant W as Window
+    participant I as Interior
+    participant B as Button
+
+    U->>A: Mouse click at (50, 15)
+    A->>D: Contains position?
+    D->>W: Contains position?
+    W->>I: Contains position?
+    I->>B: Contains position?
+    B->>B: Handle click
+    B->>B: Generate command

@@ -1,0 +1,15 @@
+flowchart TD
+    subgraph "Front-end (DSL Compiler)"
+        A[Source Code] --> B[Lexer/Parser]
+        B --> C[AST]
+        C --> D[Semantic Analysis]
+        D --> E[IR Generation]
+    end
+    E --> F[LLVM IR]
+    subgraph "LLVM Infrastructure"
+        F --> G[Analysis Passes]
+        G --> H[Optimization Passes]
+        H --> I[Optimized IR]
+        I --> J[Target Code Gen]
+    end
+    J --> K[Native Code]

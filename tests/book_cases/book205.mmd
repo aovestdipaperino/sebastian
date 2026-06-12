@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph Grammar-Driven
+        G[Grammar File] --> Gen[Parser Generator]
+        Gen --> P[Parser Code]
+    end
+    subgraph Combinator-Driven
+        C[Rust Functions] --> P2[Parser Code]
+    end
+    I[Input Text] --> P --> AST1[AST]
+    I --> P2 --> AST2[AST]

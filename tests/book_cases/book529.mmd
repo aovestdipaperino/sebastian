@@ -1,0 +1,9 @@
+flowchart TD
+    A[Conversazione principale] --> B[Claude identifica task delegabile]
+    B --> C[Lancia subagent via Task tool]
+    C --> D[Nuovo contesto isolato creato]
+    D --> E[Subagent riceve system prompt + task]
+    E --> F[Subagent lavora autonomamente]
+    F --> G[Subagent produce risultato]
+    G --> H[Solo il risultato torna al main]
+    H --> I[Conversazione continua]

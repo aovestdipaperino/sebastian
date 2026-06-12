@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph TYPES["Your&nbsp;Types"]
+        CONFIG["Config"]
+        USER["User"]
+        EVENT["Event"]
+    end
+
+    subgraph SERDE["Serde&nbsp;Traits"]
+        SER["Serialize"]
+        DE["Deserialize"]
+    end
+
+    subgraph FORMATS["Format&nbsp;Crates"]
+        JSON["serde_json"]
+        TOML["toml"]
+        YAML["serde_yaml"]
+        BIN["bincode"]
+    end
+
+    TYPES --> SER
+    TYPES --> DE
+    SER --> FORMATS
+    DE --> FORMATS

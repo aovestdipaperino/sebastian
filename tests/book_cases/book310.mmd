@@ -1,0 +1,19 @@
+flowchart TB
+ subgraph MOD_B["mod&nbsp;child"]
+        PRIV["fn&nbsp;f1()"]
+        PUB["pub&nbsp;fn&nbsp;f2()"]
+        PUB_CRATE["pub(crate)&nbsp;fn&nbsp;f3()"]
+        PUB_SUPER["pub(super)&nbsp;fn&nbsp;f4()"]
+  end
+ subgraph MOD_A["mod&nbsp;parent"]
+        MOD_B
+        PARENT_CODE["parent&nbsp;code"]
+  end
+ subgraph CRATE["crate"]
+        MOD_A
+        OTHER["mod&nbsp;other"]
+  end
+    PUB --> PARENT_CODE & OTHER & EXTERNAL["external&nbsp;crate"]
+    PUB_SUPER --> PARENT_CODE
+    PUB_CRATE --> PARENT_CODE & OTHER
+    CRATE ~~~ EXTERNAL

@@ -1,0 +1,13 @@
+graph TD
+    A[App Context] --> B[open_window]
+    B --> C[WindowHandle]
+    C --> D[Window Entity]
+    D --> E[Root View]
+
+    F[Main Window] --> G[Shared State]
+    H[Preferences Window] --> G
+    I[Chart Window] --> G
+
+    G --> J[Entity System]
+    J --> K[Subscriptions]
+    K --> L[Cross-Window Updates]

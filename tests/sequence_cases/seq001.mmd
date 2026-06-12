@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant App as Application
+    participant Browser as User's Browser
+    participant Auth as Authorization Server
+
+    Note over App: 1. Generate code_verifier (random)
+    App->>App: code_verifier = randomBytes(32)
+    App->>App: code_challenge = SHA256(code_verifier)
+    App->>App: state = randomBytes(32)
+
+    Note over App: 2. Start localhost server on port N
+    App->>App: server.listen(N)
+
+    Note over App: 3. Redirect user to authorize
+    App->>Browser: GET /oauth/authorize?<br/>client_id=...<br/>redirect_uri=http://localhost:N/callback<br/>response_type=code<br/>scope=user:inference user:profile<br/>code_challenge={code_challenge}<br/>code_challenge_method=S256<br/>state={state}
+
+    Browser->>Auth: Authorization request
+
+    Note over Browser: 4. User logs in & approves
+    Auth->>Browser: Authorization screen
+
+    Note over Auth: 5. Server stores code_challenge<br/>mapped to this session
+
+    Note over Browser: 6. Redirect with authorization code
+    Auth->>Browser: 302 http://localhost:N/callback?<br/>code=AUTH_CODE<br/>state={state}
+
+    Note over Browser: 7. Browser redirects to localhost
+    Browser->>App: GET /callback?code=AUTH_CODE&state={state}
+
+    Note over App: 8. Validate state matches
+    App->>App: if (state != expected_state) reject()
+
+    Note over App: 9. Exchange code for tokens
+    App->>Auth: POST /oauth/token<br/>{<br/>  "grant_type": "authorization_code",<br/>  "code": "AUTH_CODE",<br/>  "redirect_uri": "http://localhost:N/callback",<br/>  "client_id": "...",<br/>  "code_verifier": "{code_verifier}",<br/>  "state": "{state}"<br/>}
+
+    Note over Auth: 10. Verify PKCE challenge
+    Auth->>Auth: hash = SHA256(code_verifier)<br/>if (hash != code_challenge) reject()
+
+    Note over Auth: 11. Issue tokens
+    Auth-->>App: {<br/>  "access_token": "...",<br/>  "refresh_token": "...",<br/>  "expires_in": 3600,<br/>  "scope": "user:inference user:profile"<br/>}
+
+    Note over App: 12. Store tokens securely

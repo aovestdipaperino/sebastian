@@ -1,0 +1,17 @@
+flowchart TD
+    A[Model emits tool_use] --> B["Layer 1: Tool pre-filtering"]
+    B --> C["Layer 2: Deny-first rules"]
+    C --> D["Layer 3: Permission mode"]
+    D --> E["Layer 4: Auto-mode classifier"]
+    E --> F["Layer 5: Shell sandbox check"]
+    F --> G["Layer 6: Session-scoped non-restoration"]
+    G --> H["Layer 7: Hook interception"]
+    H --> I[Execute]
+    C -.blocked.-> X[Deny feedback]
+    D -.blocked.-> X
+    E -.blocked.-> X
+    H -.blocked.-> X
+    X --> Y[Back to model]
+    style A fill:#c8b6a6,color:#000
+    style I fill:#a8dadc,color:#000
+    style X fill:#e76f51,color:#fff

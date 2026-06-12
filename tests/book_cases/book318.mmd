@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph CCODE["C&nbsp;Application"]
+        CMAIN["main"]
+        CCALL["function&nbsp;call"]
+    end
+
+    subgraph RUSTLIB["Rust&nbsp;Library&nbsp;cdylib"]
+        EXTERN["no_mangle&nbsp;extern&nbsp;C&nbsp;fn"]
+        IMPL["Safe&nbsp;Rust&nbsp;Implementation"]
+    end
+
+    CMAIN --> CCALL
+    CCALL -->|"FFI&nbsp;boundary"| EXTERN
+    EXTERN --> IMPL

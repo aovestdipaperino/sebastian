@@ -1,0 +1,17 @@
+flowchart TB
+    A["Claude wants to understand code"] --> B{"CLAUDE.md rules"}
+    B -->|"Follows rules"| C["Calls codegraph_context / codegraph_search"]
+    B -->|"Ignores rules"| D{"PreToolUse hook"}
+    D -->|"Blocks Agent call"| E["Returns: use codegraph instead"]
+    E --> C
+    C --> F["Graph returns symbols + relationships"]
+    F --> G["Claude has context, uses ~500 tokens"]
+
+    H["Without codegraph"] --> I["Explore agent reads 30 files"]
+    I --> J["Claude has context, uses ~50,000 tokens"]
+
+    style C fill:#2d6a4f,color:#fff
+    style G fill:#2d6a4f,color:#fff
+    style J fill:#ae2012,color:#fff
+
+    style F fill:#40916c,color:#fff,font-size:16px

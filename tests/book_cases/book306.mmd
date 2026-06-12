@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph FANOUT["Fan-Out"]
+        SOURCE["Source"]
+        W1["Worker&nbsp;1"]
+        W2["Worker&nbsp;2"]
+        W3["Worker&nbsp;3"]
+    end
+
+    subgraph FANIN["Fan-In"]
+        COLLECTOR["Collector"]
+    end
+
+    SOURCE --> W1
+    SOURCE --> W2
+    SOURCE --> W3
+    W1 --> COLLECTOR
+    W2 --> COLLECTOR
+    W3 --> COLLECTOR

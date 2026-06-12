@@ -1,0 +1,13 @@
+flowchart TB
+    A --> B
+    subgraph outer [Outer Title]
+        direction LR
+        B --> C
+        subgraph inner
+            direction TB
+            D --> E
+        end
+        C --> inner
+    end
+    inner --> F
+    A --> outer

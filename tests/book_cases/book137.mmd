@@ -1,0 +1,15 @@
+flowchart TB
+    A[Identity: who Eugene is] --> P[Static prefix: cacheable]
+    B[Instructions: behavioural rules] --> P
+    C[Output: format constraints] --> P
+    E[Examples: few-shot persona] --> P
+    P --> M{{cache boundary}}
+    M --> D[Context: per-turn facts]
+    D --> S[Dynamic suffix]
+
+    style A fill:#bbdefb,stroke:#1565c0,color:#000
+    style B fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style C fill:#ffe0b2,stroke:#ef6c00,color:#000
+    style E fill:#d1c4e9,stroke:#4527a0,color:#000
+    style M fill:#ffcdd2,stroke:#c62828,color:#000
+    style D fill:#f8bbd0,stroke:#ad1457,color:#000

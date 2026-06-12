@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph VALID["Valid&nbsp;Patterns"]
+        direction TB
+        V1["Multiple&nbsp;&T&nbsp;(shared&nbsp;reads)"]
+        V2["Single&nbsp;&mut&nbsp;T&nbsp;(exclusive&nbsp;write)"]
+    end
+
+    subgraph INVALID["Invalid&nbsp;Patterns"]
+        direction TB
+        I1["&T&nbsp;+&nbsp;&mut&nbsp;T&nbsp;(read&nbsp;during&nbsp;write)"]
+        I2["Multiple&nbsp;&mut&nbsp;T&nbsp;(concurrent&nbsp;writes)"]
+    end
+
+    OWNER[Owner] --> V1
+    OWNER --> V2
+    OWNER -.->|"Rejected"| I1
+    OWNER -.->|"Rejected"| I2

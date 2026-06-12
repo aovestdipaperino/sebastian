@@ -1,0 +1,18 @@
+graph LR
+    M1[Input Fields: 150 lines]
+    M2[Buttons: 80 lines]
+    M3[Theme System: 200 lines]
+    M4[Dialog Chrome: 100 lines]
+    M5[Focus Management: 120 lines]
+
+    C1[Input Fields: 15 lines]
+    C2[Buttons: 10 lines]
+    C3[Theme System: 5 lines]
+    C4[Dialog Chrome: 20 lines]
+    C5[Focus Management: 0 lines]
+
+    M1 -.->|"Replaced by TextInput"| C1
+    M2 -.->|"Replaced by Button"| C2
+    M3 -.->|"Replaced by Theme"| C3
+    M4 -.->|"Replaced by layout helpers"| C4
+    M5 -.->|"Handled by components"| C5

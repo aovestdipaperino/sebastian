@@ -1,0 +1,26 @@
+flowchart TB
+    T["Type T"]
+    Send["Send: can move to another thread"]
+    Sync["Sync: &T can be shared across threads"]
+    NotSend["Not Send: confined to one thread"]
+    NotSync["Not Sync: no shared references across threads"]
+
+    T --> Send
+    T --> Sync
+    T --> NotSend
+    T --> NotSync
+
+    Send -.->|"Arc<T>, Vec<T>, String"| E1[" "]
+    Sync -.->|"Arc<T>, Mutex<T>, i32"| E2[" "]
+    NotSend -.->|"Rc<T>, *mut T"| E3[" "]
+    NotSync -.->|"Rc<T>, Cell<T>, RefCell<T>"| E4[" "]
+
+    style T fill:#4a9eff,color:#fff,font-size:16px
+    style Send fill:#2ecc71,color:#fff,font-size:16px
+    style Sync fill:#2ecc71,color:#fff,font-size:16px
+    style NotSend fill:#e74c3c,color:#fff,font-size:16px
+    style NotSync fill:#e74c3c,color:#fff,font-size:16px
+    style E1 fill:none,stroke:none,font-size:14px
+    style E2 fill:none,stroke:none,font-size:14px
+    style E3 fill:none,stroke:none,font-size:14px
+    style E4 fill:none,stroke:none,font-size:14px

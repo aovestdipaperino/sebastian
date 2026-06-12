@@ -1,0 +1,8 @@
+flowchart TD
+    A[Richiesta modifica UI] --> B[Claude modifica SwiftUI]
+    B --> C[Xcode compila Preview]
+    C --> D[Claude verifica il rendering]
+    D --> E{Risultato corretto?}
+    E -->|No| F[Claude itera sulla modifica]
+    F --> B
+    E -->|Sì| G[Modifica completata e verificata]

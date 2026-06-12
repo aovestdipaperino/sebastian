@@ -1,0 +1,17 @@
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '16px'}}}%%
+flowchart TB
+    A[1. gh run list\nfind latest failure] --> B[2. Check HEAD\nvs failed SHA]
+    B --> C[3. gh run view --log-failed\nfetch failure logs]
+    C --> D[4. Classify]
+    D --> E[fmt:\ncargo fmt]
+    D --> F[clippy:\nfix each lint]
+    D --> G[compile:\nfix each error]
+    D --> H[test:\nfix impl or expectation]
+    D --> I[other:\nopen GitHub issue]
+    E & F & G & H --> J[Verify:\ncargo check / test]
+    J --> K[passes:\ngit push]
+    J --> L[fails:\nopen GitHub issue]
+
+    style I fill:#f39c12,color:#fff
+    style L fill:#f39c12,color:#fff
+    style K fill:#27ae60,color:#fff

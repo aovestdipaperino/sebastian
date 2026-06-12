@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph PROD["Produzione"]
+        SVC1["UserService&lt;PostgresRepo&gt;"]
+        DB[(Database)]
+        SVC1 --> DB
+    end
+
+    subgraph TEST["Test"]
+        SVC2["UserService&lt;MockRepo&gt;"]
+        MOCK["MockRepository"]
+        SVC2 --> MOCK
+    end
+
+    TRAIT["trait UserRepository"]
+    TRAIT -.-> DB
+    TRAIT -.-> MOCK

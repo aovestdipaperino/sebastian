@@ -1,0 +1,27 @@
+graph TB
+    subgraph "External Data"
+        A["input_source<br/>lifetime 'input"]
+        B["scratch_buffer<br/>lifetime 'scratch"]
+    end
+
+    subgraph "Parser Struct"
+        C["Parser&lt;'input, 'scratch&gt;"]
+        D["source: char&lt;'input&gt;*"]
+        E["buffer: char&lt;'scratch&gt;*"]
+    end
+
+    subgraph "Return Values"
+        F["token: char&lt;'input&gt;*<br/>✅ can return"]
+    end
+
+    A -.->|borrows| D
+    B -.->|borrows| E
+    C --> D
+    C --> E
+    D -->|contains| F
+    E -.->|❌ cannot return| G["char&lt;'scratch&gt;*<br/>❌ wrong lifetime"]
+
+    style A fill:#4CAF50
+    style B fill:#FF9800
+    style F fill:#4CAF50
+    style G fill:#f44336,stroke:#000,stroke-width:3px

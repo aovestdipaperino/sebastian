@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph SCOPE["Scope Esterno"]
+        direction TB
+        S1["let s1 = String::from('long')"]
+
+        subgraph INNER["Scope Interno"]
+            direction TB
+            S2["let s2 = String::from('hi')"]
+            REF["let r = &s2"]
+            USE["usa r qui: OK"]
+        end
+
+        INVALID["usa r qui: ERRORE"]
+    end
+
+    S1 --> INNER
+    INNER --> INVALID
+    REF -.->|"lifetime di r"| USE
+    REF -.->|"s2 droppato"| INVALID

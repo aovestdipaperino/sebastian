@@ -1,0 +1,18 @@
+flowchart LR
+    subgraph Immediate["Immediate Mode (Ratatui)"]
+        A1[App State] --> A2[Render Function]
+        A2 --> A3[Terminal Output]
+        A3 -.->|Next Frame| A2
+    end
+
+    subgraph Retained["Retained Mode (Turbo Vision)"]
+        B1[View Hierarchy] --> B2[Framework]
+        B2 --> B3[Terminal Output]
+        B4[Events] --> B2
+        B2 -->|Updates| B1
+    end
+
+    style A1 fill:#22c55e
+    style B1 fill:#06b6d4
+    style A2 fill:#22c55e
+    style B2 fill:#06b6d4

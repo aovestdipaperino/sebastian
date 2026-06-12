@@ -1,0 +1,13 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px'}}}%%
+flowchart TD
+    P1["Load Write Index"]
+    P2["Check: (write+1) % N != read<br/>(ensure space available)"]
+    P3["Write Data to Buffer[write]"]
+    P4["Advance Write Index<br/>(atomic operation)"]
+
+    P1 --> P2 --> P3 --> P4
+
+    style P1 fill:#fff3e0
+    style P2 fill:#fff3e0
+    style P3 fill:#fff3e0
+    style P4 fill:#fff3e0

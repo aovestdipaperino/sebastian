@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph DATA["Definizione Dati"]
+        STRUCT["struct Rectangle"]
+    end
+
+    subgraph BEHAVIOR["Comportamenti Collegati"]
+        IMPL1["impl Rectangle (metodi inerenti)"]
+        IMPL2["impl Display for Rectangle"]
+        IMPL3["impl Debug for Rectangle"]
+    end
+
+    STRUCT --> IMPL1
+    STRUCT --> IMPL2
+    STRUCT --> IMPL3

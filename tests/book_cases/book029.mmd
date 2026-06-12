@@ -1,0 +1,15 @@
+flowchart TB
+    subgraph Regular Traits
+        A["trait Iterator"]
+        B["fn next(&mut self) → Option<Item>"]
+        A --> B
+    end
+    subgraph Marker Traits
+        C["trait Send"]
+        D["// empty body"]
+        C --> D
+    end
+    style A fill:#4a9eff,color:#fff,font-size:16px
+    style B fill:#4a9eff,color:#fff,font-size:16px
+    style C fill:#2ecc71,color:#fff,font-size:16px
+    style D fill:#2ecc71,color:#fff,font-size:16px

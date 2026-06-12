@@ -1,0 +1,28 @@
+flowchart LR
+    subgraph Covariant["Covariant Types"]
+        A1["&'a T"]
+        A2["Box<T>"]
+        A3["Vec<T>"]
+        A4["Option<T>"]
+    end
+
+    subgraph Contravariant["Contravariant Types"]
+        B1["fn(T)"]
+    end
+
+    subgraph Invariant["Invariant Types"]
+        C1["&'a mut T"]
+        C2["Cell<T>"]
+        C3["RefCell<T>"]
+        C4["UnsafeCell<T>"]
+    end
+
+    style A1 fill:#4a9,stroke:#333,color:#000
+    style A2 fill:#4a9,stroke:#333,color:#000
+    style A3 fill:#4a9,stroke:#333,color:#000
+    style A4 fill:#4a9,stroke:#333,color:#000
+    style B1 fill:#69f,stroke:#333,color:#000
+    style C1 fill:#f66,stroke:#333,color:#000
+    style C2 fill:#f66,stroke:#333,color:#000
+    style C3 fill:#f66,stroke:#333,color:#000
+    style C4 fill:#f66,stroke:#333,color:#000

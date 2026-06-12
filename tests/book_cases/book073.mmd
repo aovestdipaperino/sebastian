@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph App["Application"]
+        Code[Your Code]
+        TR[tracing::instrument]
+        Code --> TR
+    end
+
+    subgraph Registry["tracing_subscriber::registry"]
+        CL[ConsoleLayer]
+        OL[OpenTelemetryLayer]
+        FL[fmt::Layer]
+    end
+
+    TR --> Registry
+
+    CL -->|gRPC| TC[Tokio Console]
+    OL -->|OTLP| Jaeger[Jaeger/Tempo]
+    FL -->|stdout| Logs[Log Aggregator]
+
+    style CL fill:#1e3a5f
+    style OL fill:#2d5a27
+    style FL fill:#5a4a27

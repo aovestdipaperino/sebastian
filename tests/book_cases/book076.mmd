@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph Wrong["Modulo Bias (wrong)"]
+        direction TB
+        R1["random u32<br/>0 to 4,294,967,295"] --> M1["% 6"]
+        M1 --> B1["0: 715,827,883 values<br/>4: 715,827,882 values<br/>~0.00000014% bias"]
+    end
+
+    subgraph Right["Rejection Sampling (correct)"]
+        direction TB
+        R2["random u32<br/>0 to 4,294,967,295"] --> C2{"value <<br/>4,294,967,294?"}
+        C2 --> |"yes"| M2["% 6<br/>perfectly uniform"]
+        C2 --> |"no"| R2
+    end
+
+    style Wrong fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style Right fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style R1 fill:#fff,stroke:#999,font-size:16px
+    style M1 fill:#fff,stroke:#999,font-size:16px
+    style B1 fill:#fff,stroke:#999,font-size:16px
+    style R2 fill:#fff,stroke:#999,font-size:16px
+    style C2 fill:#fff,stroke:#999,font-size:16px
+    style M2 fill:#fff,stroke:#999,font-size:16px

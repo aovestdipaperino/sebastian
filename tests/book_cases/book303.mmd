@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph SOURCE["Source&nbsp;Code"]
+        GEN["fn&nbsp;largest&lt;T:&nbsp;Ord&gt;(list:&nbsp;&[T])&nbsp;->&nbsp;&T"]
+    end
+
+    subgraph CALLS["Call&nbsp;Sites"]
+        C1["largest(&integers)"]
+        C2["largest(&strings)"]
+        C3["largest(&floats)"]
+    end
+
+    subgraph BINARY["Compiled&nbsp;Binary"]
+        M1["largest_i32(list:&nbsp;&[i32])&nbsp;->&nbsp;&i32"]
+        M2["largest_String(list:&nbsp;&[String])&nbsp;->&nbsp;&String"]
+        M3["largest_f64(list:&nbsp;&[f64])&nbsp;->&nbsp;&f64"]
+    end
+
+    GEN --> C1 --> M1
+    GEN --> C2 --> M2
+    GEN --> C3 --> M3

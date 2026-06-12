@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph CW["Context Window During Recovery"]
+        direction TB
+        A["System prompt + conversation history<br/>(useful, but now further away)"]
+        B["Earlier paragraphs of the response<br/>(useful, coherent content)"]
+        C["directly directly directly directly<br/>directly directly directly directly<br/>directly directly directly directly<br/>(garbage: wastes attention capacity)"]
+        D["'Apologies, something went wrong.'<br/>(recovery attempt)"]
+        E["Continued generation<br/>(degraded: less context budget remaining)"]
+    end
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+
+    style A fill:#2d5016,stroke:#333,color:#fff,font-size:16px
+    style B fill:#2d5016,stroke:#333,color:#fff,font-size:16px
+    style C fill:#6a1a1a,stroke:#333,color:#fff,font-size:16px
+    style D fill:#4a3520,stroke:#333,color:#fff,font-size:16px
+    style E fill:#3a3a1a,stroke:#333,color:#fff,font-size:16px

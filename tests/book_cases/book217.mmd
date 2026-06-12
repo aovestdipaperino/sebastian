@@ -1,0 +1,10 @@
+flowchart TD
+    subgraph "Test Execution Flow"
+        A[Test starts] --> B[Setup TestDb]
+        B --> C[Register cleanup guard]
+        C --> D[Run test body]
+        D --> E{Test result}
+        E -->|Pass| F[Cleanup runs]
+        E -->|Panic| F
+        F --> G[Test completes]
+    end

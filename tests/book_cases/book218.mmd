@@ -1,0 +1,19 @@
+graph TB
+    subgraph Capabilities
+        R[Readable]
+        W[Writable]
+    end
+
+    subgraph States
+        O[Open]
+        RO[ReadOnly]
+        C[Closed]
+    end
+
+    O --> R
+    O --> W
+    RO --> R
+
+    style O fill:#90EE90
+    style RO fill:#87CEEB
+    style C fill:#FFB6C1

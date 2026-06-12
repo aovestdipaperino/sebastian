@@ -1,0 +1,9 @@
+graph LR
+    A[User Input] --> B[Event Handler]
+    B --> C[Action Dispatch]
+    C --> D[State Update]
+    D --> E[Model]
+    D --> F[View State]
+    E --> G[Render]
+    F --> G
+    G --> H[Terminal]

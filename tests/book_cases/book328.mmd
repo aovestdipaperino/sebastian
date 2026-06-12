@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph BEFORE["Before:&nbsp;let&nbsp;b&nbsp;=&nbsp;a"]
+        direction TB
+        A["a: User"]
+        A_NAME["name: String"]
+        A_ADDR["address: Address"]
+        A --> A_NAME
+        A --> A_ADDR
+    end
+
+    BEFORE ==>|"move"| AFTER
+
+    subgraph AFTER["After:&nbsp;let&nbsp;b&nbsp;=&nbsp;a"]
+        direction TB
+        B["b: User"]
+        B_NAME["name: String"]
+        B_ADDR["address: Address"]
+        B --> B_NAME
+        B --> B_ADDR
+        A_INVALID["a: (invalid)"]
+    end

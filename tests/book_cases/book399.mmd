@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph Decision["Choose Your Path"]
+        direction TB
+        Q1{Need terminal<br/>or GUI?}
+        Q2{Immediate or<br/>retained mode?}
+        Q3{Web tech<br/>or native?}
+    end
+
+    Q1 -->|Terminal| Q2
+    Q1 -->|GUI| Q3
+    Q2 -->|Immediate| R[Ratatui]
+    Q2 -->|Retained| TV[Turbo Vision]
+    Q3 -->|Web| T[Tauri]
+    Q3 -->|Native| G[GPUI / egui / Slint]
+
+    style R fill:#4a7c23,color:#fff
+    style TV fill:#4a7c23,color:#fff
+    style T fill:#2563eb,color:#fff
+    style G fill:#2563eb,color:#fff

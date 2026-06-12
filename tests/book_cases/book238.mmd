@@ -1,0 +1,16 @@
+flowchart TD
+    subgraph AOT["Ahead-of-Time"]
+        A1[Source] --> A2[Compile]
+        A2 --> A3[Executable]
+        A3 --> A4[Run]
+    end
+
+    subgraph JIT["Just-in-Time"]
+        J1[Source] --> J2[Bytecode]
+        J2 --> J3[Interpret]
+        J3 --> J4{Hot Path?}
+        J4 -->|Yes| J5[JIT Compile]
+        J5 --> J6[Native Code]
+        J6 --> J3
+        J4 -->|No| J3
+    end

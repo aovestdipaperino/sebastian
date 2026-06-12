@@ -1,0 +1,17 @@
+flowchart TD
+    subgraph Infallible
+        From["From&lt;T&gt;"] -->|auto-implements| Into["Into&lt;T&gt;"]
+    end
+    subgraph Fallible
+        TryFrom["TryFrom&lt;T&gt;"] -->|auto-implements| TryInto["TryInto&lt;T&gt;"]
+    end
+    From -->|"if&nbsp;infallible"| TryFrom
+
+    subgraph Borrowing
+        AsRef["AsRef&lt;T&gt;"]
+        Borrow["Borrow&lt;T&gt;"]
+        Deref["Deref&lt;Target=T&gt;"]
+    end
+
+    AsRef -.->|"similar&nbsp;but"| Borrow
+    Deref -->|"enables"| AsRef

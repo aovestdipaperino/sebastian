@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph Batch1["Batch 1"]
+        A1[Arena: 1MB] --> B1["Alloc 100KB"]
+        B1 --> C1["Alloc 50KB"]
+        C1 --> D1["Process"]
+        D1 --> E1["Reset: 0 bytes used"]
+    end
+
+    subgraph Batch2["Batch 2"]
+        A2["Arena: 1MB<br/>(same memory)"] --> B2["Alloc 200KB"]
+        B2 --> C2["Alloc 30KB"]
+        C2 --> D2["Process"]
+        D2 --> E2["Reset: 0 bytes used"]
+    end
+
+    subgraph Batch3["Batch 3"]
+        A3["Arena: 1MB<br/>(same memory)"] --> B3["Alloc 75KB"]
+        B3 --> C3["Process"]
+        C3 --> D3["Reset: 0 bytes used"]
+    end
+
+    E1 --> A2
+    E2 --> A3
+
+    style A1 fill:#90EE90,stroke:#228B22
+    style A2 fill:#90EE90,stroke:#228B22
+    style A3 fill:#90EE90,stroke:#228B22

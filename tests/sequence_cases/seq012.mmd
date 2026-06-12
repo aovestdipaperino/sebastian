@@ -1,0 +1,36 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px', 'actorFontSize':'16px', 'noteFontSize':'14px', 'messageFontSize':'14px'}}}%%
+sequenceDiagram
+    participant P as Producer
+    participant M as Mutex
+    participant E as Event
+    participant C1 as Consumer 1
+    participant C2 as Consumer 2
+
+    Note over C1,C2: Waiting on Event
+    P->>M: Lock
+    P->>P: Write work item
+    P->>M: Unlock
+    P->>E: Signal
+    E-->>C1: Wake
+    E-->>C2: Wake
+
+    C1->>M: Lock (acquire)
+    C2->>M: Lock (blocked)
+    C1->>C1: Read work item
+    C1->>M: Unlock
+
+    C2->>M: Lock (acquire)
+    C2->>C2: Check for work
+    Note over C2: No work available
+    C2->>M: Unlock
+    C2->>E: Wait
+
+    P->>M: Lock
+    P->>P: Write work item
+    P->>M: Unlock
+    P->>E: Signal
+    E-->>C2: Wake
+
+    C2->>M: Lock
+    C2->>C2: Read work item
+    C2->>M: Unlock

@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph "Captured Packet"
+        direction LR
+        ETH["Ethernet Header\n14 bytes"]
+        IP["IP Header\n20+ bytes"]
+        TCP["TCP/UDP Header\n20/8 bytes"]
+        DATA["Payload\nVariable"]
+    end
+
+    ETH --> IP --> TCP --> DATA

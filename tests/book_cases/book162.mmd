@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph Creation["Creating a Future"]
+        Create["async { ... }"] --> State["State machine created"]
+    end
+
+    subgraph Pinning["Pinning Phase"]
+        State --> BoxPin["Box::pin or pin!"]
+        BoxPin --> Pinned["Future is pinned"]
+    end
+
+    subgraph Execution["Polling Loop"]
+        Pinned --> Poll1["poll() - might create self-refs"]
+        Poll1 -->|Pending| Wait["Wait for wake"]
+        Wait --> Poll2["poll() - self-refs still valid"]
+        Poll2 -->|Pending| Wait
+        Poll2 -->|Ready| Done["Future complete"]
+    end
+
+    subgraph Cleanup["Cleanup"]
+        Done --> Drop["Drop in place"]
+        Drop --> Free["Memory freed"]
+    end

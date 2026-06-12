@@ -1,0 +1,19 @@
+%%{init: {'themeVariables': {'fontSize': '16px'}}}%%
+flowchart TB
+    subgraph poly["True polygon 3D, per frame: unaffordable on a 386"]
+        direction TB
+        P1["transform every vertex<br/>in floating point"] --> P2["project and clip<br/>against the view frustum"]
+        P2 --> P3["rasterize every triangle"]
+        P3 --> P4["depth-test every pixel"]
+    end
+    subgraph ray["Raycasting, per screen column: what a 386 could do"]
+        direction TB
+        R1["one ray per column"] --> R2["step the uniform grid<br/>integer DDA, no division per cell"]
+        R2 --> R3["perpendicular distance<br/>from a trig table"]
+        R3 --> R4["draw one scaled<br/>textured strip"]
+    end
+
+    classDef slow fill:#fecaca,stroke:#dc2626,stroke-width:2px,color:#000;
+    classDef fast fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,color:#000;
+    class P1,P2,P3,P4 slow;
+    class R1,R2,R3,R4 fast;

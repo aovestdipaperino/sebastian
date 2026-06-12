@@ -1,0 +1,11 @@
+flowchart TD
+    A[Claude deve capire il codice] --> B{Tokensave disponibile?}
+    B -->|No| C[Lancia Explore agent]
+    C --> D[grep + glob + Read]
+    D --> E[Molti file letti]
+    E --> F[Centinaia di tool call]
+    F --> G[Context window riempita]
+    B -->|Sì| H[Query al knowledge graph]
+    H --> I[Risultato mirato]
+    I --> J[Poche tool call]
+    J --> K[Context window preservata]

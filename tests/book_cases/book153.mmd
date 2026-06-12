@@ -1,0 +1,11 @@
+flowchart LR
+    A[Session transcripts<br/>project-scoped .jsonl] --> D[Durable Storage]
+    B[Prompt history<br/>history.jsonl] --> D
+    C[Subagent sidechains<br/>.jsonl + .meta.json] --> D
+    D --> E[Resume]
+    D --> F[Fork]
+    D --> G[Rewind]
+    E -.does not restore.-> H[Session-scoped permissions]
+    F -.does not restore.-> H
+    style D fill:#c8b6a6,color:#000
+    style H fill:#e76f51,color:#fff

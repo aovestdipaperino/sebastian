@@ -1,0 +1,11 @@
+flowchart TB
+    subgraph SCOPE["Scope della Funzione"]
+        direction TB
+        CREATE["let _timer = Timer::new()"]
+        WORK["... fa lavoro ..."]
+        END["scope termina"]
+        CREATE --> WORK --> END
+    end
+
+    END --> DROP["Timer::drop() esegue"]
+    DROP --> ACTION["Stampa tempo trascorso"]

@@ -1,0 +1,17 @@
+flowchart LR
+    subgraph Tumbling["Tumbling Window (5 min)"]
+        T1["10:00-10:05"]
+        T2["10:05-10:10"]
+        T3["10:10-10:15"]
+    end
+
+    subgraph Sliding["Sliding Window (10 min, 5 min slide)"]
+        S1["10:00-10:10"]
+        S2["10:05-10:15"]
+        S3["10:10-10:20"]
+    end
+
+    subgraph Session["Session Window (2 min gap)"]
+        SE1["Events until 2min silence"]
+        SE2["Next burst of events"]
+    end

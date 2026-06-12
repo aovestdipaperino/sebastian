@@ -1,0 +1,21 @@
+flowchart TB
+    Q{"What do you<br/>need?"}
+    Q --> |"Security"| CS["ChaCha20Rng<br/>cryptographic, slower"]
+    Q --> |"General purpose"| GP["ChaCha12Rng<br/>(default via rand::rng)"]
+    Q --> |"Simulation speed"| SM["SmallRng<br/>fast, not portable"]
+    Q --> |"Reproducibility"| RP["StdRng / ChaCha12Rng<br/>with fixed seed"]
+
+    CS --> U1["Tokens, keys,<br/>password salts"]
+    GP --> U2["Games, shuffling,<br/>sampling"]
+    SM --> U3["Monte Carlo,<br/>benchmarks"]
+    RP --> U4["Testing,<br/>debugging"]
+
+    style Q fill:#f4f4e8,stroke:#7d7d2d,font-size:16px
+    style CS fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style GP fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style SM fill:#e8e8f4,stroke:#2d2d7d,font-size:16px
+    style RP fill:#f0e8f4,stroke:#5d2d7d,font-size:16px
+    style U1 fill:#fff,stroke:#999,font-size:16px
+    style U2 fill:#fff,stroke:#999,font-size:16px
+    style U3 fill:#fff,stroke:#999,font-size:16px
+    style U4 fill:#fff,stroke:#999,font-size:16px

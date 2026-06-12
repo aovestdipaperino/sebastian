@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph Option
+        Some["Some(T)"]
+        None["None"]
+    end
+
+    subgraph Result
+        Ok["Ok(T)"]
+        Err["Err(E)"]
+    end
+
+    Some -->|"ok_or(e)"| Ok
+    None -->|"ok_or(e)"| Err
+    Ok -->|"ok()"| Some
+    Err -->|"ok()"| None

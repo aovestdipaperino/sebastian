@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Editor
+    participant Server
+
+    Editor->>Server: initialize
+    Server-->>Editor: capabilities
+
+    Editor->>Server: textDocument/didOpen
+    Server-->>Editor: textDocument/publishDiagnostics
+
+    Editor->>Server: textDocument/completion
+    Server-->>Editor: completion items
+
+    Editor->>Server: textDocument/definition
+    Server-->>Editor: location

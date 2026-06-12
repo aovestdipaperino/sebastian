@@ -1,0 +1,12 @@
+flowchart LR
+    A[Source Code] --> B[Lexer]
+    B --> C[Tokens]
+    C --> D[Parser]
+    D --> E[AST]
+    E --> F[Analyzer]
+    F --> G[Validated AST + Symbols]
+    G --> H[CodeGen]
+    H --> I[WebAssembly Binary]
+
+    style A fill:#e1f5fe
+    style I fill:#c8e6c9

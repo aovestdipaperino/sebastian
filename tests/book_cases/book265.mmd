@@ -1,0 +1,14 @@
+graph TB
+    subgraph Global["Global Scope"]
+        X1["x = 10"]
+        subgraph Outer["outer() Scope"]
+            X2["x = 20"]
+            subgraph Inner["inner() Scope"]
+                REF["print(x)"]
+            end
+        end
+    end
+    REF -.->|"resolves to"| X2
+
+    style X2 fill:#90EE90
+    style REF fill:#FFE4B5

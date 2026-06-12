@@ -1,0 +1,13 @@
+graph TD
+    subgraph "Memory Orderings (Weakest to Strongest)"
+        R[Relaxed] --> A[Acquire/Release]
+        A --> AR[AcqRel]
+        AR --> S[SeqCst]
+    end
+
+    subgraph "Use Cases"
+        R -.-> RC[Counters, statistics]
+        A -.-> AC[Lock acquisition/release]
+        AR -.-> ARC[CAS operations]
+        S -.-> SC[When in doubt]
+    end

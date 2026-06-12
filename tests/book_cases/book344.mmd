@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph W1["Worker 1"]
+        D1["Deque: T1, T2, T3"]
+    end
+
+    subgraph W2["Worker 2"]
+        D2["Deque: T4"]
+    end
+
+    subgraph W3["Worker 3 (inattivo)"]
+        D3["Deque: vuota"]
+    end
+
+    D1 -->|"ruba T1"| D3

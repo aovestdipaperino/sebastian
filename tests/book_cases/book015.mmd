@@ -1,0 +1,10 @@
+flowchart TB
+    A["Accident 1: 6522 shift<br/>register bug, software<br/>bit-bangs every single bit"] --> E["400 bytes<br/>per second"]
+    B["Accident 2: screw-hole board<br/>revision cuts the C64 fast wire"] --> E
+    C["Accident 3: VIC-II badline DMA<br/>forces an even slower protocol"] --> E
+    D["Accident 4: GCR 5-to-4 encoding<br/>plus a 2 KB buffer add latency"] --> E
+    style E fill:#f88,stroke:#900,color:#000
+    style A fill:#cde,stroke:#369,color:#000
+    style B fill:#cde,stroke:#369,color:#000
+    style C fill:#cde,stroke:#369,color:#000
+    style D fill:#cde,stroke:#369,color:#000

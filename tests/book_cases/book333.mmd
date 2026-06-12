@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph SCOPE["Outer&nbsp;Scope"]
+        direction TB
+        S1["let&nbsp;s1&nbsp;=&nbsp;String::from('long')"]
+
+        subgraph INNER["Inner&nbsp;Scope"]
+            direction TB
+            S2["let&nbsp;s2&nbsp;=&nbsp;String::from('hi')"]
+            REF["let&nbsp;r&nbsp;=&nbsp;&s2"]
+            USE["use&nbsp;r&nbsp;here:&nbsp;OK"]
+        end
+
+        INVALID["use&nbsp;r&nbsp;here:&nbsp;ERROR"]
+    end
+
+    S1 --> INNER
+    INNER --> INVALID
+    REF -.->|"r's&nbsp;lifetime"| USE
+    REF -.->|"s2&nbsp;dropped"| INVALID

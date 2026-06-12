@@ -1,0 +1,5 @@
+flowchart TD
+    A["Source: if x >= 42"] --> B[Lexer]
+    B --> C["Tokens: IF, ID‹x›, GE, NUM‹42›"]
+    C --> D[Parser]
+    D --> E[AST]

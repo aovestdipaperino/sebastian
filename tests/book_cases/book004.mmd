@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph Before["Manual workflow"]
+        direction TB
+        A1["Generate image"] --> A2["Open browser tool"]
+        A2 --> A3["Adjust dimensions"]
+        A3 --> A4["Copy printf output"]
+        A4 --> A5["Paste in terminal"]
+        A5 --> A6["Redirect to .art file"]
+        A6 --> A7["include_str! in Rust"]
+    end
+    subgraph After["With logo-art"]
+        direction TB
+        B1["Place PNG in assets/"] --> B2["include_bytes! + print_image"]
+    end
+    style Before fill:#2d2d2d,color:#f0f0f0,stroke:#555
+    style After fill:#1a3a1a,color:#f0f0f0,stroke:#555
+    style A1 fill:#444,color:#f0f0f0,stroke:#666
+    style A2 fill:#444,color:#f0f0f0,stroke:#666
+    style A3 fill:#444,color:#f0f0f0,stroke:#666
+    style A4 fill:#444,color:#f0f0f0,stroke:#666
+    style A5 fill:#444,color:#f0f0f0,stroke:#666
+    style A6 fill:#444,color:#f0f0f0,stroke:#666
+    style A7 fill:#444,color:#f0f0f0,stroke:#666
+    style B1 fill:#2ecc71,color:#1a1a1a,stroke:#27ae60
+    style B2 fill:#2ecc71,color:#1a1a1a,stroke:#27ae60

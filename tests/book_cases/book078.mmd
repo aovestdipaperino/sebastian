@@ -1,0 +1,17 @@
+%%{init: {'themeVariables': {'fontSize': '16px'}}}%%
+flowchart TB
+    H["Header, 12 bytes<br/>tag: IWAD or PWAD<br/>lump count<br/>directory offset"]
+    subgraph body["The rest of the file"]
+        direction TB
+        L["Lump data<br/>raw bytes: maps, graphics,<br/>sounds, the palette"]
+        D["Directory<br/>one 16-byte entry per lump:<br/>offset, size, 8-char name"]
+    end
+    H -->|"offset points at"| D
+    D -->|"each entry points at"| L
+
+    classDef hdr fill:#bfdbfe,stroke:#2563eb,stroke-width:2px,color:#000;
+    classDef dir fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,color:#000;
+    classDef dat fill:#fde68a,stroke:#d97706,stroke-width:2px,color:#000;
+    class H hdr;
+    class D dir;
+    class L dat;

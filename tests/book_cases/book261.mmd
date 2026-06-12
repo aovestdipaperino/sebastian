@@ -1,0 +1,8 @@
+flowchart TD
+    A[Grammar File] --> B[Grammar Lexer]
+    B --> C[Grammar Parser]
+    C --> D[Grammar AST]
+    D --> E[Table Generator]
+    E --> F[LALR Tables]
+    F --> G[Code Emitter]
+    G --> H[Rust Source]

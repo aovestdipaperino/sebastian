@@ -1,0 +1,8 @@
+graph TD
+    A[Client Request] -->|trace_id: abc123| B[handle_connection span]
+    B --> C[handle_produce span]
+    C --> D[acquire_write_lock span]
+    C --> E[append_messages span]
+    B --> F[encode_response span]
+    B -->|trace exported| G[Jaeger]
+    G -->|visualize| H[Developer]

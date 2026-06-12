@@ -1,0 +1,14 @@
+flowchart TB
+    A[search loop top] --> B{move available?}
+    B -- no --> C[ascend: DEC $17, jump back to top]
+    B -- yes --> D{at depth limit?}
+    D -- yes --> E[leaf: read material score]
+    D -- no --> F[make_move: INC $17]
+    F --> A
+    E --> G[cutoff check at parent]
+    C --> G
+    G --> A
+
+    style F fill:#cfe8d4,stroke:#2a7a3a,color:#000
+    style C fill:#f7d6cf,stroke:#a23a2a,color:#000
+    style E fill:#d6e0f5,stroke:#3a5aa2,color:#000

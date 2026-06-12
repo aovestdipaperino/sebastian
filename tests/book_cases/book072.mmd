@@ -1,0 +1,10 @@
+flowchart LR
+    A[Input Text] --> B[Tokenization Room]
+    B --> C[Embedding Room]
+    C --> D[Attention Rooms]
+    D --> E[Transformation Rooms]
+    E --> F[Prediction Room]
+    F --> G[Output Text]
+
+    D --> D
+    E --> E

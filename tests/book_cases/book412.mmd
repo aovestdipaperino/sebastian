@@ -1,0 +1,7 @@
+graph LR
+    N1[Line Buffered Input] --> N2[Special Key Handling]
+    N2 --> N3[Main Screen Buffer]
+    T1[Raw Input] --> T2[Application Key Handling]
+    T2 --> T3[Alternate Screen Buffer]
+    N3 -.->|"Enter TUI"| T3
+    T3 -.->|"Exit TUI"| N3

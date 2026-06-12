@@ -1,0 +1,37 @@
+flowchart TB
+    subgraph Primitives["Primitive Parsers"]
+        A[char]
+        B[digit1]
+        C[alpha1]
+        D[tag]
+    end
+
+    subgraph Combinators["Combinator Functions"]
+        E[sequence]
+        F[alt]
+        G[many0]
+        H[map]
+    end
+
+    subgraph Complex["Complex Parsers"]
+        I[identifier]
+        J[expression]
+        K[statement]
+        L[program]
+    end
+
+    A --> E
+    B --> E
+    C --> E
+    D --> F
+    E --> H
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+
+    style Primitives fill:#e1f5fe
+    style Combinators fill:#fff3e0
+    style Complex fill:#e8f5e9

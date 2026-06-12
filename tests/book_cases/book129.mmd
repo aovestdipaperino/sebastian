@@ -1,0 +1,16 @@
+flowchart LR
+    Source["Source Code<br/>in Editor Buffer"]
+
+    subgraph Compile["Compilation"]
+        direction TB
+        Token["Token Stream"]
+        Parse["Parse Tree<br/>(implicit)"]
+        Code["Machine Code"]
+    end
+
+    Output["Executable<br/>Memory or .COM"]
+
+    Source --> Token
+    Token --> Parse
+    Parse --> Code
+    Code --> Output

@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph Pipeline["The Compiler Pipeline"]
+        A[Source Code] --> B[Lexer]
+        B --> C[Tokens]
+        C --> D[Parser]
+        D --> E[AST]
+        E --> F[Semantic Analysis]
+        F --> G[IR]
+        G --> H[Code Generator]
+        H --> I[Output]
+    end
+
+    style B fill:#22c55e
+    style D fill:#06b6d4
+    style F fill:#f59e0b
+    style H fill:#a855f7

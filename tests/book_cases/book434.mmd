@@ -1,0 +1,9 @@
+graph LR
+    ALL[All Transactions] --> FILTER[Apply Filter]
+    FILTER --> FILTERED[Filtered List]
+    FILTERED --> SORT[Apply Sort]
+    SORT --> DISPLAY[Display in Table]
+
+    TEXT[Filter Text] --> FILTER
+    COL[Sort Column] --> SORT
+    DIR[Sort Direction] --> SORT

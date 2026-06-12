@@ -1,0 +1,14 @@
+flowchart TB
+    subgraph RUST["Rust&nbsp;Side"]
+        SAFE["Safe&nbsp;Rust&nbsp;Code"]
+        UNSAFE["unsafe&nbsp;block"]
+        DECL["extern&nbsp;C&nbsp;declarations"]
+    end
+
+    subgraph CSIDE["C&nbsp;Side"]
+        CLIB["C&nbsp;Library"]
+    end
+
+    SAFE --> UNSAFE
+    UNSAFE --> DECL
+    DECL -->|"FFI&nbsp;boundary"| CLIB

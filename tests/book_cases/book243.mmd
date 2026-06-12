@@ -1,0 +1,17 @@
+flowchart TD
+    R["(a+)+b vs 'aaac'"] --> A1["First group: 'aaa'"]
+    R --> A2["First group: 'aa'"]
+    R --> A3["First group: 'a'"]
+
+    A1 --> A1B["Try b vs 'c': FAIL"]
+
+    A2 --> A2_1["Second group: 'a'"]
+    A2_1 --> A2_1B["Try b vs 'c': FAIL"]
+
+    A3 --> A3_1["Second group: 'aa'"]
+    A3 --> A3_2["Second group: 'a'"]
+
+    A3_1 --> A3_1B["Try b vs 'c': FAIL"]
+
+    A3_2 --> A3_2_1["Third group: 'a'"]
+    A3_2_1 --> A3_2_1B["Try b vs 'c': FAIL"]

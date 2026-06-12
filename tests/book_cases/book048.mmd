@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph Lifetime["Lifetime Hierarchy"]
+        direction TB
+        Static["'static (longest)"]
+        Long["'long"]
+        Short["'short (shortest)"]
+        Static --> Long
+        Long --> Short
+    end
+
+    subgraph Reference["&'a T (Covariant)"]
+        direction TB
+        RefStatic["&'static T"]
+        RefLong["&'long T"]
+        RefShort["&'short T"]
+        RefStatic --> RefLong
+        RefLong --> RefShort
+    end
+
+    Lifetime -.->|"same direction"| Reference
+
+    style Static fill:#4a9,stroke:#333,color:#000
+    style RefStatic fill:#4a9,stroke:#333,color:#000
+    style Short fill:#f66,stroke:#333,color:#000
+    style RefShort fill:#f66,stroke:#333,color:#000

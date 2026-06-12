@@ -1,0 +1,33 @@
+flowchart TB
+    subgraph "Thread Pool"
+        direction TB
+        G[Global Injector Queue]
+
+        subgraph W1[Worker 1]
+            Q1[Local Queue]
+            T1[Thread]
+        end
+
+        subgraph W2[Worker 2]
+            Q2[Local Queue]
+            T2[Thread]
+        end
+
+        subgraph W3[Worker 3]
+            Q3[Local Queue]
+            T3[Thread]
+        end
+    end
+
+    G --> Q1
+    G --> Q2
+    G --> Q3
+
+    Q1 -.->|steal| Q2
+    Q2 -.->|steal| Q3
+    Q3 -.->|steal| Q1
+
+    style G fill:#4a9eff,color:#fff
+    style Q1 fill:#2ecc71,color:#fff
+    style Q2 fill:#2ecc71,color:#fff
+    style Q3 fill:#2ecc71,color:#fff

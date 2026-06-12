@@ -1,0 +1,5 @@
+stateDiagram-v2
+    [*] --> Init
+    Init --> Body: "begin" keyword
+    Body --> Body: Any other token
+    Body --> [*]: "end" keyword

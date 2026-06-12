@@ -1,0 +1,10 @@
+graph LR
+    subgraph "Original (Left-Recursive)"
+        A1[A] --> A2[A α]
+        A1 --> B1[β]
+    end
+    subgraph "Transformed"
+        A3[A] --> B2[β A']
+        A4["A'"] --> C1[α A']
+        A4 --> E1[ε]
+    end

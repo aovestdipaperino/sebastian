@@ -1,0 +1,8 @@
+graph TD
+    A[Resize Event] --> B{Check Dimensions}
+    B -->|Too Small| C[Render Size Message]
+    B -->|Adequate| D[Compute Layout]
+    D --> E[Render Header]
+    E --> F[Render Chart]
+    F --> G[Render Form]
+    G --> H[Render Status]

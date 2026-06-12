@@ -1,0 +1,6 @@
+flowchart TD
+    subgraph Without TCO
+        A[caller frame] --> B[callee frame]
+        B --> C[return to caller]
+        C --> D[return from caller]
+    end

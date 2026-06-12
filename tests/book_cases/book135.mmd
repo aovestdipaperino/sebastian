@@ -1,0 +1,11 @@
+flowchart TB
+    Q[User query] --> S[Selector LLM, Haiku]
+    M[manifest: 1 line per memory file] --> S
+    S -->|picks N names| L[Load full memory files]
+    L --> P[Inject into next turn's prompt]
+    P --> A[Agent LLM, Sonnet]
+    A --> R[Answer]
+
+    style S fill:#ffe0b2,stroke:#ef6c00,color:#000
+    style A fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style M fill:#bbdefb,stroke:#1565c0,color:#000

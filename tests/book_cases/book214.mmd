@@ -1,0 +1,6 @@
+flowchart TD
+    Source["Source: sensor_events"] --> Filter["Filter: temperature > 30.0"]
+    Filter --> Window["Window: tumbling(5 min)"]
+    Window --> Aggregate["Aggregate: GROUP BY device_id"]
+    Aggregate --> Project["Project: device_id, avg_temp"]
+    Project --> Output["Output Stream"]

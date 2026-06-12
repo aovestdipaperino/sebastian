@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph NULL["Riferimento Nullable"]
+        N1["Riferimento o null"]
+        N2["Il chiamante potrebbe dimenticare il controllo"]
+        N3["Eccezione runtime all'accesso"]
+        N1 --> N2 --> N3
+    end
+
+    subgraph OPT["Option T"]
+        O1["Valore Some o None"]
+        O2["Il compilatore richiede la gestione"]
+        O3["Nessuna sorpresa a runtime"]
+        O1 --> O2 --> O3
+    end
+
+    subgraph RES["Result T E"]
+        R1["Valore Ok o errore Err"]
+        R2["Tipo errore nella firma"]
+        R3["Percorso errore esplicito"]
+        R1 --> R2 --> R3
+    end
+
+    NULL ~~~ OPT
+    OPT ~~~ RES

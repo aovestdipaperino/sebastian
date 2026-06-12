@@ -1,0 +1,8 @@
+flowchart LR
+    subgraph "80286 Mode Transition"
+        A["Real Mode"] -->|"Set PE bit"| B["Protected Mode"]
+        B -->|"CPU Reset"| A
+    end
+
+    style A fill:#e74c3c,color:#fff
+    style B fill:#27ae60,color:#fff

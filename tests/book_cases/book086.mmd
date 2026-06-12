@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph Scalar["Scalar: 32 comparisons"]
+        S1["byte 0"] --> S2["byte 1"] --> S3["byte 2"] --> S4["..."] --> S32["byte 31"]
+    end
+
+    subgraph SIMD["SIMD: 1 comparison"]
+        V1["32 bytes loaded"]
+        V2["1 compare instruction"]
+        V3["bitmask result"]
+        V1 --> V2 --> V3
+    end

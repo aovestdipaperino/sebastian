@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph STATIC["Static&nbsp;Dispatch&nbsp;(generics)"]
+        S1["fn&nbsp;notify&lt;T:&nbsp;Summary&gt;(item:&nbsp;&T)"]
+        S2["Compiler&nbsp;generates&nbsp;specialized&nbsp;code"]
+        S3["Direct&nbsp;function&nbsp;calls,&nbsp;no&nbsp;overhead"]
+        S1 --> S2 --> S3
+    end
+
+    subgraph DYNAMIC["Dynamic&nbsp;Dispatch<br/>(trait&nbsp;objects)"]
+        D1["fn&nbsp;notify(item:&nbsp;&dyn&nbsp;Summary)"]
+        D2["Runtime&nbsp;vtable&nbsp;lookup"]
+        D3["Indirection&nbsp;on&nbsp;each&nbsp;call"]
+        D1 --> D2 --> D3
+    end
+
+    STATIC ~~~ DYNAMIC

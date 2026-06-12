@@ -1,0 +1,10 @@
+graph TD
+    A[parse_expr] --> B[parse_term]
+    B --> C[parse_unary]
+    C --> D[parse_postfix]
+    D --> E[parse_primary]
+    E --> F{Token Type}
+    F -->|Number| G[Number Node]
+    F -->|Identifier| H[Identifier Node]
+    F -->|"("| I["parse_expr()"]
+    I --> E

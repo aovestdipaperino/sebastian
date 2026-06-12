@@ -1,0 +1,15 @@
+flowchart TB
+    A[DOS application] --> B[INT 21h file call]
+    B --> C[DOS file system]
+    C --> D[INT 13h read sector N of virtual C:]
+    D --> E[Stacker INT 13h hook]
+    E --> F[Map sector N via cluster table]
+    F --> G[Read compressed run from CVF on H:]
+    G --> H[LZS decompress in RAM]
+    H --> I[Return uncompressed sector]
+    I --> C
+    C --> B
+    B --> A
+
+    style E fill:#cfe8d4,stroke:#2a7a3a,color:#000
+    style H fill:#d6e0f5,stroke:#3a5aa2,color:#000

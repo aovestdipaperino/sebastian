@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> Start
+    Start --> State1: Initialize data and reference
+    State1 --> Polling: await operation
+    Polling --> State1: Not ready
+    Polling --> Complete: Ready
+    Complete --> [*]: Print reference
+
+    note right of State1
+        data: Vec stored here
+        reference: Points to data
+        Must not move!
+    end note

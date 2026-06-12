@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph Userspace["Userspace (Rust Application)"]
+        App[Aya Application]
+        Config[Configuration Updates]
+        Stats[Statistics Display]
+    end
+
+    subgraph Kernel["Kernel Space"]
+        XDP[XDP Program]
+        Maps[(eBPF Maps)]
+    end
+
+    Packets[Network Packets] --> XDP
+    XDP -->|read/write| Maps
+    App -->|read/write| Maps
+    Config -->|write| Maps
+    Maps -->|read| Stats
+    XDP --> Action{XDP Action}
+    Action --> Pass[XDP_PASS]
+    Action --> Drop[XDP_DROP]

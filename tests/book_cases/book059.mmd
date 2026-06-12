@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph TOOLS["Profiling Tools"]
+        direction LR
+        CPU["CPU Profiler\nperf, eBPF"]
+        MEM["Heap Profiler\nmemory growth"]
+        TRC["Distributed Tracing\ncross-service flow"]
+        TCM["Tokio Console MCP\nasync stalls"]
+    end
+
+    CPU --> |"WHERE\ntime goes"| Q1["Time Attribution"]
+    MEM --> |"WHY\nmemory grows"| Q2["Allocation Analysis"]
+    TRC --> |"HOW\nrequests flow"| Q3["Request Tracing"]
+    TCM --> |"WHY\nasync stalls"| Q4["Task Diagnosis"]
+
+    style TOOLS fill:#e3f2fd,stroke:#1565c0
+    style Q4 fill:#fff3e0,stroke:#ef6c00

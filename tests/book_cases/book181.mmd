@@ -1,0 +1,14 @@
+graph LR
+    KB[Keystroke] --> D[Dispatch System]
+    D --> |matches binding| A[Action]
+    A --> |routed to| H[Handler]
+
+    subgraph Key Bindings
+        B1["cmd-d -> ToggleTheme"]
+        B2["right -> NextProfile"]
+        B3["escape -> CancelLoading"]
+    end
+
+    D --> B1
+    D --> B2
+    D --> B3

@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph Input["Source Image Pixels"]
+        direction LR
+        T["Top pixel (row y)"]
+        B["Bottom pixel (row y+1)"]
+    end
+    subgraph Cell["Single Terminal Cell"]
+        direction LR
+        BG["Background color = top pixel"]
+        FG["Foreground color = bottom pixel"]
+        CH["Character: ▄"]
+    end
+    Input --> Cell
+    style Input fill:#2d2d2d,color:#f0f0f0,stroke:#555
+    style Cell fill:#1a1a2e,color:#f0f0f0,stroke:#555
+    style T fill:#e74c3c,color:#fff,stroke:none
+    style B fill:#3498db,color:#fff,stroke:none
+    style BG fill:#e74c3c,color:#fff,stroke:none
+    style FG fill:#3498db,color:#fff,stroke:none
+    style CH fill:#1a1a2e,color:#f0f0f0,stroke:#555

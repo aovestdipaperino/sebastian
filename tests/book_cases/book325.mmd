@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph COMPILE["Compile&nbsp;Time"]
+        direction TB
+        CODE[Code&nbsp;with&nbsp;Shared&nbsp;Mutation]
+        BORROW[Borrow&nbsp;Checker]
+        REJECT[Rejected:&nbsp;Multiple&nbsp;Mutable&nbsp;References]
+        ACCEPT[Accepted:&nbsp;Safe&nbsp;Access&nbsp;Pattern]
+
+        CODE --> BORROW
+        BORROW --> REJECT
+        BORROW --> ACCEPT
+    end
+
+    subgraph RUNTIME["Runtime"]
+        direction TB
+        SAFE[Safe&nbsp;Concurrent&nbsp;Execution]
+        NORACE[No&nbsp;Data&nbsp;Races&nbsp;Possible]
+
+        SAFE --> NORACE
+    end
+
+    ACCEPT --> SAFE

@@ -1,0 +1,12 @@
+flowchart TB
+    H[MCP host: Claude Code, Eugene, ...] -->|tools/list| S1[Eugene MCP server]
+    H -->|tools/call| S1
+    H -->|tools/list| S2[Filesystem MCP server: node]
+    H -->|tools/call| S2
+    H -->|tools/list| S3[Postgres MCP server: python]
+    H -->|tools/call| S3
+
+    style H fill:#bbdefb,stroke:#1565c0,color:#000
+    style S1 fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style S2 fill:#ffe0b2,stroke:#ef6c00,color:#000
+    style S3 fill:#d1c4e9,stroke:#4527a0,color:#000

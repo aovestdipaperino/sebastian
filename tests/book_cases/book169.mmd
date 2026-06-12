@@ -1,0 +1,17 @@
+graph LR
+    subgraph Naive["Naive Rendering"]
+        N1[10,000 items] --> N2[10,000 elements]
+        N2 --> N3[Slow scroll]
+        N2 --> N4[High memory]
+    end
+
+    subgraph Virtual["Virtualized Rendering"]
+        V1[10,000 items] --> V2[~30 elements]
+        V2 --> V3[Smooth scroll]
+        V2 --> V4[Constant memory]
+    end
+
+    style N3 fill:#ffcdd2
+    style N4 fill:#ffcdd2
+    style V3 fill:#c8e6c9
+    style V4 fill:#c8e6c9

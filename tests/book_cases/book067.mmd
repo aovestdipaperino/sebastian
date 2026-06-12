@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph "Epoch 1"
+        E1[Threads A, B active]
+        R1[Retired: node X]
+    end
+
+    subgraph "Epoch 2"
+        E2[Threads B, C active]
+        R2[Retired: node Y]
+    end
+
+    subgraph "Epoch 3"
+        E3[Thread C active]
+        R3[Retired: node Z]
+    end
+
+    E1 -->|A exits| E2
+    E2 -->|B exits| E3
+
+    R1 -->|All epoch 1 threads exited| F1[Free node X]
+    R2 -->|Waiting for B| R2

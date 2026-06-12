@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph EVAL["Lock Evaluation"]
+        L1["Identify all Mutex/RwLock usage"] --> L2["Measure hold duration"]
+        L2 --> L3["Assess contention frequency"]
+        L3 --> L4["Classify protected operation"]
+    end
+
+    L4 --> D{Decision}
+
+    D -->|"Short hold, high contention,<br/>simple operation"| LF["Lock-Free Candidate"]
+    D -->|"Long hold or<br/>complex operation"| KEEP["Keep Lock"]
+    D -->|"Read-heavy workload"| RW["Consider RwLock or<br/>arc-swap"]
+
+    style EVAL fill:#e3f2fd,stroke:#1565c0
+    style LF fill:#e8f5e9,stroke:#2e7d32
+    style KEEP fill:#fff3e0,stroke:#ef6c00
+    style RW fill:#f3e5f5,stroke:#7b1fa2

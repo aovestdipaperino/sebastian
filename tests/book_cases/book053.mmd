@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph States["Builder State Machine"]
+        direction TB
+        A["ServerConfig&lt;false, false&gt;\n.new()"]
+        B["ServerConfig&lt;true, false&gt;\nname set"]
+        C["ServerConfig&lt;false, true&gt;\nport set"]
+        D["ServerConfig&lt;true, true&gt;\nready to build"]
+        E["Server\n.build()"]
+
+        A -->|".name()"| B
+        A -->|".port()"| C
+        B -->|".port()"| D
+        C -->|".name()"| D
+        D -->|".build()"| E
+    end
+
+    style States fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style A fill:#fff,stroke:#999,font-size:16px
+    style B fill:#fff,stroke:#999,font-size:16px
+    style C fill:#fff,stroke:#999,font-size:16px
+    style D fill:#dfd,stroke:#2d7d2d,font-size:16px
+    style E fill:#cfc,stroke:#2d7d2d,font-size:16px

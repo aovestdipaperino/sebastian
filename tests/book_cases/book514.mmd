@@ -1,0 +1,9 @@
+flowchart TD
+    A[Working session] --> B[Stable point reached]
+    B --> C[Create checkpoint]
+    C --> D[Risky attempt]
+    D --> E{Result?}
+    E -->|Success| F[Continue work]
+    E -->|Failure| G[Restore checkpoint]
+    G --> H[Back to stable point]
+    H --> D

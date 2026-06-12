@@ -1,0 +1,9 @@
+graph TD
+    A[let x: Int = expr] --> B[Check expr against Int]
+    B --> C[Synthesize expr type]
+    C --> D{Types match?}
+    D -->|Yes| E[Bind x to Int in env]
+    D -->|No| F[Type Error]
+
+    G["fn f(x: Int) -> Bool"] --> H[Extend env with x: Int]
+    H --> I[Check body against Bool]

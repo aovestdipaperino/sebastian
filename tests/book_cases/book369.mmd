@@ -1,0 +1,7 @@
+flowchart LR
+    GEN["Generatore<br/>Casuale"] --> INPUT["Input<br/>Generati"]
+    INPUT --> PROP["Verifica<br/>Proprietà"]
+    PROP -->|"Passa"| MORE["Genera<br/>Altri"]
+    PROP -->|"Fallisce"| SHRINK["Riduci<br/>Input"]
+    SHRINK --> MIN["Caso Fallito<br/>Minimale"]
+    MORE --> GEN

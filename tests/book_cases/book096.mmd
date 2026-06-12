@@ -1,0 +1,16 @@
+flowchart LR
+    subgraph Task1["Task 1"]
+        W1[Waiting on rx2]
+        S1[Will send to tx1]
+    end
+
+    subgraph Task2["Task 2"]
+        W2[Waiting on rx1]
+        S2[Will send to tx2]
+    end
+
+    W1 -.->|blocked| S2
+    W2 -.->|blocked| S1
+
+    style W1 fill:#5a2d27
+    style W2 fill:#5a2d27

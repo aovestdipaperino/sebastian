@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph App["Application"]
+        T1["tracing::info!(...)"]
+        T2["tracing::span!(...)"]
+        T3["tracing::error!(...)"]
+    end
+
+    subgraph Sub["TuiSubscriber"]
+        FMT["Format Event"]
+        TX["Channel Sender"]
+    end
+
+    subgraph TV["Turbo Vision App"]
+        RX["Channel Receiver"]
+        DSK["Desktop"]
+        MW["Main Window"]
+        LV["Log ListView"]
+        SL["StatusLine"]
+        MB["MenuBar"]
+    end
+
+    T1 --> FMT
+    T2 --> FMT
+    T3 --> FMT
+    FMT --> TX
+    TX --> RX
+    RX --> DSK
+    DSK --> MW
+    MW --> LV
+    DSK --> SL
+    DSK --> MB
+
+    style App fill:#e8f5e9,stroke:#2e7d32
+    style Sub fill:#e3f2fd,stroke:#1565c0
+    style TV fill:#fff3e0,stroke:#ef6c00

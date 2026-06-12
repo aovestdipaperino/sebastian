@@ -1,0 +1,15 @@
+graph LR
+    subgraph Web["Web Approach"]
+        W1[One Design] --> W2[Same Everywhere] --> W3[Foreign on All]
+    end
+
+    subgraph Native["Native Approach"]
+        N1[Platform Detection] --> N2[Adapt to Each OS] --> N3[Native on All]
+    end
+
+    W3 -.->|Trade-off| T[Consistency vs Native Feel]
+    N3 -.->|Trade-off| T
+
+    style W3 fill:#ffebee
+    style N3 fill:#c8e6c9
+    style T fill:#fff9c4

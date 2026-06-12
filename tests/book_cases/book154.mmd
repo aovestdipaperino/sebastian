@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph Before["Before Move"]
+        O[original] --> OD["data: 'Hello'"]
+        OP[ptr] --> OD
+    end
+
+    subgraph After["After Move"]
+        M[moved] --> MD["data: 'Hello'"]
+        MP[ptr] -.->|"Dangling!"| OLD["(old location)"]
+    end
+
+    Before --> After

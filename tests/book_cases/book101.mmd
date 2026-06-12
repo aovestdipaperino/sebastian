@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph "386 Virtual 8086 Mode"
+        A["Protected Mode OS"]
+        B["V86 Monitor"]
+        C["DOS App 1"]
+        D["DOS App 2"]
+        E["DOS App 3"]
+    end
+
+    A --> B
+    B --> C
+    B --> D
+    B --> E
+
+    style A fill:#27ae60,color:#fff
+    style B fill:#f39c12,color:#fff
+    style C fill:#e74c3c,color:#fff
+    style D fill:#e74c3c,color:#fff
+    style E fill:#e74c3c,color:#fff

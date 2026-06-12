@@ -1,0 +1,8 @@
+stateDiagram-v2
+    direction TB
+    [*] --> NoHost_NoPort: new()
+    NoHost_NoPort --> HasHost_NoPort: host()
+    NoHost_NoPort --> NoHost_HasPort: port()
+    HasHost_NoPort --> HasHost_HasPort: port()
+    NoHost_HasPort --> HasHost_HasPort: host()
+    HasHost_HasPort --> [*]: build()

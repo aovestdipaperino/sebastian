@@ -1,0 +1,12 @@
+graph TD
+    A["'static<br/>(entire program)"] --> B["'outer<br/>(outer scope begins)"]
+    B --> C["'inner<br/>(inner scope begins)"]
+    C --> D["❌ 'inner ends<br/>(inner scope destroyed)"]
+    D --> E["❌ 'outer ends<br/>(outer scope destroyed)"]
+    E --> F["Program ends"]
+
+    style A fill:#90EE90
+    style B fill:#87CEEB
+    style C fill:#FFB6C1
+    style D fill:#FFB6C1,stroke:#FF0000,stroke-width:3px
+    style E fill:#87CEEB,stroke:#FF0000,stroke-width:3px

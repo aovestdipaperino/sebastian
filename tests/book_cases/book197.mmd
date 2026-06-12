@@ -1,0 +1,13 @@
+graph TB
+    subgraph Screen["Display (Full Screen)"]
+        subgraph BW["Backdrop Window<br/>WindowKind::PopUp<br/>focus: false<br/>full screen<br/>transparent bg"]
+            B["Backdrop Component<br/>30% black overlay"]
+        end
+        subgraph DW["Dialog Window<br/>WindowKind::PopUp<br/>focus: true<br/>460x180, centered<br/>transparent bg"]
+            D["DialogBox Component<br/>titlebar + content + buttons"]
+        end
+    end
+
+    style BW fill:#2a2a2a,stroke:#666,color:#fff
+    style DW fill:#3a3a3a,stroke:#888,color:#fff
+    style Screen fill:#1a1a1a,stroke:#444,color:#888

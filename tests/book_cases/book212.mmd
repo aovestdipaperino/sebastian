@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph Airspace
+        A1[Aircraft 1<br/>Approaching]
+        A2[Aircraft 2<br/>Holding]
+        A3[Aircraft 3<br/>Departing]
+    end
+
+    subgraph Controller["ATC Controller (Executor)"]
+        Q1[Landing Queue]
+        Q2[Takeoff Queue]
+        RW[Runway]
+    end
+
+    A1 --> Q1
+    A2 --> Q1
+    A3 --> Q2
+    Q1 --> RW
+    Q2 --> RW
+
+    style RW fill:#e74c3c,color:#fff
+    style A1 fill:#2d8a3e,color:#fff
+    style A2 fill:#f39c12,color:#fff
+    style A3 fill:#3498db,color:#fff

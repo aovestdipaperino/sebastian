@@ -1,0 +1,11 @@
+flowchart TD
+    A["expr (lowest precedence)"] --> B["Handles + and -"]
+    B --> C["term (higher precedence)"]
+    C --> D["Handles * and /"]
+    D --> E["factor (highest precedence)"]
+    E --> F["Numbers and (expr)"]
+    F -.-> A
+
+    style A fill:#ffcdd2
+    style C fill:#fff9c4
+    style E fill:#c8e6c9

@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph Module["WebAssembly Module"]
+        direction TB
+        TS[Type Section]
+        IS[Import Section]
+        FS[Function Section]
+        TS2[Table Section]
+        MS[Memory Section]
+        GS[Global Section]
+        ES[Export Section]
+        SS[Start Section]
+        ELS[Element Section]
+        CS[Code Section]
+        DS[Data Section]
+    end
+
+    TS --> |"function signatures"| FS
+    FS --> |"type indices"| CS
+    IS --> |"external functions"| CS
+    ES --> |"public API"| CS
+    MS --> |"linear memory"| DS

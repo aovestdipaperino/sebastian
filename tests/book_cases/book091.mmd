@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph Global["Global Scope"]
+        G1["INTEGER (built-in)"]
+        G2["BOOLEAN (built-in)"]
+        G3["WRITE (built-in)"]
+        G4["MyProc (user)"]
+    end
+
+    subgraph Proc["MyProc Scope"]
+        P1["X: INTEGER (param)"]
+        P2["Y: INTEGER (local)"]
+        P3["Nested (proc)"]
+    end
+
+    subgraph Nested["Nested Scope"]
+        N1["Z: INTEGER (local)"]
+    end
+
+    Global --> Proc
+    Proc --> Nested

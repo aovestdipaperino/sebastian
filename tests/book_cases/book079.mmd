@@ -1,0 +1,11 @@
+flowchart TB
+    A[Beam at start of scanline] --> B[CPU has 76 cycles]
+    B --> C[Write player position registers]
+    C --> D[Update playfield bits for this line]
+    D --> E[Set sprite graphics for this line]
+    E --> F[WSYNC: halt CPU until next line]
+    F --> G[Beam at start of next scanline]
+    G --> B
+
+    style C fill:#cfe8d4,stroke:#2a7a3a,color:#000
+    style F fill:#f7d6cf,stroke:#a23a2a,color:#000

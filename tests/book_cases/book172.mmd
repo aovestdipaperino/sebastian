@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph Vec["Vec buffer (can relocate)"]
+        P1["Pin&lt;Box&gt;"]
+        P2["Pin&lt;Box&gt;"]
+        P3["Pin&lt;Box&gt;"]
+    end
+
+    subgraph Heap["Heap (stable addresses)"]
+        F1["Future A<br/>self-refs valid"]
+        F2["Future B<br/>self-refs valid"]
+        F3["Future C<br/>self-refs valid"]
+    end
+
+    P1 --> F1
+    P2 --> F2
+    P3 --> F3
+
+    style F1 fill:#90EE90
+    style F2 fill:#90EE90
+    style F3 fill:#90EE90

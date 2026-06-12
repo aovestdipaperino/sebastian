@@ -1,0 +1,45 @@
+flowchart TB
+    subgraph LP["Length-Prefix (4-byte header)"]
+        LP1["Two reads per message"]
+        LP2["Variable message sizes"]
+        LP3["Simple to implement"]
+        LP1 --> LP2 --> LP3
+    end
+
+    subgraph FX["Fixed-Size Frames"]
+        FX1["One read per message"]
+        FX2["Predictable memory layout"]
+        FX3["Wastes bandwidth on small payloads"]
+        FX1 --> FX2 --> FX3
+    end
+
+    subgraph DL["Delimiter-Based"]
+        DL1["Scan for terminator byte"]
+        DL2["Efficient for text protocols"]
+        DL3["Delimiter must not appear in payload"]
+        DL1 --> DL2 --> DL3
+    end
+
+    subgraph TLV["TLV (Type-Length-Value)"]
+        TLV1["Type field enables dispatch"]
+        TLV2["Extensible without breaking receivers"]
+        TLV3["More complex to parse"]
+        TLV1 --> TLV2 --> TLV3
+    end
+
+    style LP fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style FX fill:#e8e8f4,stroke:#2d2d7d,font-size:16px
+    style DL fill:#f4f4e8,stroke:#7d7d2d,font-size:16px
+    style TLV fill:#f4e8f4,stroke:#7d2d7d,font-size:16px
+    style LP1 fill:#fff,stroke:#999,font-size:16px
+    style LP2 fill:#fff,stroke:#999,font-size:16px
+    style LP3 fill:#fff,stroke:#999,font-size:16px
+    style FX1 fill:#fff,stroke:#999,font-size:16px
+    style FX2 fill:#fff,stroke:#999,font-size:16px
+    style FX3 fill:#fff,stroke:#999,font-size:16px
+    style DL1 fill:#fff,stroke:#999,font-size:16px
+    style DL2 fill:#fff,stroke:#999,font-size:16px
+    style DL3 fill:#fff,stroke:#999,font-size:16px
+    style TLV1 fill:#fff,stroke:#999,font-size:16px
+    style TLV2 fill:#fff,stroke:#999,font-size:16px
+    style TLV3 fill:#fff,stroke:#999,font-size:16px

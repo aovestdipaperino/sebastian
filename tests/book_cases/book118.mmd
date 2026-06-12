@@ -1,0 +1,51 @@
+flowchart TB
+    subgraph Safety["Safety Guarantees"]
+        direction LR
+        S1["Arena\n✓ generational keys\n✓ compile-time safe"] ~~~ S2["Rc/Weak\n✓ no dangling\n✗ runtime panics"] ~~~ S3["Context\n✓ fully static\n✓ no back-refs"]
+    end
+
+    subgraph Safety2["Safety (continued)"]
+        direction LR
+        S4["ECS\n✓ generational\n✓ compile-time safe"] ~~~ S5["GhostCell\n✓ compile-time safe\n✓ no runtime panics"] ~~~ S6["QCell\n✓ owner-checked\n✗ panic on ID mismatch"]
+    end
+
+    subgraph Perf["Performance"]
+        direction LR
+        P1["Arena\n• cache-friendly\n• 1 indirection"] ~~~ P2["Rc/Weak\n• ref-count overhead\n• heap-scattered"] ~~~ P3["Context\n• zero indirection\n• single-pass"]
+    end
+
+    subgraph Perf2["Performance (continued)"]
+        direction LR
+        P4["ECS\n• cache-friendly\n• query overhead"] ~~~ P5["GhostCell\n• zero-cost access\n• heap-scattered"] ~~~ P6["QCell\n• 1 int cmp per access\n• heap-scattered"]
+    end
+
+    subgraph Ergon["Ergonomics"]
+        direction LR
+        G1["Arena\n• central ownership\n• index juggling"] ~~~ G2["Rc/Weak\n• verbose types\n• RefCell ceremony"] ~~~ G3["Context\n• clean ownership\n• one-direction only"]
+    end
+
+    subgraph Ergon2["Ergonomics (continued)"]
+        direction LR
+        G4["ECS\n• flat structure\n• boilerplate setup"] ~~~ G5["GhostCell\n• branded lifetimes\n• closure scope required"] ~~~ G6["QCell\n• no lifetime params\n• owner threading"]
+    end
+
+    Safety ~~~ Safety2 ~~~ Perf ~~~ Perf2 ~~~ Ergon ~~~ Ergon2
+
+    style S1 fill:#2d5a3d,color:#fff,font-size:14px
+    style S2 fill:#6b3a3a,color:#fff,font-size:14px
+    style S3 fill:#2d5a3d,color:#fff,font-size:14px
+    style S4 fill:#2d5a3d,color:#fff,font-size:14px
+    style S5 fill:#2d5a3d,color:#fff,font-size:14px
+    style S6 fill:#6b4a3a,color:#fff,font-size:14px
+    style P1 fill:#3a4a6b,color:#fff,font-size:14px
+    style P2 fill:#6b4a3a,color:#fff,font-size:14px
+    style P3 fill:#2d5a3d,color:#fff,font-size:14px
+    style P4 fill:#3a4a6b,color:#fff,font-size:14px
+    style P5 fill:#2d5a3d,color:#fff,font-size:14px
+    style P6 fill:#3a4a6b,color:#fff,font-size:14px
+    style G1 fill:#4a4a2d,color:#fff,font-size:14px
+    style G2 fill:#6b4a3a,color:#fff,font-size:14px
+    style G3 fill:#2d5a3d,color:#fff,font-size:14px
+    style G4 fill:#4a4a2d,color:#fff,font-size:14px
+    style G5 fill:#4a4a2d,color:#fff,font-size:14px
+    style G6 fill:#3a4a6b,color:#fff,font-size:14px

@@ -1,0 +1,24 @@
+flowchart TD
+    A[Application requests memory] --> B{Allocation within<br/>cgroup limit?}
+    B -->|Yes| C[Kernel grants memory]
+    C --> D[Application continues]
+
+    B -->|No| E[Kernel returns ENOMEM]
+    E --> F{Allocator can<br/>free cached memory?}
+
+    F -->|Yes| G[Retry allocation]
+    G --> B
+
+    F -->|No| H[Allocation failure]
+    H --> I{Rust allocation<br/>error handler}
+
+    I -->|Default handler| J[Process aborts]
+    I -->|Custom handler| K[Application handles error]
+
+    L[Memory pressure severe] --> M[OOM Killer invoked]
+    M --> N[Process terminated<br/>with SIGKILL]
+    N --> O[No cleanup runs]
+
+    style J fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style N fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style O fill:#ff8787,stroke:#c92a2a,color:#fff

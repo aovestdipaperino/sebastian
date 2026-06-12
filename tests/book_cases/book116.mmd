@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph Entities["Entity Table"]
+        direction LR
+        E0["Entity 0\n(App)"] ~~~ E1["Entity 1\n(Dialog)"] ~~~ E2["Entity 2\n(Button)"]
+    end
+
+    subgraph Components["Component Storage"]
+        direction TB
+        N["Name Table\n0→App, 1→Dialog, 2→Button"]
+        PA["Palette Table\n0→[10,20,30,40], 1→[1,3,0,2], 2→[0,2,1]"]
+        PR["Parent Table\n1→Entity 0, 2→Entity 1"]
+    end
+
+    Entities --> Components
+
+    style E0 fill:#2d5a3d,color:#fff,font-size:16px
+    style E1 fill:#3a4a6b,color:#fff,font-size:16px
+    style E2 fill:#6b3a3a,color:#fff,font-size:16px
+    style N fill:#4a4a2d,color:#fff,font-size:14px
+    style PA fill:#4a4a2d,color:#fff,font-size:14px
+    style PR fill:#4a4a2d,color:#fff,font-size:14px

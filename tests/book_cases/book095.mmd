@@ -1,0 +1,14 @@
+flowchart TB
+    A[Need interior mutability?] -->|Yes| B{Type implements Copy?}
+    B -->|Yes| C{Need reference to inner value?}
+    C -->|No| D["Use Cell&lt;T&gt;"]
+    C -->|Yes| E["Use RefCell&lt;T&gt;"]
+    B -->|No| E
+
+    A -->|Building low-level abstraction| F{Can prove safety externally?}
+    F -->|Yes| G["Use UnsafeCell&lt;T&gt;"]
+    F -->|No| E
+
+    style D fill:#4a9,stroke:#333,color:#fff
+    style E fill:#49a,stroke:#333,color:#fff
+    style G fill:#a94,stroke:#333,color:#fff

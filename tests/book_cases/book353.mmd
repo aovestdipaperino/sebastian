@@ -1,0 +1,12 @@
+%%{init: {"flowchart": {"htmlLabels": false}} }%%
+flowchart TB
+    subgraph RUST["Rust: Composizione di Capacità"]
+        WALK["PuòCamminare"]
+        SPEAK["PuòParlare"]
+        STRUCT_D["struct Cane"]
+        STRUCT_C["struct Gatto"]
+        WALK --> STRUCT_D
+        WALK --> STRUCT_C
+        SPEAK --> STRUCT_D
+        SPEAK --> STRUCT_C
+    end

@@ -1,0 +1,36 @@
+graph TB
+    subgraph Manual["Manual Implementation (Parts 1-4)"]
+        M1[Application Code] --> M2[Custom Input Fields]
+        M1 --> M3[Custom Buttons]
+        M1 --> M4[Custom Theme System]
+        M2 --> M5[Cursor Management]
+        M2 --> M6[Focus Tracking]
+        M2 --> M7[Keyboard Handlers]
+        M3 --> M8[Style Builder]
+        M3 --> M9[Event Handlers]
+        M4 --> M10[OS Theme Detection]
+        M4 --> M11[Color Management]
+        M1 --> M12[GPUI Primitives]
+        M5 --> M12
+        M6 --> M12
+        M7 --> M12
+        M8 --> M12
+        M9 --> M12
+        M10 --> M12
+        M11 --> M12
+    end
+
+    subgraph Components["Component-Based Implementation"]
+        C1[Application Code] --> C2[gpui-component Library]
+        C2 --> C3[Input Components]
+        C2 --> C4[Button Components]
+        C2 --> C5[Theme System]
+        C3 --> C6[GPUI Primitives]
+        C4 --> C6
+        C5 --> C6
+    end
+
+    style M1 fill:#e3f2fd
+    style C1 fill:#c8e6c9
+    style M12 fill:#fff9c4
+    style C6 fill:#fff9c4

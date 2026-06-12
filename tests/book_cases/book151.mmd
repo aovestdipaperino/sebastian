@@ -1,0 +1,8 @@
+flowchart TB
+    A[System Layer: system prompt, env info, styles] --> F[Context Window]
+    B[Project Config: CLAUDE.md, path-scoped rules] --> F
+    C[Memory: auto memory, compact summaries] --> F
+    D[Conversation: history, subagent summaries] --> F
+    E[Runtime: file reads, command outputs, tool results] --> F
+    G[On-Demand: deferred tool schemas via ToolSearch] -.lazy.-> F
+    style F fill:#a8dadc,color:#000

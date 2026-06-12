@@ -1,0 +1,5 @@
+flowchart TD
+    subgraph With TCO
+        E[caller frame reused] --> F[callee executes]
+        F --> G[return directly]
+    end

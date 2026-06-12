@@ -1,0 +1,10 @@
+flowchart TD
+    A[Claude starts session] --> B[Reads CLAUDE.md]
+    B --> C[Consults MEMORY.md index]
+    C --> D[Loads relevant memories]
+    D --> E{Conflict between sources?}
+    E -->|No| F[Uses both sources]
+    E -->|Yes| G[CLAUDE.md takes precedence]
+    G --> H[Reports conflict to user]
+    F --> I[Works with enriched context]
+    H --> I

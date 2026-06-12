@@ -1,0 +1,9 @@
+stateDiagram-v2
+    direction TB
+    [*] --> Bozza: new()
+    Bozza --> Bozza: edit()
+    Bozza --> InRevisione: submit()
+    InRevisione --> Approvato: approve()
+    InRevisione --> Rifiutato: reject()
+    Approvato --> [*]
+    Rifiutato --> [*]

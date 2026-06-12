@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant main
+    participant process
+    participant Heap
+    
+    main->>Heap: Create vec![1,2,3,4,5]
+    Note over main: numbers owns the Vec
+    main->>process: Move numbers to data
+    Note over main: numbers now invalid
+    Note over process: data owns the Vec
+    process->>process: Use data
+    process->>Heap: Drop data, free memory

@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph APP["Applicazione"]
+        ROOT["Token Radice"]
+    end
+
+    subgraph SERVICES["Servizi"]
+        HTTP["Server HTTP<br/>(token figlio)"]
+        BG["Task in Background<br/>(token figlio)"]
+    end
+
+    subgraph REQUESTS["Richieste"]
+        R1["Richiesta 1"]
+        R2["Richiesta 2"]
+    end
+
+    ROOT --> HTTP
+    ROOT --> BG
+    HTTP --> R1
+    HTTP --> R2
+
+    ROOT -.->|"cancel()"| HTTP
+    HTTP -.-> R1
+    HTTP -.-> R2
+    ROOT -.->|"cancel()"| BG

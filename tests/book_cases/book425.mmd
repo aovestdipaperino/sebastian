@@ -1,0 +1,13 @@
+graph TD
+    M1[Open Dialog] --> M2[Run Local Event Loop]
+    M2 --> M3[User Interacts]
+    M3 --> M2
+    M3 --> M4[User Confirms/Cancels]
+    M4 --> M5[Return Result]
+    M5 --> M6[Continue Application]
+
+    N1[Open Dialog] --> N2[Add to Desktop]
+    N2 --> N3[Return Immediately]
+    N3 --> N4[Normal Event Loop]
+    N4 --> N5[Dialog Receives Events]
+    N5 --> N4

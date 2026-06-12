@@ -1,0 +1,10 @@
+flowchart TD
+    A[Ricevi task] --> B[Osserva stato corrente]
+    B --> C[Ragiona: cosa fare?]
+    C --> D{Servono tool?}
+    D -->|Sì| E[Seleziona ed esegui tool]
+    E --> F[Osserva risultato]
+    F --> C
+    D -->|No| G{Task completato?}
+    G -->|No| C
+    G -->|Sì| H[Restituisci risultato]

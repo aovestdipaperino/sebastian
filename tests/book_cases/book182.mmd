@@ -1,0 +1,9 @@
+graph TD
+    PM[PopupMenu] --> MI[PopupMenuItem]
+    MI --> ITM[Clickable Item]
+    MI --> SEP[Separator]
+    MI --> LBL[Label]
+    MI --> SUB[Submenu]
+
+    BTN[Button] --> |DropdownMenu trait| PM
+    DIV[Any Element] --> |ContextMenuExt trait| PM

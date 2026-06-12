@@ -1,0 +1,15 @@
+flowchart TB
+    A[Composer writes pattern data] --> B[Custom assembly driver]
+    B --> C[50/100/200 Hz IRQ]
+    C --> D[Voice 1 registers]
+    C --> E[Voice 2 registers]
+    C --> F[Voice 3 registers]
+    D --> G[6581 SID]
+    E --> G
+    F --> G
+    G --> H[Analog filter]
+    H --> I[Audio out]
+
+    style B fill:#cfe8d4,stroke:#2a7a3a,color:#000
+    style G fill:#d6e0f5,stroke:#3a5aa2,color:#000
+    style H fill:#f7d6cf,stroke:#a23a2a,color:#000

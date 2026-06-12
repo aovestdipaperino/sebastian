@@ -1,0 +1,12 @@
+graph TD
+    A[User Clicks OK] --> B[Dialog Validates Views]
+    B --> C{First Field Valid?}
+    C -->|Yes| D{Next Field Valid?}
+    C -->|No| E[Focus First Field]
+    D -->|Yes| F{More Fields?}
+    D -->|No| G[Focus Invalid Field]
+    F -->|Yes| D
+    F -->|No| H[Close Dialog]
+    E --> I[Show Error]
+    G --> I
+    I --> J[Wait for Correction]

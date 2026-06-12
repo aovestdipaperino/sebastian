@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph PRNG["Pseudorandom Number Generator"]
+        direction TB
+        S["Seed Value<br/>(initial state)"] --> A["Algorithm<br/>(state transition)"]
+        A --> O["Output Stream<br/>42, 17, 83, 56, ..."]
+        A --> |"updates"| S
+    end
+
+    subgraph Sources["Seed Sources"]
+        direction TB
+        E["OS Entropy<br/>/dev/urandom, CryptGenRandom"]
+        T["Fixed Seed<br/>for reproducibility"]
+    end
+
+    E --> S
+    T --> S
+
+    style PRNG fill:#f0f0f0,stroke:#333,font-size:16px
+    style Sources fill:#f0f0f0,stroke:#333,font-size:16px
+    style S fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style A fill:#e8e8f4,stroke:#2d2d7d,font-size:16px
+    style O fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style E fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style T fill:#e8f4e8,stroke:#2d7d2d,font-size:16px

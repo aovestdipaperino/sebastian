@@ -1,0 +1,6 @@
+graph LR
+    subgraph "FIRST Set Computation"
+        A[Terminal] --> B["{Terminal}"]
+        C[Non-terminal] --> D["Union of FIRST<br>of all alternatives"]
+        E[Sequence X Y] --> F["FIRST(X) ∪ FIRST(Y)<br>if X nullable"]
+    end

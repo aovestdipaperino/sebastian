@@ -1,0 +1,10 @@
+flowchart LR
+    Source["Source<br/>Text"] --> Lexer
+
+    subgraph SinglePass["Single Pass"]
+        Lexer["Lexer<br/>get_token()"] --> Parser["Parser<br/>recursive descent"]
+        Parser --> CodeGen["Code Gen<br/>emit_byte()"]
+        Parser <--> SymTab["Symbol<br/>Table"]
+    end
+
+    CodeGen --> Output["Machine<br/>Code"]

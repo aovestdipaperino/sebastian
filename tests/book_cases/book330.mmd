@@ -1,0 +1,12 @@
+%%{init: {"theme": "default", "themeVariables": {"fontSize": "16px"}}}%%
+flowchart TB
+    subgraph Before["Before:&nbsp;let&nbsp;b&nbsp;=&nbsp;a"]
+        A1["a&nbsp;(valid)"] --> H1["Heap:&nbsp;'Hello'"]
+    end
+
+    subgraph After["After:&nbsp;let&nbsp;b&nbsp;=&nbsp;a"]
+        A2["a&nbsp;(invalid)"] -.-> H2["Heap:&nbsp;'Hello'"]
+        B2["b&nbsp;(valid)"] --> H2
+    end
+
+    Before --> After

@@ -1,0 +1,16 @@
+flowchart LR
+    subgraph Before
+        direction TB
+        B1["Box → 0x1000"]
+        H1["Heap 0x1000: Task A"]
+        S1["Stack: Task B"]
+    end
+
+    subgraph After
+        direction TB
+        B2["Box → 0x1000"]
+        H2["Heap 0x1000: Task B"]
+        S2["Stack: Task A"]
+    end
+
+    Before -->|"mem::swap"| After

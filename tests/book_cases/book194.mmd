@@ -1,0 +1,6 @@
+flowchart TD
+    A["Option&lt;String&gt;"] -->|"and_then(parse)"| B["Option&lt;u16&gt;"]
+    B -->|"and_then(validate)"| C["Option&lt;u16&gt;"]
+
+    D["Without and_then:"] --> E["Option&lt;Option&lt;Option&lt;u16&gt;&gt;&gt;"]
+    F["With and_then:"] --> G["Option&lt;u16&gt;"]

@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph NULL["Nullable&nbsp;Reference"]
+        N1["Reference&nbsp;or&nbsp;null"]
+        N2["Caller&nbsp;may&nbsp;forget&nbsp;to&nbsp;check"]
+        N3["Runtime&nbsp;exception&nbsp;on&nbsp;access"]
+        N1 --> N2 --> N3
+    end
+
+    subgraph OPT["Option&nbsp;T"]
+        O1["Some&nbsp;value&nbsp;or&nbsp;None"]
+        O2["Compiler&nbsp;requires&nbsp;handling"]
+        O3["No&nbsp;runtime&nbsp;surprise"]
+        O1 --> O2 --> O3
+    end
+
+    subgraph RES["Result&nbsp;T&nbsp;E"]
+        R1["Ok&nbsp;value&nbsp;or&nbsp;Err&nbsp;error"]
+        R2["Error&nbsp;type&nbsp;in&nbsp;signature"]
+        R3["Explicit&nbsp;error&nbsp;path"]
+        R1 --> R2 --> R3
+    end
+
+    NULL ~~~ OPT
+    OPT ~~~ RES

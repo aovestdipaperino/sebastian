@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph "ArcSwap Internals"
+        AS[ArcSwap&lt;Config&gt;]
+        A1[Arc&lt;Config v1&gt;]
+        A2[Arc&lt;Config v2&gt;]
+    end
+
+    subgraph "Readers"
+        R1[Thread 1]
+        R2[Thread 2]
+        R3[Thread 3]
+    end
+
+    subgraph "Writer"
+        W[Config Updater]
+    end
+
+    AS -->|current| A2
+    A1 -.->|previous, still held| R1
+    R2 -->|load| AS
+    R3 -->|load| AS
+    W -->|swap| AS
+
+    style AS fill:#4a9,stroke:#333,stroke-width:2px
+    style A1 fill:#888,stroke:#333
+    style A2 fill:#6b6,stroke:#333

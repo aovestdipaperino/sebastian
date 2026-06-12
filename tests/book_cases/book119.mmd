@@ -1,0 +1,36 @@
+flowchart TB
+    subgraph App["Your Application"]
+        A1["Vec::new()"]
+        A2["String::from()"]
+        A3["Box::new()"]
+    end
+
+    subgraph Alloc["Global Allocator"]
+        B1["Thread-Local Cache<br/>8-64KB per thread"]
+        B2["Size Class Bins<br/>16B, 32B, 64B, ..."]
+        B3["Large Object Heap"]
+        B4["Arena Pool<br/>Metadata overhead"]
+    end
+
+    subgraph Kernel["Linux Kernel"]
+        C1["Virtual Memory"]
+        C2["Physical Pages"]
+        C3["cgroup Memory Accounting"]
+    end
+
+    A1 --> B1
+    A2 --> B1
+    A3 --> B1
+
+    B1 --> B2
+    B2 --> B3
+    B3 --> B4
+
+    B4 -->|mmap/brk| C1
+    C1 --> C2
+    C2 --> C3
+
+    C3 -->|Limit exceeded| D["OOM Kill"]
+
+    style D fill:#ff6b6b,stroke:#c92a2a,color:#fff
+    style C3 fill:#ffd43b,stroke:#fab005,color:#000

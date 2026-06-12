@@ -1,0 +1,35 @@
+flowchart TB
+    START["Analyze&nbsp;OOP&nbsp;Hierarchy"]
+    Q1{"Primary&nbsp;purpose?"}
+
+    SHARE["Shares&nbsp;data&nbsp;&<br/>implementation"]
+    IFACE["Defines<br/>interfaces"]
+    FIXED["Models&nbsp;fixed<br/>variants"]
+    DISTINCT["Creates&nbsp;type<br/>distinctions"]
+
+    Q2{"Set&nbsp;of&nbsp;types<br/>extensible?"}
+    Q3{"New&nbsp;operations<br/>more&nbsp;frequent?"}
+    Q4{"Need&nbsp;mixed-type<br/>collections?"}
+
+    COMP["Use&nbsp;Composition"]
+    TRAIT["Use&nbsp;Traits<br/>with&nbsp;Generics"]
+    DYN["Use&nbsp;dyn&nbsp;Trait"]
+    ENUM["Use&nbsp;Enum"]
+    NEWTYPE["Use&nbsp;Newtype"]
+
+    START --> Q1
+    Q1 --> SHARE
+    Q1 --> IFACE
+    Q1 --> FIXED
+    Q1 --> DISTINCT
+
+    SHARE --> COMP
+    IFACE --> Q2
+    Q2 -->|"Yes"| Q4
+    Q2 -->|"No"| Q3
+    Q4 -->|"Yes"| DYN
+    Q4 -->|"No"| TRAIT
+    Q3 -->|"Yes"| ENUM
+    Q3 -->|"No"| TRAIT
+    FIXED --> Q3
+    DISTINCT --> NEWTYPE

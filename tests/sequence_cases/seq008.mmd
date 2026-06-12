@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant Code as Your Code
+    participant Render as render()
+    participant Tree as Element Tree
+    participant Diff as Diff Engine
+    participant GPU as GPU
+
+    Code->>Code: State changes
+    Code->>Render: cx.notify()
+    Render->>Tree: Build new tree<br/>(hundreds of elements)
+    Note over Tree: Lightweight construction<br/>minimal allocation
+
+    Tree->>Diff: Compare with previous tree
+    Diff->>Diff: Calculate minimal changes
+    Note over Diff: Only changed elements<br/>identified
+
+    Diff->>GPU: Update changed elements only
+    GPU->>GPU: Hardware-accelerated render
+
+    Note over Code,GPU: Cost: tree construction (cheap)<br/>Benefit: no manual optimization needed

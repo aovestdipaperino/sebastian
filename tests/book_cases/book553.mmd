@@ -1,0 +1,18 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'18px'}}}%%
+flowchart TD
+    STRUCT["ProcessMetrics struct<br/>(Producer)"]
+    SER["bincode::serialize<br/>Convert to bytes"]
+    SHMEM["Shared Memory Region<br/>[len: 8 bytes] [data: len bytes]"]
+    DESER["bincode::deserialize<br/>Convert from bytes"]
+    STRUCT2["ProcessMetrics struct<br/>(Consumer)"]
+
+    STRUCT --> SER
+    SER --> SHMEM
+    SHMEM --> DESER
+    DESER --> STRUCT2
+
+    style STRUCT fill:#e3f2fd
+    style SER fill:#fff3e0
+    style SHMEM fill:#f1f8e9
+    style DESER fill:#fff3e0
+    style STRUCT2 fill:#e3f2fd

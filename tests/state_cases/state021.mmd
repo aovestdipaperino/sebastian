@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> Created : build
+    Created --> Visible : add to desktop
+    Visible --> Active : receives focus
+    Active --> Visible : loses focus
+    Visible --> Closing : closed flag set
+    Closing --> Removed : idle cleanup
+    Removed --> [*]

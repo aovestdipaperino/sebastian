@@ -1,0 +1,8 @@
+flowchart TB
+    A[Mutual Exclusion] --> E[Deadlock Possible]
+    B[Hold and Wait] --> E
+    C[No Preemption] --> E
+    D[Circular Wait] --> E
+    D -.->|broken by SureLock| X[Compile Error]
+    style D fill:#ffcccc
+    style X fill:#ccffcc

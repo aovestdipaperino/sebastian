@@ -1,0 +1,11 @@
+flowchart TD
+    A[Richiesta utente] --> B{Claude analizza}
+    B --> C{Servono dati esterni?}
+    C -->|No| D[Genera risposta]
+    C -->|Sì| E[Identifica server MCP]
+    E --> F[Invoca tool appropriato]
+    F --> G[Riceve risultato]
+    G --> H{Servono altri dati?}
+    H -->|Sì| E
+    H -->|No| D
+    D --> I[Risposta all'utente]

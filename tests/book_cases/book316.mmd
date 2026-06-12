@@ -1,0 +1,8 @@
+%%{init: {"theme": "default", "themeVariables": {"fontSize": "16px"}}}%%
+flowchart TB
+    GEN["Random<br/>Generator"] --> INPUT["Generated<br/>Inputs"]
+    INPUT --> PROP["Property<br/>Check"]
+    PROP -->|"Pass"| MORE["Generate<br/>More"]
+    PROP -->|"Fail"| SHRINK["Shrink<br/>Input"]
+    SHRINK --> MIN["Minimal<br/>Failing&nbsp;Case"]
+    MORE --> GEN

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant U as User
+    participant A as Application
+    participant D as Desktop
+    participant W as Active Window
+    participant I as Input Field
+
+    U->>A: Press 'A' key
+    A->>D: Route to focused
+    D->>W: Route to focused
+    W->>I: Route to focused
+    I->>I: Handle keystroke

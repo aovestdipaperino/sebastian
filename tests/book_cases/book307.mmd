@@ -1,0 +1,13 @@
+flowchart TD
+    A[Need&nbsp;heap&nbsp;allocation?] -->|Yes| B[Shared&nbsp;ownership?]
+    A -->|No| Z[Use&nbsp;stack&nbsp;allocation]
+    B -->|No| C[Box&lt;T&gt;]
+    B -->|Yes| D[Multi-threaded?]
+    D -->|No| E[Need&nbsp;mutation?]
+    D -->|Yes| F[Need&nbsp;mutation?]
+    E -->|No| G[Rc&lt;T&gt;]
+    E -->|Yes| H[Rc&lt;RefCell&lt;T&gt;&gt;]
+    F -->|No| I[Arc&lt;T&gt;]
+    F -->|Yes| J[Read-heavy?]
+    J -->|No| K[Arc&lt;Mutex&lt;T&gt;&gt;]
+    J -->|Yes| L[Arc&lt;RwLock&lt;T&gt;&gt;]

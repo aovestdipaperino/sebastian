@@ -1,0 +1,15 @@
+graph TD
+    AMT[Amount Input]
+    TYP[Expense/Income Toggle]
+
+    DT[Date Picker]
+    CAT[Category Select]
+
+    DESC[Description Input]
+
+    ERR[Validation Errors]
+    BTN[Save Button]
+
+    AMT --> DT
+    DT --> DESC
+    DESC --> ERR

@@ -1,0 +1,11 @@
+flowchart TB
+    Q[User query] --> R[researcher]
+    Q --> S[skeptic]
+    R --> SYN[synthesizer]
+    S --> SYN
+    SYN --> A[Final answer]
+
+    style R fill:#bbdefb,stroke:#1565c0,color:#000
+    style S fill:#ffe0b2,stroke:#ef6c00,color:#000
+    style SYN fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style A fill:#d1c4e9,stroke:#4527a0,color:#000

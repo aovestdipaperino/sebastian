@@ -1,0 +1,9 @@
+flowchart TD
+    A[Richiesta dell'utente] --> B{Complessità stimata}
+    B -->|Bassa| C[Ragionamento minimo]
+    B -->|Media| D[Ragionamento moderato]
+    B -->|Alta| E[Ragionamento esteso]
+    C --> F[Generazione risposta]
+    D --> F
+    E --> F
+    F --> G[Output visibile]

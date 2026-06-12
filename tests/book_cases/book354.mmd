@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph SCOPE["Scope della Funzione"]
+        direction TB
+        USER["user: User"]
+    end
+
+    subgraph USER_STRUCT["Struct User"]
+        direction TB
+        NAME["name: String"]
+        ADDR["address: Address"]
+    end
+
+    subgraph ADDR_STRUCT["Struct Address"]
+        direction TB
+        STREET["street: String"]
+        CITY["city: String"]
+    end
+
+    USER -.->|"possiede"| USER_STRUCT
+    ADDR-.->|"possiede"|ADDR_STRUCT

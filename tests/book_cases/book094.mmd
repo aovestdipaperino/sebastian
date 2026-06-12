@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph "RefCell State Machine"
+        A[Unborrowed] -->|"borrow()"| B[Shared Borrowed]
+        B -->|"borrow()"| B
+        B -->|"drop Ref"| C{All Refs dropped?}
+        C -->|"Yes"| A
+        C -->|"No"| B
+
+        A -->|"borrow_mut()"| D[Mutably Borrowed]
+        D -->|"drop RefMut"| A
+
+        B -->|"borrow_mut()"| E[PANIC]
+        D -->|"borrow()"| E
+        D -->|"borrow_mut()"| E
+    end
+
+    style A fill:#4a9,stroke:#333,color:#fff
+    style B fill:#49a,stroke:#333,color:#fff
+    style D fill:#a94,stroke:#333,color:#fff
+    style E fill:#a44,stroke:#333,color:#fff

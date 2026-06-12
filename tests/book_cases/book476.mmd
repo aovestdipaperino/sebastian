@@ -1,0 +1,8 @@
+flowchart TD
+    A["Claude 3.7 Sonnet<br/>Feb 2025<br/>Primo ragionamento ibrido"] --> B["Claude Opus 4<br/>Mag 2025<br/>72.5% SWE-bench"]
+    A --> C["Claude Sonnet 4<br/>Mag 2025<br/>72.7% SWE-bench"]
+    B --> D["Claude Sonnet 4.5<br/>Set 2025<br/>0% edit errors, checkpoint"]
+    C --> D
+    D --> E["Claude Opus 4.5<br/>Nov 2025<br/>-65% token, 7/8 linguaggi"]
+    E --> F["Claude Opus 4.6<br/>Feb 2026<br/>1M context, 14h30 METR"]
+    E --> G["Claude Sonnet 4.6<br/>Feb 2026<br/>1M context, 70% preferito"]

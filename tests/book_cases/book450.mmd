@@ -1,0 +1,23 @@
+graph LR
+    JS[JavaScript API]
+
+    IPC[IPC Layer]
+    PM[Plugin Manager]
+
+    FS[Filesystem]
+    DLG[Dialog]
+    NOT[Notification]
+    SHELL[Shell]
+
+    OS[Native APIs]
+
+    JS --> IPC
+    IPC --> PM
+    PM --> FS
+    PM --> DLG
+    PM --> NOT
+    PM --> SHELL
+    FS --> OS
+    DLG --> OS
+    NOT --> OS
+    SHELL --> OS

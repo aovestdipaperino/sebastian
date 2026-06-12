@@ -1,0 +1,15 @@
+flowchart TD
+    U[User] <--> TL[Team Lead]
+    TL -->|TeamCreate| S1[Specialist: Architecture]
+    TL -->|TeamCreate| S2[Specialist: Testing]
+    TL -->|TeamCreate| S3[Specialist: Security]
+
+    S1 <-->|SendMessage| S2
+    S2 <-->|SendMessage| S3
+    S1 <-->|SendMessage| S3
+
+    TL -->|TaskCreate| TK[Shared Task List]
+    S1 -->|TaskUpdate| TK
+    S2 -->|TaskUpdate| TK
+    S3 -->|TaskUpdate| TK
+    TL -->|TaskUpdate| TK

@@ -1,0 +1,7 @@
+flowchart TB
+    START["Need&nbsp;value&nbsp;in&nbsp;multiple&nbsp;places?"]
+    START -->|"No"| MOVE["Move&nbsp;it&nbsp;(zero&nbsp;cost)"]
+    START -->|"Yes"| CONSIDER["Consider&nbsp;alternatives"]
+    CONSIDER --> READ["Read-only&nbsp;access?<br/>Use&nbsp;references"]
+    CONSIDER --> INDEPENDENT["Need&nbsp;independent&nbsp;copies?<br/>Clone&nbsp;explicitly"]
+    CONSIDER --> SHARED["Shared&nbsp;ownership?<br/>Use&nbsp;Rc&nbsp;or&nbsp;Arc"]

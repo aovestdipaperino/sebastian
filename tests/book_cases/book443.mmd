@@ -1,0 +1,14 @@
+graph TB
+    Main[main.rs]
+    App[app.rs]
+    UI[ui.rs]
+
+    Mac[macos.rs]
+    Win[windows.rs]
+    Lin[linux.rs]
+
+    Main --> App
+    App --> UI
+    App --> |"#[cfg(macos)]"| Mac
+    App --> |"#[cfg(windows)]"| Win
+    App --> |"#[cfg(linux)]"| Lin

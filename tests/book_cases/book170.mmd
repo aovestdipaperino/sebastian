@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph Valid["Valid State"]
+        D1["data: Vec at offset 0"]
+        H1["header: ptr to offset 0"]
+        H1 -.->|"points to"| D1
+    end
+
+    subgraph Invalid["After Relocation"]
+        D2["data: Vec at NEW offset"]
+        H2["header: ptr to OLD offset"]
+        OLD["Old memory (invalid)"]
+        H2 -.->|"points to"| OLD
+    end
+
+    Valid -->|"mem::swap"| Invalid
+
+    style OLD fill:#ffcccc

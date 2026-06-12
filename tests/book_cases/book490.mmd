@@ -1,0 +1,7 @@
+flowchart TD
+    A[Batch of tool calls] --> B{inputSchema.safeParse<br/>says concurrency-safe?}
+    B -->|Yes| C[Run in parallel]
+    B -->|No| D[Serialize]
+    C --> E[Join results in order]
+    D --> E
+    E --> F[Return to conversation]

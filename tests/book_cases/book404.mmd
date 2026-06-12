@@ -1,0 +1,21 @@
+graph TD
+    KB[Keyboard Shortcut]
+    BTN[Button Click]
+    MENU[Menu Selection]
+
+    ACT[Action Instance]
+    DISP[Dispatch Path]
+    CTX[Focus Context]
+
+    VIEW[View Handler]
+    APP[App Handler]
+    GLOBAL[Global Handler]
+
+    KB --> ACT
+    BTN --> ACT
+    MENU --> ACT
+    ACT --> DISP
+    DISP --> CTX
+    CTX --> VIEW
+    VIEW -->|unhandled| APP
+    APP -->|unhandled| GLOBAL

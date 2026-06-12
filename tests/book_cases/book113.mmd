@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph Unlinked["Unlinked: Three Round-Trips"]
+        direction TB
+        U1["Submit Read SQE"]
+        U2["submit_and_wait(1)"]
+        U3["Handle Read CQE\nSubmit Write SQE"]
+        U4["submit_and_wait(1)"]
+        U5["Handle Write CQE\nSubmit Close SQE"]
+        U6["submit_and_wait(1)"]
+        U1 --> U2 --> U3 --> U4 --> U5 --> U6
+    end
+
+    subgraph Linked["Linked: One Round-Trip"]
+        direction TB
+        L1["Submit Read+Write+Close\nas linked chain"]
+        L2["submit_and_wait(3)"]
+        L3["Handle all three CQEs"]
+        L1 --> L2 --> L3
+    end
+
+    style Unlinked fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style Linked fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style U1 fill:#fff,stroke:#999,font-size:16px
+    style U2 fill:#fff,stroke:#999,font-size:16px
+    style U3 fill:#fff,stroke:#999,font-size:16px
+    style U4 fill:#fff,stroke:#999,font-size:16px
+    style U5 fill:#fff,stroke:#999,font-size:16px
+    style U6 fill:#fff,stroke:#999,font-size:16px
+    style L1 fill:#fff,stroke:#999,font-size:16px
+    style L2 fill:#fff,stroke:#999,font-size:16px
+    style L3 fill:#fff,stroke:#999,font-size:16px

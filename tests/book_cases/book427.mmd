@@ -1,0 +1,12 @@
+graph LR
+    K1[User Types] --> K2{Valid Char?}
+    K2 -->|Yes| K3[Accept]
+    K2 -->|No| K4[Reject]
+
+    F1[Tab Away] --> F2{Field Valid?}
+    F2 -->|Yes| F3[Allow Move]
+    F2 -->|No| F4[Keep Focus]
+
+    S1[Click OK] --> S2{All Valid?}
+    S2 -->|Yes| S3[Close Dialog]
+    S2 -->|No| S4[Show Errors]

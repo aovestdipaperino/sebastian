@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph Dev["Development"]
+        Code["eBPF Program\n(Rust)"]
+        Compile["Compile to BPF bytecode"]
+    end
+    subgraph Load["Loading"]
+        Verify["Verifier Check"]
+        JIT["JIT Compilation"]
+    end
+    subgraph Run["Runtime"]
+        Hook["Kernel Hook Point"]
+        Exec["Native Execution"]
+    end
+    Code --> Compile
+    Compile --> Verify
+    Verify -->|"pass"| JIT
+    Verify -->|"fail"| Reject["Load Rejected"]
+    JIT --> Hook
+    Hook --> Exec

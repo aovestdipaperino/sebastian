@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph FOUNDATION["Crate Fondazionali"]
+        SERDE["serde"]
+        TOKIO["tokio"]
+        TRACING["tracing"]
+        ERRORS["anyhow/thiserror"]
+    end
+
+    subgraph WEB["Web"]
+        AXUM["axum"]
+        ACTIX["actix-web"]
+        SQLX["sqlx"]
+    end
+
+    subgraph CLI["CLI"]
+        CLAP["clap"]
+        RATATUI["ratatui"]
+    end
+
+    subgraph EMBEDDED["Embedded"]
+        EMBHAL["embedded-hal"]
+        RTIC["RTIC"]
+    end
+
+    SERDE --> WEB
+    SERDE --> CLI
+    TOKIO --> WEB
+    TRACING --> WEB
+    TRACING --> CLI
+    ERRORS --> WEB
+    ERRORS --> CLI

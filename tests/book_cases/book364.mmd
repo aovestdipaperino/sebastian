@@ -1,0 +1,19 @@
+%%{init: {"flowchart": {"htmlLabels": false}} }%%
+flowchart TB
+    subgraph TIMELINE["Timeline"]
+        direction LR
+        T1["vec creato"]
+        T2["&vec[0] borrowed"]
+        T3["borrow termina"]
+        T4["vec può essere droppato"]
+        T1 --> T2 --> T3 --> T4
+    end
+
+    subgraph BLOCKED["Operazioni Bloccate Durante il Borrow"]
+        direction TB
+        B1["vec.clear()"]
+        B2["vec.push(...)"]
+        B3["drop(vec)"]
+    end
+
+    T2 -.->|"previene"| BLOCKED

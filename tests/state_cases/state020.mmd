@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Viewing
+    Viewing --> EditingBirthDate: Enter on birth date
+    Viewing --> EditingTargetDate: Enter on target date
+    EditingBirthDate --> Viewing: Enter or Escape
+    EditingTargetDate --> Viewing: Enter or Escape

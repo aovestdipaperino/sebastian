@@ -1,0 +1,15 @@
+flowchart TB
+    subgraph "Standard References"
+        A["&T (shared)"] -->|"Multiple allowed"| B[Read only]
+        C["&mut T (exclusive)"] -->|"Only one allowed"| D[Read and write]
+    end
+
+    subgraph "Interior Mutability"
+        E["&UnsafeCell&lt;T&gt;"] -->|"get() returns *mut T"| F[Raw mutable pointer]
+        F -->|"unsafe"| G[You ensure safety]
+    end
+
+    style A fill:#4a90d9,stroke:#333,color:#fff
+    style C fill:#d94a4a,stroke:#333,color:#fff
+    style E fill:#d9a84a,stroke:#333,color:#fff
+    style G fill:#888,stroke:#333,color:#fff

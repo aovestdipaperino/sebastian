@@ -1,0 +1,26 @@
+flowchart TD
+    subgraph "Application Layer"
+        APP[Your Rust Application]
+    end
+
+    subgraph "Library Layer"
+        PCAP[libpcap API]
+    end
+
+    subgraph "Platform Abstraction"
+        LINUX["AF_PACKET\nLinux"]
+        BSD["BPF Device\nmacOS/BSD"]
+        WIN["Npcap/WinPcap\nWindows"]
+    end
+
+    subgraph "Kernel"
+        NIC[Network Interface Card]
+    end
+
+    APP --> PCAP
+    PCAP --> LINUX
+    PCAP --> BSD
+    PCAP --> WIN
+    LINUX --> NIC
+    BSD --> NIC
+    WIN --> NIC

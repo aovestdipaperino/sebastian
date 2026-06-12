@@ -1,0 +1,10 @@
+flowchart TD
+    A[User request] --> B{Type of extension?}
+    B -->|Delegate work| C[Subagent]
+    B -->|Modify behavior| D[Skill]
+    C --> E[Isolated context]
+    C --> F[Summarized output]
+    C --> G[Parallelizable]
+    D --> H[Same context]
+    D --> I[Full visibility]
+    D --> J[Modified behavior]

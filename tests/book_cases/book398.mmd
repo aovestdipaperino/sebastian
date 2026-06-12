@@ -1,0 +1,15 @@
+flowchart TB
+    subgraph Terminal["Terminal Interfaces"]
+        R[Ratatui<br/>Immediate Mode]
+        TV[Turbo Vision<br/>Retained Mode]
+    end
+
+    subgraph GUI["Graphical Interfaces"]
+        T[Tauri<br/>Web Technology]
+        E[egui<br/>Immediate Mode]
+        S[Slint<br/>Declarative DSL]
+        G[GPUI<br/>GPU Accelerated]
+    end
+
+    style Terminal fill:#2d5016,color:#fff
+    style GUI fill:#1a3a5c,color:#fff

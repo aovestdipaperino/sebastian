@@ -1,0 +1,23 @@
+flowchart TD
+    subgraph Input["3 4 + 2 *"]
+        direction LR
+        W1["3"]
+        W2["4"]
+        W3["+"]
+        W4["2"]
+        W5["*"]
+    end
+
+    subgraph Stack["Stack evolution"]
+        S1["[3]"]
+        S2["[3,4]"]
+        S3["[7]"]
+        S4["[7,2]"]
+        S5["[14]"]
+    end
+
+    W1 --> S1
+    W2 --> S2
+    W3 --> S3
+    W4 --> S4
+    W5 --> S5

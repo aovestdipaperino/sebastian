@@ -1,0 +1,16 @@
+flowchart TD
+    NIC[Network Interface Card] --> Driver[NIC Driver]
+    Driver --> XDP{XDP Hook}
+    XDP -->|XDP_DROP| Dropped1[Packet Dropped]
+    XDP -->|XDP_TX| TXBack[Transmit Back Out Same NIC]
+    XDP -->|XDP_REDIRECT| OtherNIC[Redirect to Another NIC]
+    XDP -->|XDP_PASS| SKB[SKB Allocation]
+    SKB --> TC{TC Hook}
+    TC --> Netfilter[Netfilter / iptables]
+    Netfilter --> Routing[Routing Decision]
+    Routing --> Socket{Socket Filter Hook}
+    Socket --> App[Application]
+
+    style XDP fill:#2d5016,stroke:#1a3009,color:#ffffff
+    style TC fill:#4a3728,stroke:#2d2118,color:#ffffff
+    style Socket fill:#1e3a5f,stroke:#0d1f33,color:#ffffff

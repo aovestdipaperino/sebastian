@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph App["Application (Root)"]
+        direction LR
+        A1["1→Blue"] ~~~ A2["2→Green"] ~~~ A3["3→Red"] ~~~ A4["4→White"]
+    end
+
+    subgraph Dialog["Dialog"]
+        direction LR
+        D1["1→map→2"] ~~~ D2["2→map→4"] ~~~ D3["3→map→1"]
+    end
+
+    subgraph Button["Button"]
+        direction LR
+        B1["1→map→1"] ~~~ B2["2→map→3"]
+    end
+
+    Button -->|"resolve index 2"| Dialog
+    Dialog -->|"maps to index 1"| App
+    App -->|"resolves to Blue"| Result["Final: Blue"]
+
+    style App fill:#2d5a3d,color:#fff,font-size:16px
+    style Dialog fill:#3a4a6b,color:#fff,font-size:16px
+    style Button fill:#6b3a3a,color:#fff,font-size:16px
+    style Result fill:#4a4a2d,color:#fff,font-size:16px

@@ -1,0 +1,25 @@
+flowchart TB
+    subgraph Owned["Owned Parsing"]
+        direction TB
+        OB["Receive Buffer<br/>(heap or stack)"]
+        OS["String: sender<br/>(heap allocation)"]
+        OT["String: topic<br/>(heap allocation)"]
+        OP["Vec: payload<br/>(heap allocation)"]
+        OB -->|"copy"| OS
+        OB -->|"copy"| OT
+        OB -->|"copy"| OP
+    end
+
+    subgraph ZeroCopy["Zero-Copy Parsing"]
+        direction TB
+        ZB["Receive Buffer<br/>(heap or stack)"]
+        ZS["&str: sender"]
+        ZT["&str: topic"]
+        ZP["&[u8]: payload"]
+        ZB -.->|"points to"| ZS
+        ZB -.->|"points to"| ZT
+        ZB -.->|"points to"| ZP
+    end
+
+    style Owned fill:#f4e8e8,stroke:#5a2d2d
+    style ZeroCopy fill:#e8f4e8,stroke:#2d5a2d

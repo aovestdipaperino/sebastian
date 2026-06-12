@@ -1,0 +1,12 @@
+flowchart TD
+    A[cargo profile-build] --> B[Set RUSTC_WRAPPER]
+    B --> C[cargo build]
+    C --> D{For each crate}
+    D --> E[rustc-wrapper]
+    E --> F{Target crate?}
+    F -->|No| G[Pass through to rustc]
+    F -->|Yes| H[Emit LLVM IR]
+    H --> I[Instrument IR]
+    I --> J[Compile with clang/llc]
+    J --> K[Link with runtime]
+    K --> L[Instrumented binary]

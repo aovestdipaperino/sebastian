@@ -1,0 +1,18 @@
+%%{init: {'theme': 'default', 'themeVariables': {'fontSize': '16px'}}}%%
+flowchart TB
+    A[CI fails on master] --> B[CI Repair workflow\nfires via workflow_run]
+    B --> C[curl POST to\nClaude API /run]
+    C --> D[Remote routine\nwakes in Anthropic cloud]
+    D --> E[Clone repo via\nClaude GitHub App]
+    E --> F{Classify failure}
+    F -->|fmt / clippy\ncompile / test| G[Fix source code]
+    F -->|infra flake| H[Open GitHub issue]
+    G --> I{Verify with\ncargo check or test}
+    I -->|passes| J[git push origin master]
+    I -->|fails| H
+    J --> K[CI re-runs\non fix commit]
+
+    style A fill:#e74c3c,color:#fff
+    style K fill:#27ae60,color:#fff
+    style H fill:#f39c12,color:#fff
+    style J fill:#27ae60,color:#fff

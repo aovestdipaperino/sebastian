@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph Without["Box&lt;Task&gt; (vulnerable)"]
+        B1["Box"]
+        T1["Task at 0x1000"]
+        B1 -->|"DerefMut gives &mut Task"| T1
+        SWAP["mem::swap possible"]
+        T1 -.-> SWAP
+    end
+
+    subgraph With["Pin&lt;Box&lt;Task&gt;&gt; (protected)"]
+        P["Pin wrapper"]
+        B2["Box"]
+        T2["Task at 0x1000"]
+        P -->|"blocks &mut Task"| B2
+        B2 --> T2
+        BLOCK["mem::swap blocked"]
+        T2 -.->|"✗"| BLOCK
+    end
+
+    style SWAP fill:#ffcccc
+    style BLOCK fill:#90EE90

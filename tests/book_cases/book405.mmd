@@ -1,0 +1,10 @@
+graph TD
+    R1[Modify State] --> R2[Framework Detects Change]
+    R2 --> R3[Framework Finds Dependents]
+    R3 --> R4[Automatic Re-render]
+    R2 -.->|Hidden| R5[Dependency Tracking]
+
+    G1[Modify State] --> G2[Call cx.notify]
+    G2 --> G3[render Method Runs]
+    G3 --> G4[GPUI Diffs Element Tree]
+    G4 --> G5[Update Changed Elements]

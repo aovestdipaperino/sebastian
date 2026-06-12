@@ -1,0 +1,14 @@
+flowchart TD
+    A[Associated Types] --> B[type Item]
+    B --> C[Fixed type]
+
+    A --> D[Generic Associated Types]
+    D --> E["type Item&lt;'a&gt;"]
+    D --> F["type Item&lt;T&gt;"]
+    D --> G["type Item&lt;'a, T&gt;"]
+
+    E --> H[Lifetime parameter]
+    F --> I[Type parameter]
+    G --> J[Both]
+
+    style D fill:#6f9,stroke:#333

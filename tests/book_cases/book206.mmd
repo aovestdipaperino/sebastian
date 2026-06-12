@@ -1,0 +1,15 @@
+flowchart TB
+    subgraph PEG["pest (PEG)"]
+        P1[Rule A] --> P2{Try B}
+        P2 -->|Success| P3[Use B]
+        P2 -->|Failure| P4{Try C}
+        P4 -->|Success| P5[Use C]
+        P4 -->|Failure| P6[Fail A]
+    end
+
+    subgraph LL["ANTLR (LL)"]
+        A1[Rule A] --> A2{Lookahead}
+        A2 -->|Predicts B| A3[Parse B]
+        A2 -->|Predicts C| A4[Parse C]
+        A2 -->|Ambiguous| A5[Report]
+    end

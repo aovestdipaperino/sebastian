@@ -1,0 +1,12 @@
+flowchart TD
+    A[L'errore può verificarsi?] -->|No| B[Nessuna gestione necessaria]
+    A -->|Sì| C[Il chiamante può recuperare?]
+    C -->|No| D[È un bug?]
+    C -->|Sì| E[Restituisci Result&lt;T, E&gt;]
+    D -->|Sì| F[panic! o assert!]
+    D -->|No| G[È una libreria?]
+    G -->|Sì| H[Restituisci Result, lascia decidere al chiamante]
+    G -->|No| I[Logga ed esci con grazia]
+    E --> J[Il chiamante deve gestire inline?]
+    J -->|Sì| K[match o if let]
+    J -->|No| L[Propaga con ?]

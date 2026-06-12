@@ -1,0 +1,34 @@
+graph TD
+    subgraph "Single Input - Elision Works"
+        A1["input: char&lt;'a&gt;*"]
+        B1["output inherits 'a"]
+        C1["return: char&lt;'a&gt;*"]
+        A1 --> B1 --> C1
+    end
+
+    subgraph "Multiple Inputs - Explicit"
+        A2["s1: char&lt;'a&gt;*"]
+        A3["s2: char&lt;'a&gt;*"]
+        B2["both must live at least 'a"]
+        C2["return: char&lt;'a&gt;*"]
+        A2 --> B2
+        A3 --> B2
+        B2 --> C2
+    end
+
+    subgraph "Multiple Inputs - Ambiguous"
+        A4["s1: char&lt;'?&gt;*"]
+        A5["s2: char&lt;'?&gt;*"]
+        B3["which lifetime?"]
+        C3["return: char&lt;'?&gt;*<br/>❌ compiler error"]
+        A4 -.-> B3
+        A5 -.-> B3
+        B3 -.-> C3
+    end
+
+    style A1 fill:#4CAF50
+    style C1 fill:#4CAF50
+    style B2 fill:#2196F3
+    style C2 fill:#4CAF50
+    style B3 fill:#f44336
+    style C3 fill:#f44336,stroke:#000,stroke-width:3px

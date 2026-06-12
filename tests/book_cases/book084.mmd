@@ -1,0 +1,10 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px'}}}%%
+flowchart TD
+    A[Scan reads a row] --> B[Insert appends a copy]
+    B --> C[Table grows by one row]
+    C --> D{Will the scan reach<br/>the new row?}
+    D -->|Always yes| A
+    D -.->|Never| E[Statement completes]
+    style E fill:#bbf,stroke:#333
+    style A fill:#fc9,stroke:#333
+    style B fill:#fc9,stroke:#333

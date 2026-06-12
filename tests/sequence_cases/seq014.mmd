@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant Thread A
+    participant Stack
+    participant Thread B
+
+    Note over Stack: top → X → Y → Z
+
+    Thread A->>Stack: read top = X, next = Y
+    Note over Thread A: preparing CAS(X, Y)
+
+    Thread B->>Stack: pop X
+    Note over Stack: top → Y → Z
+    Thread B->>Stack: pop Y
+    Note over Stack: top → Z
+    Thread B->>Stack: push W
+    Note over Stack: top → W → Z
+    Thread B->>Stack: push X (reused!)
+    Note over Stack: top → X → W → Z
+
+    Thread A->>Stack: CAS(X, Y) succeeds!
+    Note over Stack: top → Y (dangling!)
+    Note over Thread A: Corruption: Y was freed

@@ -1,0 +1,11 @@
+graph TB
+    subgraph Chomsky["Chomsky Hierarchy"]
+        direction TB
+        T0["Type 0: Unrestricted Grammars<br/>Recognized by: Turing Machines<br/>Decidable: No"]
+        T1["Type 1: Context-Sensitive Grammars<br/>Recognized by: Linear-Bounded Automata<br/>Decidable: Yes (exponential time)"]
+        T2["Type 2: Context-Free Grammars<br/>Recognized by: Pushdown Automata<br/>Decidable: Yes (polynomial time)"]
+        T3["Type 3: Regular Grammars<br/>Recognized by: Finite Automata<br/>Decidable: Yes (linear time)"]
+    end
+    T0 --> T1
+    T1 --> T2
+    T2 --> T3

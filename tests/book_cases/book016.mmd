@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph Flame["Reading a Flamegraph"]
+        direction TB
+        note["Width = CPU time spent in this frame (and its callees)\nHeight = call stack depth\nRead bottom-up: callee is above caller"]
+        W["Wide frame = hot path, worth investigating"]
+        N["Narrow frame = rarely sampled, low cost"]
+        P["Plateau = a frame that calls many different things\n(its callees spread across the width)"]
+        note --> W
+        note --> N
+        note --> P
+    end
+
+    style Flame fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style note fill:#fff,stroke:#999,font-size:16px
+    style W fill:#fff,stroke:#999,font-size:16px
+    style N fill:#fff,stroke:#999,font-size:16px
+    style P fill:#fff,stroke:#999,font-size:16px

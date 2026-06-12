@@ -1,0 +1,10 @@
+graph TD
+    A[Application Palette] -->|Provides base colors| B[Window Palette]
+    B -->|Provides dialog colors| C[Button Palette]
+    C -->|Index 0 = Normal| D[Actual Color]
+    C -->|Index 1 = Default| E[Actual Color]
+    C -->|Index 2 = Selected| F[Actual Color]
+
+    style A fill:#f9f,stroke:#333
+    style B fill:#bbf,stroke:#333
+    style C fill:#bfb,stroke:#333

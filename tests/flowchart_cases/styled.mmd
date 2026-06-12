@@ -1,0 +1,8 @@
+flowchart LR
+    classDef green fill:#9f6,stroke:#333,stroke-width:2px
+    classDef orange fill:#f96,stroke:#333,stroke-width:4px
+    A[Start]:::green --> B{Decision}
+    B -->|one| C[Result one]:::orange
+    B -->|two| D[Result two]
+    style D fill:#bbf,stroke:#f66,stroke-width:2px,color:#fff
+    linkStyle 1 stroke:#ff3,stroke-width:4px,color:red

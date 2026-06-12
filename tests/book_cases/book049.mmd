@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph Lifetime["Lifetime Hierarchy"]
+        direction TB
+        Long["'long (longer)"]
+        Short["'short (shorter)"]
+        Long --> Short
+    end
+
+    subgraph FnType["fn(&'a str) (Contravariant)"]
+        direction TB
+        FnShort["fn(&'short str)"]
+        FnLong["fn(&'long str)"]
+        FnShort --> FnLong
+    end
+
+    Lifetime -.->|"opposite direction"| FnType
+
+    style Long fill:#4a9,stroke:#333,color:#000
+    style FnShort fill:#4a9,stroke:#333,color:#000
+    style Short fill:#f66,stroke:#333,color:#000
+    style FnLong fill:#f66,stroke:#333,color:#000

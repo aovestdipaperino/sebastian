@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant User
+    participant Menu as Menu Item
+    participant KB as Keyboard
+    participant GPUI as GPUI Action System
+    participant Handler as Action Handler
+    participant App as Application
+
+    Note over User,App: Multiple Input Methods, Single Handler
+
+    User->>Menu: Click "About"
+    Menu->>GPUI: Dispatch ShowAbout action
+
+    User->>KB: Press Cmd+Q
+    KB->>GPUI: Dispatch Quit action
+
+    GPUI->>GPUI: Look up registered handler
+    GPUI->>Handler: Call show_about(&ShowAbout, cx)
+    Handler->>App: Display native dialog
+
+    GPUI->>Handler: Call quit(&Quit, cx)
+    Handler->>App: cx.quit()
+
+    Note over GPUI,Handler: Same code handles<br/>menu + keyboard

@@ -1,0 +1,6 @@
+flowchart TD
+    subgraph "Without Orphan Rules"
+        A[Library A] -->|impl Display for Vec| C[Your Application]
+        B[Library B] -->|impl Display for Vec| C
+        C -->|Which one?| D[Conflict!]
+    end

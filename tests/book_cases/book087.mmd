@@ -1,0 +1,7 @@
+flowchart TD
+    subgraph Factors["Performance Factors"]
+        A["Data Size"] --> E["Larger = more benefit"]
+        B["Memory Access Pattern"] --> F["Sequential = best"]
+        C["Branch Predictability"] --> G["Predictable = scalar competitive"]
+        D["Operation Mix"] --> H["Data-parallel = SIMD wins"]
+    end

@@ -1,0 +1,16 @@
+flowchart TD
+    subgraph S["S-Attributed (synthesized only)"]
+        direction BT
+        S_C1[Child 1] --> S_P[Parent]
+        S_C2[Child 2] --> S_P
+        S_C3[Child 3] --> S_P
+    end
+
+    subgraph L["L-Attributed (left-to-right)"]
+        direction TB
+        L_P[Parent] --> L_C1[Child 1]
+        L_P --> L_C2[Child 2]
+        L_P --> L_C3[Child 3]
+        L_C1 --> L_C2
+        L_C2 --> L_C3
+    end

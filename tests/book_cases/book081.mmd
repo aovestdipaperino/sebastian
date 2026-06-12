@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph "Normal Completion"
+        A1["select! branch A wins"] --> B1["Branch A completes"]
+        A1 --> C1["Branch B: dropped at .await"]
+        style B1 fill:#2d8a4e,color:#fff,font-size:16px
+        style C1 fill:#c0392b,color:#fff,font-size:16px
+        style A1 fill:#2c3e50,color:#fff,font-size:16px
+    end
+
+    subgraph "Timeout Cancellation"
+        A2["timeout(5s, future)"] --> B2["Deadline expires"]
+        B2 --> C2["Inner future: dropped"]
+        C2 --> D2["All child futures: dropped"]
+        style A2 fill:#2c3e50,color:#fff,font-size:16px
+        style B2 fill:#d4a017,color:#fff,font-size:16px
+        style C2 fill:#c0392b,color:#fff,font-size:16px
+        style D2 fill:#c0392b,color:#fff,font-size:16px
+    end
+
+    subgraph "Task Abort"
+        A3["handle.abort()"] --> B3["Task cancelled at next .await"]
+        B3 --> C3["Future tree: dropped entirely"]
+        style A3 fill:#2c3e50,color:#fff,font-size:16px
+        style B3 fill:#d4a017,color:#fff,font-size:16px
+        style C3 fill:#c0392b,color:#fff,font-size:16px
+    end

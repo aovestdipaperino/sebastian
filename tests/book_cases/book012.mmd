@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph "Typical Application Architecture"
+        A[Main Menu] --> B[Customer Entry]
+        A --> C[Invoice Processing]
+        A --> D[Reports]
+        A --> E[Utilities]
+
+        B --> F[(CUSTOMER.DBF)]
+        C --> F
+        C --> G[(INVOICE.DBF)]
+        C --> H[(INVLINE.DBF)]
+        D --> F
+        D --> G
+        D --> H
+    end
+
+    style A fill:#5588aa,color:#fff
+    style F fill:#aa8855,color:#fff
+    style G fill:#aa8855,color:#fff
+    style H fill:#aa8855,color:#fff

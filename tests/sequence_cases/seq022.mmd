@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant T as Terminal
+    participant F as Framework
+    participant M as Menu Bar
+    participant A as Application
+    participant D as Dialog
+
+    T->>F: F5 keypress
+    F->>M: Keyboard event
+    M->>M: Match F5 to command
+    M->>F: Generate CMD_SET_BIRTH_DATE
+    F->>A: Command event
+    A->>A: Match command
+    A->>D: Show dialog
+    D->>A: Return with date
+    A->>A: Update command state
+    A->>F: Idle broadcast
+    F->>M: CM_COMMAND_SET_CHANGED
+    M->>M: Update display

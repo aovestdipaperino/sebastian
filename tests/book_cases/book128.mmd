@@ -1,0 +1,13 @@
+flowchart TD
+    subgraph "Alpha-Beta Pruning"
+        Root["Max Node<br/>α=-∞, β=+∞"]
+
+        Root --> A["Min Node<br/>returns -3"]
+        Root --> B["Min Node<br/>α=-3"]
+
+        B --> B1["Max Node<br/>returns -5"]
+        B --> B2["Max Node<br/>returns -2<br/>β=-2 < α=-3<br/>PRUNE remaining"]
+        B --> B3["Pruned"]
+
+        style B3 fill:#ffcccc
+    end

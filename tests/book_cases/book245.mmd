@@ -1,0 +1,5 @@
+flowchart TD
+    A[Entry: x = 1] --> B{x < 10?}
+    B -->|yes| C[body: x = x + 1]
+    C --> B
+    B -->|no| D[Exit: return x]

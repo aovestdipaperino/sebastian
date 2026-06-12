@@ -1,0 +1,15 @@
+graph TB
+    FE["Frontend (HTML/CSS/JS)"]
+    WV["System WebView"]
+    BE["Rust Backend"]
+    API["Tauri Commands"]
+    FS["Filesystem"]
+    NET["Network"]
+    SYS["System APIs"]
+
+    FE --> WV
+    WV <-->|IPC| API
+    API --> BE
+    BE --> FS
+    BE --> NET
+    BE --> SYS

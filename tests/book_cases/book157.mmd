@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph Heap["Heap Memory Layout"]
+        direction LR
+        V["Vec buffer<br/>0x1000-0x11FF"]
+        O["Other data<br/>0x1200-0x13FF"]
+        F["Free space<br/>0x5000-0x52FF"]
+    end
+
+    V -.->|"Can't extend here<br/>blocked by other data"| O
+    V -->|"Must relocate to<br/>available space"| F

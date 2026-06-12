@@ -1,0 +1,18 @@
+flowchart LR
+    subgraph Application["Your Application"]
+        RT[Tokio Runtime]
+        CS[Console Subscriber]
+        RT -->|task events| CS
+    end
+
+    subgraph Console["tokio-console CLI"]
+        GC[gRPC Client]
+        TUI[Terminal UI]
+        GC --> TUI
+    end
+
+    CS -->|gRPC :6669| GC
+
+    style RT fill:#2d5a27
+    style CS fill:#1e3a5f
+    style TUI fill:#5a2d27

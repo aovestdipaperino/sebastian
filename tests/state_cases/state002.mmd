@@ -1,0 +1,10 @@
+stateDiagram-v2
+    direction LR
+    [*] --> q0
+    q0 --> q0 : a, Z/AZ
+    q0 --> q0 : a, A/AA
+    q0 --> q1 : b, A/ε
+    q1 --> q1 : b, A/ε
+    q0 --> q2 : ε, Z/ε
+    q1 --> q2 : ε, Z/ε
+    q2 --> [*]

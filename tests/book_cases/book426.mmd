@@ -1,0 +1,23 @@
+graph TD
+    ENV[Deployment Environment]
+    PERF[Performance Needs]
+    FEAT[Feature Complexity]
+    NATIVE[Native Feel Priority]
+
+    EXP[Existing Expertise]
+    MAINTAIN[Maintenance Horizon]
+    SIZE[Team Size]
+
+    RAT[Ratatui]
+    TV[Turbo Vision]
+    TAU[Tauri]
+    GPUI[GPUI]
+
+    ENV -->|"Terminal needed"| RAT
+    ENV -->|"Terminal needed"| TV
+    ENV -->|"Desktop GUI"| TAU
+    ENV -->|"Desktop GUI"| GPUI
+
+    EXP -->|"Web background"| TAU
+    EXP -->|"Systems background"| GPUI
+    EXP -->|"CLI tools"| RAT

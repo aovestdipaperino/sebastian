@@ -1,0 +1,29 @@
+flowchart TB
+    subgraph Runtime["tokio-uring Runtime (single thread)"]
+        direction TB
+        subgraph Works["Works with io-uring"]
+            N["tokio_uring::net<br/>TcpListener, TcpStream"]
+            F["tokio_uring::fs<br/>File"]
+        end
+        subgraph Compat["Tokio ecosystem (compatible)"]
+            CH["tokio::sync<br/>mpsc, oneshot, watch"]
+            TM["tokio::time<br/>sleep, interval, timeout"]
+            SE["tokio::select!<br/>race multiple futures"]
+        end
+        subgraph NoUring["Uses epoll, not io-uring"]
+            TN["tokio::net<br/>TcpStream, UdpSocket"]
+            TF["tokio::fs<br/>File"]
+        end
+    end
+
+    style Runtime fill:#f0f0f0,stroke:#333,font-size:16px
+    style Works fill:#e8f4e8,stroke:#2d7d2d,font-size:16px
+    style Compat fill:#e8e8f4,stroke:#2d2d7d,font-size:16px
+    style NoUring fill:#f4e8e8,stroke:#7d2d2d,font-size:16px
+    style N fill:#fff,stroke:#999,font-size:16px
+    style F fill:#fff,stroke:#999,font-size:16px
+    style CH fill:#fff,stroke:#999,font-size:16px
+    style TM fill:#fff,stroke:#999,font-size:16px
+    style SE fill:#fff,stroke:#999,font-size:16px
+    style TN fill:#fff,stroke:#999,font-size:16px
+    style TF fill:#fff,stroke:#999,font-size:16px

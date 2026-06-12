@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph INH["Inheritance&nbsp;Approach"]
+        BASE["StyledElement<br/>-&nbsp;style:&nbsp;Style<br/>+&nbsp;applyStyle()"]
+        PARA_I["Paragraph<br/>-&nbsp;text:&nbsp;String"]
+        HEAD_I["Heading<br/>-&nbsp;text:&nbsp;String<br/>-&nbsp;level:&nbsp;int"]
+        BASE --> PARA_I
+        BASE --> HEAD_I
+    end
+
+    subgraph COMP["Composition&nbsp;Approach"]
+        STYLE["Style<br/>-&nbsp;fontSize:&nbsp;u16<br/>-&nbsp;color:&nbsp;String"]
+        PARA_C["Paragraph<br/>-&nbsp;text:&nbsp;String<br/>-&nbsp;style:&nbsp;Style"]
+        HEAD_C["Heading<br/>-&nbsp;text:&nbsp;String<br/>-&nbsp;level:&nbsp;u8<br/>-&nbsp;style:&nbsp;Style"]
+        STYLE -.->|"contains"| PARA_C
+        STYLE -.->|"contains"| HEAD_C
+    end
+
+    INH ~~~ COMP

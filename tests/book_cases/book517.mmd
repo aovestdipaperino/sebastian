@@ -1,0 +1,11 @@
+flowchart TD
+    A[Claude needs to understand the code] --> B{Tokensave available?}
+    B -->|No| C[Launch Explore agent]
+    C --> D[grep + glob + Read]
+    D --> E[Many files read]
+    E --> F[Hundreds of tool calls]
+    F --> G[Context window filled]
+    B -->|Yes| H[Query the knowledge graph]
+    H --> I[Targeted result]
+    I --> J[Few tool calls]
+    J --> K[Context window preserved]

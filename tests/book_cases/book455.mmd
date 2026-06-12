@@ -1,0 +1,17 @@
+flowchart TD
+    A[Evento nel ciclo di Claude] --> B{Hook configurato?}
+    B -->|No| C[Procedi normalmente]
+    B -->|Sì| D[Esegui hook command]
+    D --> E[Hook riceve JSON via stdin]
+    E --> F[Hook elabora e decide]
+    F --> G{Exit code?}
+    G -->|0| H[Successo: elabora output]
+    G -->|2| I[Blocco: mostra errore]
+    G -->|Altro| J[Errore non bloccante]
+    H --> K{Output JSON?}
+    K -->|Sì| L[Applica decisioni]
+    K -->|No| M[Aggiungi stdout al contesto]
+    L --> C
+    M --> C
+    I --> N[Operazione bloccata]
+    J --> C

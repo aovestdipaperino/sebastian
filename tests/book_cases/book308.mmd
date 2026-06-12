@@ -1,0 +1,12 @@
+flowchart TD
+    A[Can&nbsp;the&nbsp;error&nbsp;occur?] -->|No| B[No&nbsp;handling&nbsp;needed]
+    A -->|Yes| C[Can&nbsp;caller&nbsp;recover?]
+    C -->|No| D[Is&nbsp;it&nbsp;a&nbsp;bug?]
+    C -->|Yes| E[Return&nbsp;Result&lt;T,&nbsp;E&gt;]
+    D -->|Yes| F[panic!&nbsp;or&nbsp;assert!]
+    D -->|No| G[Is&nbsp;this&nbsp;a&nbsp;library?]
+    G -->|Yes| H[Return&nbsp;Result,&nbsp;let&nbsp;caller&nbsp;decide]
+    G -->|No| I[Log&nbsp;and&nbsp;exit&nbsp;gracefully]
+    E --> J[Should&nbsp;caller&nbsp;handle&nbsp;inline?]
+    J -->|Yes| K[match&nbsp;or&nbsp;if&nbsp;let]
+    J -->|No| L[Propagate&nbsp;with&nbsp;?]

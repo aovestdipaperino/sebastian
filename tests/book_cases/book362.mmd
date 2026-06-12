@@ -1,0 +1,29 @@
+flowchart TB
+    subgraph BEFORE["Owner in Scope"]
+        direction TB
+        CONN["conn: Connection"]
+        SOCK["socket: TcpStream"]
+        BUF["buffer: Vec<u8>"]
+        META["metadata: String"]
+        CONN --> SOCK
+        CONN --> BUF
+        CONN --> META
+    end
+
+    subgraph DURING["Scope Termina: Cascata di Drop"]
+        direction TB
+        D1["1. Connection::drop() eseguito"]
+        D2["2. TcpStream::drop() chiude socket"]
+        D3["3. Vec::drop() libera buffer"]
+        D4["4. String::drop() libera stringa"]
+        D1 --> D2
+        D1 --> D3
+        D1 --> D4
+    end
+
+    subgraph AFTER["Dopo il Drop"]
+        direction TB
+        FREED["Tutte le risorse rilasciate"]
+    end
+
+    BEFORE --> DURING --> AFTER

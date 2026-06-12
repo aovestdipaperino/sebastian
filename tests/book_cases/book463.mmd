@@ -1,0 +1,14 @@
+flowchart TD
+    A[Utente invia richiesta<br/>con Plan Mode attivo] --> B[Claude esplora la codebase<br/>Read, Grep, Glob]
+    B --> C{Servono chiarimenti?}
+    C -->|Sì| D[Claude pone domande<br/>Question Tool]
+    D --> E[Utente risponde]
+    E --> B
+    C -->|No| F[Claude formula il piano<br/>con approccio e passi]
+    F --> G{Utente approva?}
+    G -->|Modifica richiesta| H[Claude rivede il piano]
+    H --> G
+    G -->|Rifiuta| I[Claude ripensa<br/>l'approccio]
+    I --> B
+    G -->|Approva| J[Esecuzione del piano<br/>tool di scrittura riattivati]
+    J --> K[Implementazione<br/>con il piano come guida]

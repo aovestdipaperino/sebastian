@@ -1,0 +1,10 @@
+graph TD
+    A[set_menus] --> B{Platform}
+    B --> |macOS| C[System Menu Bar]
+    B --> |Windows| D[Window Menu Bar]
+    B --> |Linux| E[Window Menu Bar]
+
+    F[Menu] --> G[MenuItem::Action]
+    F --> H[MenuItem::Submenu]
+    F --> I[MenuItem::Separator]
+    F --> J[MenuItem::SystemMenu]

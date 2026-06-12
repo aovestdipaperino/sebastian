@@ -1,0 +1,29 @@
+flowchart TD
+    subgraph Existing["Existing Content"]
+        LF[Lock-Free Structures]
+        TC[Tokio Console Series]
+        UR[Unsafe Rust]
+        DSL[DSL Series]
+        EBPF[eBPF Series]
+    end
+
+    subgraph Proposed["Proposed Posts"]
+        TP[Thread Pool]
+        CA[Custom Allocators]
+        IM[Interior Mutability]
+        PIN[Pin/Unpin]
+        TS[Tracing Subscriber]
+        ZC[Zero-Copy Parsing]
+        VAR[Variance]
+        SIMD[SIMD Parsing]
+    end
+
+    LF --> TP
+    LF --> CA
+    UR --> IM
+    UR --> VAR
+    TC --> TS
+    TC --> PIN
+    DSL --> ZC
+    EBPF --> ZC
+    DSL --> SIMD

@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph WasmModule["Generated Wasm Module"]
+        direction TB
+        Types["Type Section<br/>Function signatures"]
+        Imports["Import Section<br/>print_num, print_char, cr"]
+        Functions["Function Section<br/>Type indices"]
+        Memory["Memory Section<br/>1-16 pages"]
+        Globals["Global Section<br/>Stack pointer"]
+        Exports["Export Section<br/>main, memory"]
+        Code["Code Section<br/>All function bodies"]
+    end
+
+    subgraph CodeContents["Code Section Contents"]
+        Push["push(i64)"]
+        Pop["pop() -> i64"]
+        Peek["peek() -> i64"]
+        UserWords["User words..."]
+        Main["main()"]
+    end
+
+    Code --> CodeContents
+
+    style WasmModule fill:#e3f2fd
+    style CodeContents fill:#fff3e0

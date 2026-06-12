@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph Before["Before: let b = a"]
+        A1["a (valid)"] --> H1["Heap: 'Hello'"]
+    end
+    
+    subgraph After["After: let b = a"]
+        A2["a (invalid)"] -.-> H2["Heap: 'Hello'"]
+        B2["b (valid)"] --> H2
+    end
+    
+    Before --> After

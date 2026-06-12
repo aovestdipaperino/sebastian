@@ -1,0 +1,13 @@
+flowchart TD
+    Start[New DSL Parser] --> Q1{Grammar complexity?}
+    Q1 -->|Simple, <20 rules| nom
+    Q1 -->|Medium| Q2{Need left recursion?}
+    Q1 -->|Complex| ANTLR
+
+    Q2 -->|Yes| ANTLR
+    Q2 -->|No| Q3{Prefer declarative grammar?}
+
+    Q3 -->|Yes| pest
+    Q3 -->|No| nom
+
+    Q1 -->|Cross-language needed| ANTLR

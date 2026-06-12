@@ -1,0 +1,14 @@
+flowchart TD
+    subgraph Question["When Can Type A Substitute for Type B?"]
+        Q1{{"Is it a read position?"}}
+        Q2{{"Is it a write position?"}}
+        Q3{{"Is it a function parameter?"}}
+    end
+
+    Q1 -->|Yes| Cov["Covariant: longer lifetime OK"]
+    Q2 -->|Yes| Inv["Invariant: exact match required"]
+    Q3 -->|Yes| Con["Contravariant: shorter lifetime OK"]
+
+    style Cov fill:#4a9,stroke:#333,color:#000
+    style Inv fill:#f66,stroke:#333,color:#000
+    style Con fill:#69f,stroke:#333,color:#000

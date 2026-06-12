@@ -1,0 +1,15 @@
+graph TD
+    INLINE[Inline Status<br/>Field validation, badges]
+    STATUS[Status Bar<br/>Connection state, counts]
+
+    TOAST[Toast Messages<br/>Success/error notifications]
+    PROGRESS[Progress Indicators<br/>Loading states]
+
+    NOTIF[Notifications<br/>Persistent messages]
+    DIALOG[Modal Dialogs<br/>Confirmations, errors]
+
+    INLINE --> STATUS
+    STATUS --> TOAST
+    TOAST --> PROGRESS
+    PROGRESS --> NOTIF
+    NOTIF --> DIALOG

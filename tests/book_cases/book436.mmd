@@ -1,0 +1,11 @@
+graph TD
+    Safe[Memory Safe Languages]
+    Unsafe[C/C++]
+
+    Safe --> GC[Garbage Collection Overhead]
+    Safe --> Startup[Slow Startup]
+    Safe --> Interop[FFI Complexity]
+
+    Unsafe --> Fast[Native Performance]
+    Unsafe --> Bugs[Memory Bugs]
+    Unsafe --> Platform[Direct Platform Access]

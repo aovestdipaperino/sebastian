@@ -1,0 +1,20 @@
+%%{init: {'themeVariables': {'fontSize': '16px'}}}%%
+flowchart TB
+    HMA["100000h and up<br/>High Memory Area, ~64 KB<br/>reachable only when A20 is enabled"]
+    subgraph onemb["The original 1 MB (twenty address lines)"]
+        direction TB
+        ROM["F0000h - FFFFFh<br/>motherboard BIOS ROM"]
+        UMA["A0000h - EFFFFh<br/>video RAM, option ROMs, Upper Memory Blocks"]
+        CONV["00000h - 9FFFFh<br/>conventional memory, 640 KB<br/>where DOS programs actually run"]
+    end
+    HMA --- ROM
+    ROM --- UMA
+    UMA --- CONV
+
+    classDef usable fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,color:#000;
+    classDef reserved fill:#fecaca,stroke:#dc2626,stroke-width:2px,color:#000;
+    classDef special fill:#bfdbfe,stroke:#2563eb,stroke-width:2px,color:#000;
+    class CONV usable;
+    class UMA reserved;
+    class ROM reserved;
+    class HMA special;

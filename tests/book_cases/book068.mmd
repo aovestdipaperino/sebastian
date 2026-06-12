@@ -1,0 +1,20 @@
+graph LR
+    subgraph "Simple to Use"
+        ARC[Arc/Rc]
+    end
+
+    subgraph "Balanced"
+        EPOCH[Epoch-based]
+    end
+
+    subgraph "Lowest Overhead"
+        QSBR_N[QSBR]
+    end
+
+    subgraph "Most Precise"
+        HP[Hazard Pointers]
+    end
+
+    ARC -->|"Higher read overhead"| EPOCH
+    EPOCH -->|"Needs quiescent points"| QSBR_N
+    EPOCH -->|"More complex"| HP

@@ -1,0 +1,9 @@
+graph LR
+    A[Event Stream] --> C{select!}
+    B[Tick Interval] --> C
+    C --> D[Handle Event]
+    C --> E[Handle Tick]
+    D --> F[Update State]
+    E --> F
+    F --> G[Render]
+    G --> C

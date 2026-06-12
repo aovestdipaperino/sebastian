@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph "Standard Iterator"
+        A[Item type] --> B[Fixed at impl time]
+        B --> C[Same lifetime for all calls]
+    end
+
+    subgraph "LendingIterator with GATs"
+        D[Item&lt;'a&gt; type] --> E[Parameterized]
+        E --> F[Fresh lifetime per call]
+    end
+
+    style A fill:#f96,stroke:#333
+    style D fill:#6f9,stroke:#333

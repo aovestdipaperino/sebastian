@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Columns: SELECT
+    Columns --> Columns: identifier, comma
+    Columns --> Table: identifier, FROM
+    Table --> Where: identifier, WHERE
+    Table --> Order: identifier, ORDER BY
+    Table --> [*]: identifier (end)
+    Where --> Order: condition, ORDER BY
+    Where --> [*]: condition (end)
+    Order --> [*]: columns (end)

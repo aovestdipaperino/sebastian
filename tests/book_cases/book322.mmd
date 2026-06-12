@@ -1,0 +1,15 @@
+%%{init: {"theme": "default", "themeVariables": {"fontSize": "16px"}}}%%
+flowchart LR
+    subgraph W1["Worker&nbsp;1"]
+        D1["Deque:&nbsp;T1,&nbsp;T2,&nbsp;T3"]
+    end
+
+    subgraph W2["Worker&nbsp;2"]
+        D2["Deque:&nbsp;T4"]
+    end
+
+    subgraph W3["Worker&nbsp;3&nbsp;(idle)"]
+        D3["Deque:&nbsp;empty"]
+    end
+
+    D1 -->|"steals&nbsp;T1"| D3

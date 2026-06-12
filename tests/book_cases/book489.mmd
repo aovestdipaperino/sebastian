@@ -1,0 +1,8 @@
+flowchart TD
+    A[Turn completes] --> B{Remaining space<br/>below 13K?}
+    B -->|No| C[Continue normally]
+    B -->|Yes| D[Reserve 20K for summary]
+    D --> E[Fire pre-compact hooks]
+    E --> F[Model generates summary]
+    F --> G[Replace older messages<br/>with boundary marker]
+    G --> H[Turn resumes]

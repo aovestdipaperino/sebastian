@@ -1,0 +1,8 @@
+flowchart TD
+    A[Build App] --> B[Sign with Developer ID]
+    B --> C[Submit to Notarization]
+    C --> D{Apple Review}
+    D -->|Approved| E[Staple Ticket]
+    D -->|Rejected| F[Fix Issues]
+    F --> B
+    E --> G[Distribute]

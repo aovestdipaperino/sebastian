@@ -1,0 +1,15 @@
+flowchart TB
+    START["Need&nbsp;polymorphism?"]
+    CLOSED["Is&nbsp;the&nbsp;set&nbsp;of&nbsp;types<br/>known&nbsp;and&nbsp;closed?"]
+    FREQUENT["Are&nbsp;new&nbsp;operations<br/>added&nbsp;frequently?"]
+    ENUM["Use&nbsp;enum"]
+    TRAIT["Use&nbsp;trait"]
+    DYNTRAIT["Use&nbsp;dyn&nbsp;Trait"]
+
+    START --> CLOSED
+    CLOSED -->|"Yes"| FREQUENT
+    CLOSED -->|"No"| TRAIT
+    FREQUENT -->|"Yes"| ENUM
+    FREQUENT -->|"No"| TRAIT
+
+    TRAIT -->|"Need&nbsp;heterogeneous<br/>collections?"| DYNTRAIT

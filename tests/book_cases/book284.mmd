@@ -1,0 +1,8 @@
+flowchart TD
+    A[Compilation request] --> B{Is binary crate?}
+    B -->|No| C[Pass through]
+    B -->|Yes| D{Is primary package?}
+    D -->|No| C
+    D -->|Yes| E{Is proc-macro or build script?}
+    E -->|Yes| C
+    E -->|No| F[Instrument]

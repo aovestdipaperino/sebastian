@@ -1,0 +1,7 @@
+flowchart TB
+    A[Language model<br/>text in, text out] --> B{Can it act<br/>on the world?}
+    B -->|No, only replies| C[Chatbot<br/>it talks]
+    B -->|Yes, runs tools| D[Agent<br/>it acts]
+
+    style C fill:#bbdefb,stroke:#1565c0,color:#000
+    style D fill:#c8e6c9,stroke:#2e7d32,color:#000

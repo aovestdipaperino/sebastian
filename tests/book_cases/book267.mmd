@@ -1,0 +1,8 @@
+flowchart TD
+    subgraph "PEG Ordered Choice: A ← B / C"
+        A1[Start] --> B1{Try B}
+        B1 -->|Success| D1[Accept B result]
+        B1 -->|Fail| C1{Try C}
+        C1 -->|Success| D2[Accept C result]
+        C1 -->|Fail| E1[Fail A]
+    end

@@ -1,0 +1,11 @@
+flowchart TD
+    A[Team Lead creates task] --> B[Task assigned to specialist]
+    B --> C[Specialist accepts and starts]
+    C --> D{Specialist working}
+    D -->|Progress| E["TaskUpdate: intermediate state"]
+    E --> D
+    D -->|Completed| F["TaskUpdate: final result"]
+    F --> G[Team Lead receives update]
+    G --> H{More tasks needed?}
+    H -->|Yes| A
+    H -->|No| I[Aggregated results]

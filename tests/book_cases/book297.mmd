@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph STATIC["Static&nbsp;Dispatch&nbsp;(Generics)"]
+        GENERIC["fn&nbsp;draw&lt;T:&nbsp;Shape&gt;(s:&nbsp;&T)"]
+        MONO1["draw::&lt;Circle&gt;"]
+        MONO2["draw::&lt;Rectangle&gt;"]
+        GENERIC --> MONO1
+        GENERIC --> MONO2
+    end
+
+    subgraph DYNAMIC["Dynamic&nbsp;Dispatch&nbsp;(dyn&nbsp;Trait)"]
+        DYN["fn&nbsp;draw(s:&nbsp;&dyn&nbsp;Shape)"]
+        VTABLE["vtable&nbsp;lookup<br/>at&nbsp;runtime"]
+        IMPL1["Circle::draw"]
+        IMPL2["Rectangle::draw"]
+        DYN --> VTABLE
+        VTABLE --> IMPL1
+        VTABLE --> IMPL2
+    end
+
+    STATIC ~~~ DYNAMIC

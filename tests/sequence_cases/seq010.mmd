@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant UI as UI Thread
+    participant Task as Async Task
+    participant Data as Data Source
+
+    UI->>Task: cx.spawn(async { ... })
+    UI->>UI: Continue rendering
+    Task->>Data: Fetch/Load
+    Data-->>Task: Response
+    Task->>UI: entity.update(|view, cx| { ... })
+    UI->>UI: Re-render with new data

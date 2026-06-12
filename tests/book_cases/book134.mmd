@@ -1,0 +1,10 @@
+flowchart TB
+    A[User question] --> B[POST to /v1/messages]
+    B --> C{Claude response}
+    C -->|stop_reason: tool_use| D[Run tool in your program]
+    D --> E[Append tool_result block]
+    E --> B
+    C -->|stop_reason: end_turn| F[Print text and exit]
+
+    style D fill:#c8e6c9,stroke:#2e7d32,color:#000
+    style F fill:#bbdefb,stroke:#1565c0,color:#000

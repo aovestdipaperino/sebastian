@@ -1,0 +1,5 @@
+stateDiagram-v2
+    [*] --> Closed: new()
+    Closed --> Open: open()
+    Open --> Closed: close()
+    Open --> Open: read()

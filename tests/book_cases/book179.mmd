@@ -1,0 +1,11 @@
+graph LR
+    A["Ownership<br/>(who owns data)"] --> C["Borrow Checker"]
+    B["Lifetimes<br/>(when references valid)"] --> C
+    C --> D["Memory Safety<br/>at Compile Time"]
+    D --> E["Zero Runtime<br/>Overhead"]
+
+    style A fill:#4CAF50
+    style B fill:#2196F3
+    style C fill:#FF9800
+    style D fill:#9C27B0
+    style E fill:#4CAF50

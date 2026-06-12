@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Listening : listen()
+    Closed --> Connected : connect()
+    Listening --> Established : accept()
+    Listening --> Closed : close()
+    Connected --> Established : handshake()
+    Connected --> Closed : close()
+    Established --> Closed : close()

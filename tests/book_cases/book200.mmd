@@ -1,0 +1,6 @@
+graph TD
+    A[Config change] --> D[Outage]
+    B[Unusual traffic pattern] --> D
+    C[Aggressive timeout] --> D
+    D --> E[Retry storm]
+    E --> D

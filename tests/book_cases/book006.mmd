@@ -1,0 +1,42 @@
+flowchart TB
+    subgraph App["Application"]
+        T1["tracing::info!(...)"]
+        T2["tracing::span!(...)"]
+        T3["tracing::error!(...)"]
+    end
+
+    subgraph Sub["TuiSubscriber"]
+        RB["Ring Buffer"]
+        SS["Span Storage"]
+        TX["Channel Sender"]
+    end
+
+    subgraph TUI["Terminal UI"]
+        RX["Channel Receiver"]
+        ST["UI State"]
+        RN["Render Loop"]
+        EV["Event Handler"]
+    end
+
+    subgraph Views["Views"]
+        LV["Log View"]
+        SV["Span Tree"]
+        FV["Filtered View"]
+    end
+
+    T1 --> TX
+    T2 --> SS
+    T3 --> TX
+    SS --> TX
+    TX --> RX
+    RX --> ST
+    ST --> RN
+    RN --> LV
+    RN --> SV
+    RN --> FV
+    EV --> ST
+
+    style App fill:#e8f5e9,stroke:#2e7d32
+    style Sub fill:#e3f2fd,stroke:#1565c0
+    style TUI fill:#fff3e0,stroke:#ef6c00
+    style Views fill:#f3e5f5,stroke:#7b1fa2

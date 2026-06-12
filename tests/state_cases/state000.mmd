@@ -1,0 +1,8 @@
+stateDiagram-v2
+    direction LR
+    [*] --> Even
+    Even --> Odd : a
+    Odd --> Even : a
+    Even --> Even : b
+    Odd --> Odd : b
+    Even --> [*]

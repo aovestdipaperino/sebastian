@@ -1,0 +1,17 @@
+%%{init: {'theme':'base', 'themeVariables': {'fontSize':'16px'}}}%%
+flowchart TD
+    subgraph Pipelined[Pipelined: no protection]
+        direction TB
+        P1[Read a row] --> P2[Write the row]
+        P2 --> P1
+    end
+    subgraph Separated[Phase separated: protected]
+        direction TB
+        S1[Read all matching rows] --> S2[Buffer them aside]
+        S2 --> S3[Write buffered rows]
+    end
+    style P1 fill:#fc9,stroke:#333
+    style P2 fill:#fc9,stroke:#333
+    style S1 fill:#9c9,stroke:#333
+    style S2 fill:#9c9,stroke:#333
+    style S3 fill:#9c9,stroke:#333

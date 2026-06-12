@@ -1,0 +1,18 @@
+flowchart TB
+    subgraph STATIC["Dispatch Statico<br/>(Generics)"]
+        aspace["-"]:::hidden
+        S1["Tipo concreto noto a compile time"]
+        S2["Chiamate dirette a funzioni"]
+        S3["Il compilatore può ottimizzare e inlinare"]
+        S4["Dimensione binario cresce con le istanziazioni"]
+    end
+
+    subgraph DYNAMIC["Dispatch Dinamico<br/>(Trait Objects)"]
+        bspace["-"]:::hidden
+        D1["Tipo concreto sconosciuto fino a runtime"]
+        D2["Lookup della vtable ad ogni chiamata"]
+        D3["Opportunità di ottimizzazione limitate"]
+        D4["Singolo percorso di codice per tutti i tipi"]
+    end
+
+    classDef hidden fill:none,stroke:none

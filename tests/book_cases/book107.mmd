@@ -1,0 +1,7 @@
+flowchart LR
+    subgraph "Address Calculation"
+        S[Segment Register<br/>16 bits] --> SHIFT[Shift Left 4]
+        SHIFT --> ADD[Add]
+        O[Offset Register<br/>16 bits] --> ADD
+        ADD --> PA[Physical Address<br/>20 bits]
+    end

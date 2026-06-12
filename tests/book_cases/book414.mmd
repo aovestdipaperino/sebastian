@@ -1,0 +1,6 @@
+graph LR
+    A[Application State] --> B[Create Widget]
+    B --> C[render_widget]
+    C --> D[Widget renders to Buffer]
+    D --> E[Framework diffs with previous]
+    E --> F[Send changes to terminal]

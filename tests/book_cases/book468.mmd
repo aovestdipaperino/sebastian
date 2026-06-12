@@ -1,0 +1,10 @@
+flowchart TD
+    A[Claude inizia sessione] --> B[Legge CLAUDE.md]
+    B --> C[Consulta MEMORY.md indice]
+    C --> D[Carica ricordi rilevanti]
+    D --> E{Conflitto tra fonti?}
+    E -->|No| F[Usa entrambe le fonti]
+    E -->|Sì| G[CLAUDE.md ha precedenza]
+    G --> H[Segnala conflitto all'utente]
+    F --> I[Lavora con contesto arricchito]
+    H --> I

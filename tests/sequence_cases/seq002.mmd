@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant P as Parser
+    participant L as Lexer
+    participant S as SymTab
+    participant C as CodeGen
+
+    P->>L: get_token()
+    L-->>P: IDENT "X"
+    P->>S: lookup("X")
+    S-->>P: var at BP-4, type INTEGER
+    P->>L: get_token()
+    L-->>P: ASSIGN ":="
+    P->>P: parse_expression()
+    Note over P: Recursive call
+    P->>L: get_token()
+    L-->>P: IDENT "Y"
+    P->>S: lookup("Y")
+    S-->>P: var at BP-6, type INTEGER
+    P->>C: emit MOV AX,[BP-6]
+    P->>L: get_token()
+    L-->>P: PLUS "+"
+    P->>L: get_token()
+    L-->>P: INTEGER 1
+    P->>C: emit ADD AX,1
+    P->>C: emit MOV [BP-4],AX

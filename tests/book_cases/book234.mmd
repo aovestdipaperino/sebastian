@@ -1,0 +1,18 @@
+flowchart TD
+    A[Start: Packet Processing Need] --> B{Cross-platform required?}
+    B -->|Yes| C[Use libpcap]
+    B -->|No| D{Need to modify or drop packets?}
+    D -->|Yes| E[Use eBPF/XDP]
+    D -->|No| F{Traffic > 1M PPS?}
+    F -->|Yes| E
+    F -->|No| G{Quick prototype or one-off tool?}
+    G -->|Yes| C
+    G -->|No| H{Need stateful kernel logic?}
+    H -->|Yes| E
+    H -->|No| I{Team familiar with eBPF?}
+    I -->|Yes| J[Either works: prefer simpler]
+    I -->|No| C
+
+    C --> K[libpcap Path]
+    E --> L[eBPF/XDP Path]
+    J --> M[Evaluate specific requirements]
