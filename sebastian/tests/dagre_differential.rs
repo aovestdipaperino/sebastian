@@ -5,9 +5,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use mermaid_rust::dagre;
-use mermaid_rust::dagre::types::{EdgeLabel, GraphLabel, NodeLabel, edge_ref, node_ref};
-use mermaid_rust::graphlib::{Graph, GraphOptions};
+use sebastian::dagre;
+use sebastian::dagre::types::{EdgeLabel, GraphLabel, NodeLabel, edge_ref, node_ref};
+use sebastian::graphlib::{Graph, GraphOptions};
 use serde_json::Value;
 
 fn build_graph(spec: &Value) -> dagre::types::LayoutGraph {

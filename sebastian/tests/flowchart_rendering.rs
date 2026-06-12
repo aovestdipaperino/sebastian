@@ -4,7 +4,7 @@
 //! Requires the system Trebuchet MS font (present on macOS/Windows); text
 //! metrics and therefore the whole layout depend on it.
 
-use mermaid_rust::render::render_flowchart;
+use sebastian::render::render_flowchart;
 
 fn run_case(name: &str) {
     let dir = format!("{}/tests/flowchart_cases", env!("CARGO_MANIFEST_DIR"));

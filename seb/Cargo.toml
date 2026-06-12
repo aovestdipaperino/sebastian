@@ -1,0 +1,18 @@
+[package]
+name = "seb"
+description = "CLI for sebastian — render mermaid diagrams to SVG, mmdc-style"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "seb"
+path = "src/main.rs"
+
+[dependencies]
+sebastian = { path = "../sebastian" }
+
+[lints]
+workspace = true

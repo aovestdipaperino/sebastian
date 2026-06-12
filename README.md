@@ -1,12 +1,22 @@
-# mermaid-rust
+# sebastian 🦀🧜
 
-A pixel-perfect Rust port of the [mermaid.js](https://mermaid.js.org) flowchart
-renderer (mermaid 11.15.0). For supported diagrams the output SVG is
+A pixel-perfect Rust port of the [mermaid.js](https://mermaid.js.org)
+diagram renderers (mermaid 11.15.0). Named after the crab from the
+mermaid. For supported diagram types — **flowchart, stateDiagram-v2,
+sequenceDiagram, classDiagram, timeline** — the output SVG is
 **byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
 
+The workspace contains two crates:
+
+- **`sebastian`** — the rendering library (`sebastian::render::render_diagram`)
+- **`seb`** — the CLI
+
 ```
-cargo run -- -i diagram.mmd -o diagram.svg
+cargo run -p seb -- -i diagram.mmd -o diagram.svg
 ```
+
+The non-obvious Chrome/V8/mermaid behaviors this required are cataloged
+in [docs/NUANCES.md](docs/NUANCES.md).
 
 ## What is ported
 
@@ -36,20 +46,20 @@ The full flowchart pipeline, ported line-by-line from the JS sources:
 
 Two reference suites assert output against captured `mmdc` SVGs:
 
-- `tests/flowchart_rendering.rs` — 14 hand-written diagrams (directions,
+- `sebastian/tests/flowchart_rendering.rs` — 14 hand-written diagrams (directions,
   subgraphs, self-loops, styling, unicode, wrapping, parallel edges, …),
   byte-identical.
-- `tests/book_corpus.rs` — 553 real-world flowcharts harvested from `.md`
+- `sebastian/tests/book_corpus.rs` — 553 real-world flowcharts harvested from `.md`
   books. **544 are byte-identical**, including 17 with `%%{init}%%`
   directives (themes, themeVariables, `htmlLabels:false`); 3 contain
   rough.js shapes (compared modulo mermaid's own random control points);
   6 differ only numerically (5 below 0.01px from Chrome's
   arc-decomposition arithmetic, 1 at ≤2px from a space-kerning quirk).
-- `tests/state_corpus.rs` — 23 stateDiagram-v2 diagrams from the same
+- `sebastian/tests/state_corpus.rs` — 23 stateDiagram-v2 diagrams from the same
   books (20 byte-identical, 3 note diagrams modulo rough randomness).
-- `tests/sequence_corpus.rs` — 24 sequence diagrams, all byte-identical.
-- `tests/timeline_corpus.rs` — 4 timeline diagrams, all byte-identical.
-- `tests/class_corpus.rs` — 5 class diagrams, byte-identical modulo the
+- `sebastian/tests/sequence_corpus.rs` — 24 sequence diagrams, all byte-identical.
+- `sebastian/tests/timeline_corpus.rs` — 4 timeline diagrams, all byte-identical.
+- `sebastian/tests/class_corpus.rs` — 5 class diagrams, byte-identical modulo the
   rough rectangle/divider randomness mermaid itself embeds.
 
 Reproducing the corpus required matching Chrome's text pipeline in detail:

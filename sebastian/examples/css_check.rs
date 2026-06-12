@@ -1,7 +1,7 @@
 fn main() {
-    let vars = mermaid_rust::render::themes::theme_variables("default", &serde_json::Map::new());
-    let generated = mermaid_rust::render::css::themed_flowchart_css("my-svg", &vars);
-    let captured = mermaid_rust::render::css::flowchart_css("my-svg");
+    let vars = sebastian::render::themes::theme_variables("default", &serde_json::Map::new());
+    let generated = sebastian::render::css::themed_flowchart_css("my-svg", &vars);
+    let captured = sebastian::render::css::flowchart_css("my-svg");
     if generated == captured {
         println!("DEFAULT CSS IDENTICAL");
     } else {

@@ -1,13 +1,14 @@
-//! Corpus test: 24 real-world sequence diagrams extracted from `../books`,
-//! all byte-identical to official mermaid-cli (mermaid 11.15.0) output.
+//! Timeline corpus: 1 diagram from `../books` plus hand-made cases
+//! (sections, multiple events, wrapping), all byte-identical to official
+//! mermaid-cli (mermaid 11.15.0) output.
 
-use mermaid_rust::render::render_diagram;
+use sebastian::render::render_diagram;
 
 #[test]
-fn sequence_corpus() {
-    let dir = format!("{}/tests/sequence_cases", env!("CARGO_MANIFEST_DIR"));
+fn timeline_corpus() {
+    let dir = format!("{}/tests/timeline_cases", env!("CARGO_MANIFEST_DIR"));
     let mut cases: Vec<String> = std::fs::read_dir(&dir)
-        .expect("sequence_cases dir")
+        .expect("timeline_cases dir")
         .filter_map(|e| {
             let name = e.ok()?.file_name().into_string().ok()?;
             name.strip_suffix(".mmd").map(str::to_owned)
@@ -21,15 +22,14 @@ fn sequence_corpus() {
         let reference =
             std::fs::read_to_string(format!("{dir}/{case}.svg")).expect("reference readable");
         match std::panic::catch_unwind(|| render_diagram(&source, "my-svg")) {
+            Ok(Ok(svg)) if svg == reference => {}
             Ok(Ok(svg)) => {
-                if svg != reference {
-                    let pos = svg
-                        .bytes()
-                        .zip(reference.bytes())
-                        .position(|(a, b)| a != b)
-                        .unwrap_or(svg.len().min(reference.len()));
-                    failures.push(format!("{case}: differs at byte {pos}"));
-                }
+                let pos = svg
+                    .bytes()
+                    .zip(reference.bytes())
+                    .position(|(a, b)| a != b)
+                    .unwrap_or(svg.len().min(reference.len()));
+                failures.push(format!("{case}: differs at byte {pos}"));
             }
             Ok(Err(err)) => failures.push(format!("{case}: parse error: {err}")),
             Err(_) => failures.push(format!("{case}: render panicked")),
@@ -37,7 +37,7 @@ fn sequence_corpus() {
     }
     assert!(
         failures.is_empty(),
-        "{} sequence corpus failures:\n{}",
+        "{} timeline corpus failures:\n{}",
         failures.len(),
         failures.join("\n")
     );

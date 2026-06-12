@@ -1,4 +1,4 @@
-//! CLI: renders a mermaid flowchart (.mmd) to SVG, mmdc-style.
+//! `seb`: renders a mermaid diagram (.mmd) to SVG, mmdc-style.
 
 use std::process::ExitCode;
 
@@ -33,7 +33,7 @@ fn main() -> ExitCode {
     }
 
     let Some(input) = input else {
-        eprintln!("usage: mermaid-rust -i input.mmd [-o output.svg] [--id svg-id]");
+        eprintln!("usage: seb -i input.mmd [-o output.svg] [--id svg-id]");
         return ExitCode::FAILURE;
     };
 
@@ -45,7 +45,7 @@ fn main() -> ExitCode {
         }
     };
 
-    match mermaid_rust::render::render_diagram(&source, &id) {
+    match sebastian::render::render_diagram(&source, &id) {
         Ok(svg) => {
             if let Some(output) = output {
                 if let Err(err) = std::fs::write(&output, svg) {

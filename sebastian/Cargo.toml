@@ -1,0 +1,20 @@
+[package]
+name = "sebastian"
+description = "Pixel-perfect Rust port of the mermaid.js diagram renderers"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[dependencies]
+core-math = "1.0.2"
+indexmap = "2"
+serde_json = "1.0.150"
+ttf-parser = "0.25.1"
+
+[dev-dependencies]
+serde_json = "1.0.150"
+
+[lints]
+workspace = true

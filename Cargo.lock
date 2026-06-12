@@ -208,16 +208,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b947ae49db0d222b1dbc6b113ce7248a3fc3a6ca21b696717bfc000ba4484d8"
 
 [[package]]
-name = "mermaid-rust"
-version = "0.1.0"
-dependencies = [
- "core-math",
- "indexmap",
- "serde_json",
- "ttf-parser",
-]
-
-[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -301,6 +291,23 @@ name = "rustc-hash"
 version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94300abf3f1ae2e2b8ffb7b58043de3d399c73fa6f4b73826402a5c457614dbe"
+
+[[package]]
+name = "seb"
+version = "0.1.0"
+dependencies = [
+ "sebastian",
+]
+
+[[package]]
+name = "sebastian"
+version = "0.1.0"
+dependencies = [
+ "core-math",
+ "indexmap",
+ "serde_json",
+ "ttf-parser",
+]
 
 [[package]]
 name = "serde"
