@@ -38,9 +38,30 @@ The full flowchart pipeline, ported line-by-line from the JS sources:
 - **SVG generation** — d3 `curveBasis` edges with marker offsets, the exact
   default-theme stylesheet, `classDef` CSS (CSSOM serialization), markers
   (including per-color clones), clusters, self-loop decomposition, rough.js
-  two-path shapes (stadium, odd), foreignObject HTML labels, and Chrome
+  two-path shapes (stadium, odd), foreignObject HTML labels (or SVG
+  `<text>` labels when `htmlLabels: false`, see below), and Chrome
   `XMLSerializer`/`getBBox` semantics (f32 quantization, attribute ordering,
   DOMPurify trimming).
+
+## Label rendering (`htmlLabels`)
+
+Mermaid renders labels two ways, and this port matches both byte-for-byte:
+
+- **`htmlLabels: true`** (the default) — labels are `foreignObject` HTML
+  spans, exactly as `mmdc` emits them. Faithful, but `foreignObject`
+  requires an HTML/CSS layout engine (a browser) to rasterize.
+- **`htmlLabels: false`** — node, edge, and cluster labels become native
+  SVG `<text>`/`<tspan>` (mermaid's `createFormattedText` path; node text is
+  centered via the `.node .label text { text-anchor: middle }` rule), and
+  `classDef` styling targets the shape elements (`rect`/`polygon`/`ellipse`/
+  `circle`/`path`) instead of the foreignObject contents. This output
+  rasterizes in pure-SVG renderers such as
+  [resvg](https://github.com/linebender/resvg) that don't support
+  `foreignObject`, which makes offline SVG → PNG conversion possible without
+  a headless browser.
+
+Select it with an init directive — `%%{init: {'htmlLabels': false,
+'flowchart': {'htmlLabels': false}}}%%` — or the merged config.
 
 ## Fidelity
 
@@ -55,6 +76,12 @@ Two reference suites assert output against captured `mmdc` SVGs:
   rough.js shapes (compared modulo mermaid's own random control points);
   6 differ only numerically (5 below 0.01px from Chrome's
   arc-decomposition arithmetic, 1 at ≤2px from a space-kerning quirk).
+- `sebastian/tests/flowchart_nohtml_rendering.rs` — 12 of the flowchart
+  diagrams re-rendered with `htmlLabels: false` (SVG `<text>` labels),
+  byte-identical. Two cases (`chain`, `multibr`) are omitted: they differ by
+  ≤0.07px / 1 f32 ULP because Chrome sizes SVG-text nodes from glyph ink
+  extents (`getBBox`) while this port uses advance widths — invisible when
+  rasterized.
 - `sebastian/tests/state_corpus.rs` — 23 stateDiagram-v2 diagrams from the same
   books (20 byte-identical, 3 note diagrams modulo rough randomness).
 - `sebastian/tests/sequence_corpus.rs` — 24 sequence diagrams, all byte-identical.
