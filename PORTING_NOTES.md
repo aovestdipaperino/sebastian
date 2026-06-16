@@ -38,8 +38,17 @@ svg_label.rs):
   only at paren depth 0. useGradient themes emit <linearGradient> defs.
 - htmlLabels:false → edge/cluster labels via getEffectiveHtmlLabels
   (flowchart.htmlLabels ?? htmlLabels ?? true) render as SVG
-  <text>/<tspan> (createFormattedText port); node labelHelper reads only
-  the top-level htmlLabels, so node labels stay foreignObject.
+  <text>/<tspan> (createFormattedText port). Node labelHelper reads the
+  top-level htmlLabels: when false, node labels also render as SVG text
+  (createText isNode=true, centerText=!isNode=false, centering via the
+  `.node .label text { text-anchor: middle }` CSS rule), labelEl transform
+  is translate(0, -bbox.height/2), and classDef CSS targets the shape
+  elements (rect/polygon/ellipse/circle/path) instead of `> *`/`span`.
+  Validated byte-exact against mmdc in tests/flowchart_nohtml_cases.
+  Known sub-pixel gap: Chrome sizes SVG-text nodes from glyph ink extents
+  (getBBox) while this port uses advance widths, so a few glyphs (e.g. "f")
+  and multi-line heights differ by ≤0.07px / 1 f32 ULP (chain, multibr);
+  invisible when rasterized.
 - SVG getComputedTextLength = exact advance+kern sum rounded HALF-UP to the
   1/64px grid, per inner tspan (verified empirically: "Ti"=-85 units exact
   but "Timeline" rounds the total up 1 unit). HTML measurement is NOT
