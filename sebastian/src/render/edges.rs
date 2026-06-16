@@ -103,8 +103,16 @@ pub fn insert_edge_label(
             true,
         );
         crate::svg::move_element(&ft.label_element, &label);
-        // isNode=false style transforms (style is empty in practice).
+        // createText isNode=false style transforms: the rect keeps non-stroke/
+        // fill declarations (background -> fill), the text maps color -> fill.
         if ft.has_background {
+            let strip = |s: &str| {
+                let s = super::shapes::remove_style_decl(s, "stroke:");
+                let s = super::shapes::remove_style_decl(&s, "stroke-width:");
+                super::shapes::remove_style_decl(&s, "fill:")
+            };
+            let rect_style = strip(&label_style).replace("background:", "fill:");
+            let text_style = strip(&label_style).replace("color:", "fill:");
             set_attr(
                 &ft.label_group
                     .borrow()
@@ -118,9 +126,9 @@ pub fn insert_edge_label(
                     })
                     .expect("background rect"),
                 "style",
-                "",
+                &rect_style,
             );
-            set_attr(&ft.text_element, "style", "");
+            set_attr(&ft.text_element, "style", &text_style);
         }
         set_attr(
             &label,

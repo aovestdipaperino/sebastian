@@ -51,7 +51,11 @@ fn cssom_value(prop: &str, value: &str) -> String {
 
 /// classDef CSS (mermaidAPI `createCssStyles` + stylis serialization).
 #[must_use]
-pub fn class_defs_css(id: &str, classes: &[(String, Vec<String>, Vec<String>)]) -> String {
+pub fn class_defs_css(
+    id: &str,
+    html_labels: bool,
+    classes: &[(String, Vec<String>, Vec<String>)],
+) -> String {
     let mut out = String::new();
     use std::fmt::Write;
     let format_decls = |styles: &[String]| -> String {
@@ -66,14 +70,20 @@ pub fn class_defs_css(id: &str, classes: &[(String, Vec<String>, Vec<String>)]) 
                 decls
             })
     };
+    // createCssStyles: htmlLabels targets the foreignObject contents (`> *`
+    // serializes as `>*` via CSSOM, plus `span`); without html labels the
+    // styles target the SVG shape elements directly. The `>` is XML-escaped
+    // later, but our style text is escaped during serialization, so emit the
+    // raw `>` here.
+    let elements: &[&str] = if html_labels {
+        &[">*", " span"]
+    } else {
+        &[" rect", " polygon", " ellipse", " circle", " path"]
+    };
     for (name, styles, text_styles) in classes {
         if !styles.is_empty() {
             let decls = format_decls(styles);
-            for element in ["&gt;*", " span"] {
-                // `> *` serializes as `>*` via CSSOM; `>` is XML-escaped later,
-                // but our style text is escaped during serialization, so emit
-                // the raw `>` here.
-                let element = if *element == *"&gt;*" { ">*" } else { element };
+            for element in elements {
                 let _ = write!(out, "#{id} .{name}{element}{{{decls}}}");
             }
         }

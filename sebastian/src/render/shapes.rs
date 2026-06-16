@@ -319,7 +319,54 @@ pub struct LabelResult {
     pub label: Element,
 }
 
-/// Port of `labelHelper` (htmlLabels = true path).
+/// Removes every `prop value` declaration from a style string, mirroring the
+/// JS regex `/prop[^;]+;?/g` (requires at least one non-`;` value char).
+pub(crate) fn remove_style_decl(style: &str, prop: &str) -> String {
+    let mut out = String::new();
+    let mut rest = style;
+    while let Some(pos) = rest.find(prop) {
+        let after = &rest[pos + prop.len()..];
+        let val_len = after.find(';').unwrap_or(after.len());
+        if val_len == 0 {
+            // No value char: the regex would not match here. Keep the literal
+            // prop text and continue scanning past it.
+            out.push_str(&rest[..pos + prop.len()]);
+            rest = after;
+            continue;
+        }
+        out.push_str(&rest[..pos]);
+        let mut skip = pos + prop.len() + val_len;
+        if rest[skip..].starts_with(';') {
+            skip += 1;
+        }
+        rest = &rest[skip..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// createText's `isNode` style transform for SVG text labels: the first
+/// `stroke:` becomes `lineColor:`, remaining stroke/stroke-width/fill
+/// declarations are stripped, and `color:` maps to `fill:`.
+fn node_label_text_style(style: &str) -> String {
+    if style.is_empty() {
+        return String::new();
+    }
+    let s = if style.contains("stroke:") {
+        style.replacen("stroke:", "lineColor:", 1)
+    } else {
+        style.to_owned()
+    };
+    let s = remove_style_decl(&s, "stroke:");
+    let s = remove_style_decl(&s, "stroke-width:");
+    let s = remove_style_decl(&s, "fill:");
+    // `color:` is lowercase; the capital `C` in `lineColor:` is left intact.
+    s.replace("color:", "fill:")
+}
+
+/// Port of `labelHelper`. Node labels render as a foreignObject HTML span
+/// (`htmlLabels: true`, the default) or as an SVG `<text>`/`<tspan>` label
+/// (`htmlLabels: false`, via `createFormattedText`).
 pub fn label_helper(
     parent: &Element,
     node: &NodeRef,
@@ -344,32 +391,63 @@ pub fn label_helper(
         n.width
     };
     let font_size = font_size_from_styles_or(&n.label_style_str, config.font_size());
-    let bbox = measure_label_sized(measurer, &n.label, wrap_width, font_size);
-    build_html_label_classed(
-        &label_el,
-        &n.label,
-        bbox,
-        if n.label_type == "markdown" {
-            "nodeLabel markdown-node-label"
-        } else {
-            "nodeLabel"
-        },
-        false,
-        wrap_width,
-        &n.label_style_str.clone(),
-    );
+
+    let bbox = if config.node_html_labels() {
+        let bbox = measure_label_sized(measurer, &n.label, wrap_width, font_size);
+        build_html_label_classed(
+            &label_el,
+            &n.label,
+            bbox,
+            if n.label_type == "markdown" {
+                "nodeLabel markdown-node-label"
+            } else {
+                "nodeLabel"
+            },
+            false,
+            wrap_width,
+            &n.label_style_str.clone(),
+        );
+        // labelEl.attr('transform', translate(-bbox.width/2, -bbox.height/2)).
+        set_attr(
+            &label_el,
+            "transform",
+            format!(
+                "translate({}, {})",
+                js_num(-bbox.width / 2.0),
+                js_num(-bbox.height / 2.0)
+            ),
+        );
+        bbox
+    } else {
+        // createText with useHtmlLabels=false, isNode=true: SVG text label.
+        // addSvgBackground is false for plain nodes; centerText = !isNode =
+        // false (horizontal centering comes from the `.node .label text`
+        // `text-anchor: middle` CSS rule).
+        let ft = super::svg_label::create_formatted_text(
+            &label_el, &n.label, measurer, font_size, wrap_width, false, false,
+        );
+        // createText isNode branch applies the derived text style to the
+        // returned label element (the bare <text> when no background).
+        set_attr(
+            &ft.label_element,
+            "style",
+            node_label_text_style(&n.label_style_str),
+        );
+        let bbox = BBox {
+            width: ft.text_bbox.width,
+            height: ft.text_bbox.height,
+            wrapped: false,
+        };
+        // labelEl.attr('transform', translate(0, -bbox.height/2)).
+        set_attr(
+            &label_el,
+            "transform",
+            format!("translate(0, {})", js_num(-bbox.height / 2.0)),
+        );
+        bbox
+    };
 
     let half_padding = n.padding / 2.0;
-
-    set_attr(
-        &label_el,
-        "transform",
-        format!(
-            "translate({}, {})",
-            js_num(-bbox.width / 2.0),
-            js_num(-bbox.height / 2.0)
-        ),
-    );
     // labelEl.insert('rect', ':first-child')
     insert_first(&label_el, "rect");
     LabelResult {

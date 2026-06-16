@@ -179,7 +179,7 @@ pub fn render_flowchart(source: &str, id: &str) -> Result<String, ParseError> {
         css: format!(
             "{}{}",
             css::themed_flowchart_css(id, &theme_vars),
-            css::class_defs_css(id, &class_list)
+            css::class_defs_css(id, config.effective_html_labels(), &class_list)
         ),
     };
     Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
