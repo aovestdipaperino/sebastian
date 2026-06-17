@@ -902,7 +902,13 @@ pub fn insert_edge(
             curve.line_end();
         }
     }
-    let line_path = path.d;
+    let line_path = if e.look == "handDrawn" && with_offsets.len() > 1 {
+        let pts: Vec<Point> = with_offsets.iter().map(|&(x, y)| Point { x, y }).collect();
+        let seed = super::handdrawn::seed_from(with_offsets[0].0, with_offsets[0].1);
+        super::handdrawn::hd_edge_d(&pts, seed)
+    } else {
+        path.d
+    };
 
     let mut stroke_classes = match e.thickness.as_str() {
         "thick" => "edge-thickness-thick",

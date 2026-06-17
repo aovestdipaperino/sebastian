@@ -49,6 +49,17 @@ fn cssom_value(prop: &str, value: &str) -> String {
     value.to_owned()
 }
 
+/// Font-family override applied to every label in `look: handDrawn` mode, for
+/// the handwritten/Excalidraw appearance. Uses a handwritten system-font stack
+/// (Trebuchet metrics still drive layout, so node sizes are approximate).
+#[must_use]
+pub fn hand_drawn_font_css(id: &str) -> String {
+    let font = "\"Comic Sans MS\", \"Chalkboard SE\", \"Bradley Hand\", cursive";
+    format!(
+        "#{id} .nodeLabel,#{id} .edgeLabel,#{id} .label text,#{id} span,#{id} p{{font-family:{font}!important;}}"
+    )
+}
+
 /// classDef CSS (mermaidAPI `createCssStyles` + stylis serialization).
 #[must_use]
 pub fn class_defs_css(
