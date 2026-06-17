@@ -460,7 +460,13 @@ pub fn label_helper(
 
 fn get_node_classes(node: &NodeRef) -> String {
     let n = node.borrow();
-    format!("node {} ", n.css_classes)
+    // getNodeClasses: handDrawn nodes are "rough-node", classic ones "node".
+    let kind = if n.look == "handDrawn" {
+        "rough-node"
+    } else {
+        "node"
+    };
+    format!("{kind} {} ", n.css_classes)
 }
 
 /// Inserts a polygon like `insertPolygonShape`.
@@ -513,6 +519,39 @@ fn draw_rect(
     let total_height = f64::max(result.bbox.height + label_padding_y * 2.0, 0.0);
     let x = -total_width / 2.0;
     let y = -total_height / 2.0;
+
+    if n.look == "handDrawn" {
+        let corners = [
+            Point { x, y },
+            Point {
+                x: x + total_width,
+                y,
+            },
+            Point {
+                x: x + total_width,
+                y: y + total_height,
+            },
+            Point {
+                x,
+                y: y + total_height,
+            },
+        ];
+        let (fill, stroke) = hd_theme_colors(config);
+        let g = super::handdrawn::hd_polygon(
+            &result.shape_svg,
+            &corners,
+            &fill,
+            &stroke,
+            HD_STROKE_WIDTH,
+            node_styles,
+            super::handdrawn::seed_from(total_width, total_height),
+        );
+        set_attr(&g, "class", "basic label-container");
+        n.width = f32q(total_width);
+        n.height = f32q(total_height);
+        n.intersect = Some(IntersectShape::Rect);
+        return result.shape_svg;
+    }
 
     let rect = insert_first(&result.shape_svg, "rect");
     set_attr(&rect, "class", "basic label-container");
@@ -597,12 +636,28 @@ pub fn insert_node_shape(
                     y: -s / 2.0,
                 },
             ];
+            let transform = format!("translate({}, {})", js_num(-s / 2.0 + 0.5), js_num(s / 2.0));
+            if n.look == "handDrawn" {
+                let (fill, stroke) = hd_theme_colors(config);
+                let g = super::handdrawn::hd_polygon(
+                    &result.shape_svg,
+                    &points,
+                    &fill,
+                    &stroke,
+                    HD_STROKE_WIDTH,
+                    &node_styles,
+                    super::handdrawn::seed_from(s, h),
+                );
+                set_attr(&g, "class", "basic label-container");
+                set_attr(&g, "transform", transform);
+                let (bw, bh) = polygon_bbox(&points);
+                n.width = f32q(bw);
+                n.height = f32q(bh);
+                n.intersect = Some(IntersectShape::Question(points));
+                return result.shape_svg;
+            }
             let polygon = insert_polygon_shape(&result.shape_svg, s, s, &points);
-            set_attr(
-                &polygon,
-                "transform",
-                format!("translate({}, {})", js_num(-s / 2.0 + 0.5), js_num(s / 2.0)),
-            );
+            set_attr(&polygon, "transform", transform);
             if !node_styles.is_empty() {
                 set_attr(&polygon, "style", node_styles.clone());
             }
@@ -622,6 +677,24 @@ pub fn insert_node_shape(
             );
             let mut n = node.borrow_mut();
             let radius = result.bbox.width / 2.0 + result.half_padding;
+            if n.look == "handDrawn" {
+                let (fill, stroke) = hd_theme_colors(config);
+                let g = super::handdrawn::hd_ellipse(
+                    &result.shape_svg,
+                    radius,
+                    radius,
+                    &fill,
+                    &stroke,
+                    HD_STROKE_WIDTH,
+                    &node_styles,
+                    super::handdrawn::seed_from(radius, radius),
+                );
+                set_attr(&g, "class", "basic label-container");
+                n.width = f32q(radius * 2.0);
+                n.height = f32q(radius * 2.0);
+                n.intersect = Some(IntersectShape::Circle { radius });
+                return result.shape_svg;
+            }
             let circle = insert_first(&result.shape_svg, "circle");
             set_attr(&circle, "class", "basic label-container");
             set_attr(&circle, "style", node_styles.clone());
@@ -1236,6 +1309,20 @@ fn rough_rectangle(
 /// Theme colors applied as rough.js path attributes (default theme).
 const MAIN_BKG: &str = "#ECECFF";
 const NODE_BORDER: &str = "#9370DB";
+
+/// Stroke width for hand-drawn (`look: handDrawn`) shape outlines.
+const HD_STROKE_WIDTH: &str = "1.5";
+
+/// Fill/stroke colors for hand-drawn shapes, from the computed theme with the
+/// default-theme values as fallback.
+fn hd_theme_colors(config: &super::config::RenderConfig) -> (String, String) {
+    let theme = &config.computed_theme;
+    let pick = |key: &str, default: &str| {
+        let v = super::themes::get(theme, key);
+        if v.is_empty() { default.to_owned() } else { v }
+    };
+    (pick("mainBkg", MAIN_BKG), pick("nodeBorder", NODE_BORDER))
+}
 
 /// Formats a rough.js coordinate pair.
 fn rough_pair(p: Point) -> String {

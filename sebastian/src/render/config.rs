@@ -6,6 +6,10 @@ use serde_json::{Map, Value};
 #[derive(Debug, Clone)]
 pub struct RenderConfig {
     pub theme: String,
+    /// `look`: "classic" (default) or "handDrawn" (sketchy shapes +
+    /// handwritten font). handDrawn is an opt-in stylization and is not
+    /// byte-exact against mmdc (rough.js output is randomized upstream).
+    pub look: String,
     /// Raw themeVariables overrides from the directive.
     pub theme_variables: Map<String, Value>,
     /// `flowchart.htmlLabels` (edge/cluster labels via getEffectiveHtmlLabels).
@@ -26,6 +30,7 @@ impl Default for RenderConfig {
     fn default() -> Self {
         Self {
             theme: "default".to_owned(),
+            look: "classic".to_owned(),
             theme_variables: Map::new(),
             flowchart_html_labels: None,
             top_html_labels: None,
@@ -52,6 +57,12 @@ impl RenderConfig {
     #[must_use]
     pub fn node_html_labels(&self) -> bool {
         self.top_html_labels.unwrap_or(true)
+    }
+
+    /// True when `look: handDrawn` selected the sketchy/handwritten style.
+    #[must_use]
+    pub fn is_hand_drawn(&self) -> bool {
+        self.look == "handDrawn"
     }
 
     /// Label font size in px from themeVariables (default 16).
@@ -101,6 +112,9 @@ pub fn detect_init(text: &str) -> RenderConfig {
 fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
     if let Some(theme) = map.get("theme").and_then(Value::as_str) {
         theme.clone_into(&mut config.theme);
+    }
+    if let Some(look) = map.get("look").and_then(Value::as_str) {
+        look.clone_into(&mut config.look);
     }
     if let Some(Value::Object(vars)) = map.get("themeVariables") {
         for (k, v) in vars {

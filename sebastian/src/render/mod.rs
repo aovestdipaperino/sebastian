@@ -8,6 +8,7 @@ pub mod dagre_render;
 pub mod data;
 pub mod edges;
 pub mod graph;
+pub mod handdrawn;
 pub mod khroma;
 pub mod markers;
 pub mod shapes;
@@ -177,9 +178,14 @@ pub fn render_flowchart(source: &str, id: &str) -> Result<String, ParseError> {
         aria: "flowchart-v2",
         diagram_type: "flowchart-v2",
         css: format!(
-            "{}{}",
+            "{}{}{}",
             css::themed_flowchart_css(id, &theme_vars),
-            css::class_defs_css(id, config.effective_html_labels(), &class_list)
+            css::class_defs_css(id, config.effective_html_labels(), &class_list),
+            if config.is_hand_drawn() {
+                css::hand_drawn_font_css(id)
+            } else {
+                String::new()
+            }
         ),
     };
     Ok(render_unified(&data, &config, &theme_vars, &chrome, id))

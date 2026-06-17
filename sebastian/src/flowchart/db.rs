@@ -686,7 +686,7 @@ impl FlowDb {
                 shape: "rect".to_owned(),
                 dir: sub_graph.dir.clone(),
                 is_group: true,
-                look: "classic".to_owned(),
+                look: config.look.clone(),
                 dom_id: sub_graph.id.clone(),
                 ..Default::default()
             });
@@ -717,7 +717,7 @@ impl FlowDb {
                 css_classes: format!("default {}", vertex.classes.join(" ")),
                 dir: vertex.dir.clone(),
                 dom_id: vertex.dom_id.clone(),
-                look: "classic".to_owned(),
+                look: config.look.clone(),
                 ..Default::default()
             };
             if is_group {
@@ -779,7 +779,7 @@ impl FlowDb {
                     .clone()
                     .or_else(|| config.curve.clone())
                     .unwrap_or_else(|| "basis".to_owned()),
-                look: "classic".to_owned(),
+                look: config.look.clone(),
                 ..Default::default()
             });
         }

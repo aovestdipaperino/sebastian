@@ -63,6 +63,23 @@ Mermaid renders labels two ways, and this port matches both byte-for-byte:
 Select it with an init directive — `%%{init: {'htmlLabels': false,
 'flowchart': {'htmlLabels': false}}}%%` — or the merged config.
 
+## Hand-drawn look (`look: handDrawn`)
+
+`%%{init: {'look': 'handDrawn'}}%%` turns on an Excalidraw-style look:
+flowchart node shapes (rectangles, rounded rectangles, diamonds, circles)
+and edges are drawn with sketchy, double-stroked outlines, and labels switch
+to a handwritten font stack (`"Comic Sans MS", "Chalkboard SE", "Bradley
+Hand", cursive`).
+
+Unlike the classic look, this is an **opt-in stylization, not byte-exact**.
+Upstream mermaid draws hand-drawn shapes with rough.js seeded from
+`Math.random`, so two `mmdc` runs of the same diagram differ. sebastian
+instead uses a deterministic seeded PRNG (a port of rough.js's `mulberry32`),
+so its hand-drawn output is stable run to run. Layout still uses the
+Trebuchet metrics, so node sizes match the classic look while the rendered
+font is handwritten (sizes are therefore approximate). Pairs naturally with
+`htmlLabels: false` for offline rasterization.
+
 ## Fidelity
 
 Two reference suites assert output against captured `mmdc` SVGs:
