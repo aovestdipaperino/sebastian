@@ -464,12 +464,10 @@ fn render_tokens(toks: &[Tok]) -> String {
 
 #[test]
 fn golden_corpus_snapshot() {
+    use std::fmt::Write as _;
     let mut out = String::new();
     for (name, src) in CORPUS {
-        out.push_str(&format!(
-            "=== {name} ===\n  {}\n\n",
-            render_tokens(&lex(src))
-        ));
+        let _ = write!(out, "=== {name} ===\n  {}\n\n", render_tokens(&lex(src)));
     }
 
     let path = concat!(

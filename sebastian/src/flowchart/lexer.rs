@@ -272,372 +272,466 @@ impl<'a> Lexer<'a> {
         Some((i, body))
     }
 
-    #[allow(clippy::too_many_lines)]
+    /// Produces the next token, dispatching on the current lexer state.
+    ///
+    /// Each `%x` state from the jison grammar has a dedicated `lex_*` helper;
+    /// the default `Initial` state is split into ordered `try_*` matchers (see
+    /// [`Self::lex_initial`]). All helpers share the longest-match, earlier-rule-
+    /// wins semantics of the original grammar.
     pub fn next_token(&mut self) -> Tok {
         if self.pos >= self.src.len() {
             return Tok::Eof;
         }
 
         match self.state() {
-            State::Str => {
-                if self.starts_with("\"") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return self.next_token();
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != '"') {
-                    n += 1;
-                }
-                return Tok::Str(self.take(n));
-            }
-            State::MdStr => {
-                if self.starts_with("`\"") {
-                    self.pos += 2;
-                    self.stack.pop();
-                    return self.next_token();
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != '`' && c != '"') {
-                    n += 1;
-                }
-                return Tok::MdStr(self.take(n));
-            }
-            State::AccTitle | State::AccDescr => {
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != '\n') {
-                    n += 1;
-                }
-                let value = self.take(n);
-                self.stack.pop();
-                return if self.state() == State::Initial {
-                    // Value tokens carry their text; the parser ignores them.
-                    Tok::Str(value)
-                } else {
-                    Tok::Str(value)
-                };
-            }
-            State::AccDescrMultiline => {
-                if self.starts_with("}") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return self.next_token();
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != '}') {
-                    n += 1;
-                }
-                return Tok::Str(self.take(n));
-            }
-            State::ShapeData => {
-                if self.starts_with("\"") {
-                    self.pos += 1;
-                    self.stack.push(State::ShapeDataStr);
-                    return Tok::ShapeData(String::new());
-                }
-                if self.starts_with("}") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return self.next_token();
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != '}' && c != '"') {
-                    n += 1;
-                }
-                return Tok::ShapeData(self.take(n));
-            }
-            State::ShapeDataStr => {
-                if self.starts_with("\"") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return Tok::ShapeData(String::new());
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != '"') {
-                    n += 1;
-                }
-                let text = self.take(n);
-                // jison replaces newline+indent with <br/>
-                let re_replaced = text
-                    .split('\n')
-                    .map(str::trim_start)
-                    .collect::<Vec<_>>()
-                    .join("<br/>");
-                return Tok::ShapeData(re_replaced);
-            }
-            State::Click => {
-                if self.peek(0).is_some_and(|c| c == ' ' || c == '\n') {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return self.next_token();
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != ' ' && c != '\n') {
-                    n += 1;
-                }
-                return Tok::Click(self.take(n));
-            }
-            State::CallbackName => {
-                if self.starts_with("(") {
-                    // `(...)` args or empty
-                    if self.peek(1).is_some_and(|c| c == ')') {
-                        self.pos += 2;
-                        self.stack.pop();
-                        return self.next_token();
-                    }
-                    self.pos += 1;
-                    self.stack.pop();
-                    self.stack.push(State::CallbackArgs);
-                    return self.next_token();
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != '(' && c != '\n') {
-                    n += 1;
-                }
-                return Tok::CallbackName(self.take(n));
-            }
-            State::CallbackArgs => {
-                if self.starts_with(")") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return self.next_token();
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| c != ')') {
-                    n += 1;
-                }
-                return Tok::CallbackArgs(self.take(n));
-            }
-            State::Dir => {
-                // (\r?\n)*\s*\n → NODIR; \s*XX → DIR
-                let rest = self.rest();
-                let mut i = 0;
-                while i < rest.len() && rest[i].is_whitespace() {
-                    if rest[i] == '\n' {
-                        self.pos += i + 1;
-                        self.stack.pop();
-                        return Tok::NoDir;
-                    }
-                    i += 1;
-                }
-                for (pat, dir) in [
-                    ("LR", "LR"),
-                    ("RL", "RL"),
-                    ("TB", "TB"),
-                    ("BT", "BT"),
-                    ("TD", "TD"),
-                    ("BR", "BR"),
-                    ("<", "<"),
-                    (">", ">"),
-                    ("^", "^"),
-                    ("v", "v"),
-                ] {
-                    let chars: Vec<char> = pat.chars().collect();
-                    if rest[i..].starts_with(&chars[..]) {
-                        self.pos += i + chars.len();
-                        self.stack.pop();
-                        return Tok::Dir(dir.to_owned());
-                    }
-                }
-                // No direction given on same line; treat as NODIR at newline.
-                self.pos += i;
+            State::Str => self.lex_str(),
+            State::MdStr => self.lex_md_str(),
+            State::AccTitle | State::AccDescr => self.lex_acc_value(),
+            State::AccDescrMultiline => self.lex_acc_descr_multiline(),
+            State::ShapeData => self.lex_shape_data(),
+            State::ShapeDataStr => self.lex_shape_data_str(),
+            State::Click => self.lex_click(),
+            State::CallbackName => self.lex_callback_name(),
+            State::CallbackArgs => self.lex_callback_args(),
+            State::Dir => self.lex_dir(),
+            State::EdgeText | State::ThickEdgeText | State::DottedEdgeText => self.lex_edge_text(),
+            State::Text => self.lex_text(),
+            State::EllipseText => self.lex_ellipse_text(),
+            State::TrapText => self.lex_trap_text(),
+            State::Initial => self.lex_initial(),
+        }
+    }
+
+    /// `"..."` string body; a closing quote pops back to the prior state.
+    fn lex_str(&mut self) -> Tok {
+        if self.starts_with("\"") {
+            self.pos += 1;
+            self.stack.pop();
+            return self.next_token();
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != '"') {
+            n += 1;
+        }
+        Tok::Str(self.take(n))
+    }
+
+    /// Markdown string body (opened by `` "` ``), closed by `` `" ``.
+    fn lex_md_str(&mut self) -> Tok {
+        if self.starts_with("`\"") {
+            self.pos += 2;
+            self.stack.pop();
+            return self.next_token();
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != '`' && c != '"') {
+            n += 1;
+        }
+        Tok::MdStr(self.take(n))
+    }
+
+    /// Single-line `accTitle`/`accDescr` value, up to end of line.
+    fn lex_acc_value(&mut self) -> Tok {
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != '\n') {
+            n += 1;
+        }
+        let value = self.take(n);
+        self.stack.pop();
+        // Value tokens carry their text; the parser ignores them.
+        Tok::Str(value)
+    }
+
+    /// Multi-line `accDescr { ... }` body, closed by `}`.
+    fn lex_acc_descr_multiline(&mut self) -> Tok {
+        if self.starts_with("}") {
+            self.pos += 1;
+            self.stack.pop();
+            return self.next_token();
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != '}') {
+            n += 1;
+        }
+        Tok::Str(self.take(n))
+    }
+
+    /// `@{ ... }` shape-data body; `"` opens a quoted sub-state and `}` closes.
+    fn lex_shape_data(&mut self) -> Tok {
+        if self.starts_with("\"") {
+            self.pos += 1;
+            self.stack.push(State::ShapeDataStr);
+            return Tok::ShapeData(String::new());
+        }
+        if self.starts_with("}") {
+            self.pos += 1;
+            self.stack.pop();
+            return self.next_token();
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != '}' && c != '"') {
+            n += 1;
+        }
+        Tok::ShapeData(self.take(n))
+    }
+
+    /// Quoted string inside shape data; newline+indent collapses to `<br/>`.
+    fn lex_shape_data_str(&mut self) -> Tok {
+        if self.starts_with("\"") {
+            self.pos += 1;
+            self.stack.pop();
+            return Tok::ShapeData(String::new());
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != '"') {
+            n += 1;
+        }
+        let text = self.take(n);
+        // jison replaces newline+indent with <br/>
+        let re_replaced = text
+            .split('\n')
+            .map(str::trim_start)
+            .collect::<Vec<_>>()
+            .join("<br/>");
+        Tok::ShapeData(re_replaced)
+    }
+
+    /// `click` target id, terminated by a space or newline.
+    fn lex_click(&mut self) -> Tok {
+        if self.peek(0).is_some_and(|c| c == ' ' || c == '\n') {
+            self.pos += 1;
+            self.stack.pop();
+            return self.next_token();
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != ' ' && c != '\n') {
+            n += 1;
+        }
+        Tok::Click(self.take(n))
+    }
+
+    /// Callback function name; `(` switches to argument scanning (or skips `()`).
+    fn lex_callback_name(&mut self) -> Tok {
+        if self.starts_with("(") {
+            // `(...)` args or empty
+            if self.peek(1).is_some_and(|c| c == ')') {
+                self.pos += 2;
                 self.stack.pop();
                 return self.next_token();
             }
-            State::EdgeText | State::ThickEdgeText | State::DottedEdgeText => {
-                let kind = match self.state() {
-                    State::EdgeText => '-',
-                    State::ThickEdgeText => '=',
-                    _ => '.',
-                };
-                if let Some((n, body)) = self.match_link(true, kind) {
-                    self.pos += n;
-                    self.stack.pop();
-                    return Tok::Link(body);
-                }
-                // EDGE_TEXT: [^-]|-(?!-)  (analogous for = and .)
-                let c = self.peek(0).expect("non-empty");
-                // Accumulate a run for efficiency, stopping before potential link end.
-                let mut n = 0;
-                while let Some(c2) = self.peek(n) {
-                    let stop = match kind {
-                        '-' => c2 == '-' && self.peek(n + 1) == Some('-'),
-                        '=' => c2 == '=' && self.peek(n + 1) == Some('='),
-                        _ => {
-                            (c2 == '.' && self.peek(n + 1) == Some('-'))
-                                || (c2 == '-' && self.peek(n + 1) == Some('.'))
-                        }
-                    };
-                    if stop {
-                        break;
-                    }
-                    n += 1;
-                }
-                if n == 0 {
-                    // single char fallthrough
-                    let _ = c;
-                    n = 1;
-                }
-                return Tok::EdgeText(self.take(n));
-            }
-            State::Text => {
-                // close tokens first
-                for (pat, tok, pop) in [
-                    ("])", Tok::StadiumEnd, true),
-                    ("]]", Tok::SubroutineEnd, true),
-                    (")]", Tok::CylinderEnd, true),
-                    (")))", Tok::DoubleCircleEnd, true),
-                ] {
-                    if self.starts_with(pat) {
-                        self.pos += pat.chars().count();
-                        if pop {
-                            self.stack.pop();
-                        }
-                        return tok;
-                    }
-                }
-                if self.starts_with("|") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return Tok::Pipe;
-                }
-                if self.starts_with(")") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return Tok::Pe;
-                }
-                if self.starts_with("]") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return Tok::Sqe;
-                }
-                if self.starts_with("}") {
-                    self.pos += 1;
-                    self.stack.pop();
-                    return Tok::DiamondStop;
-                }
-                if self.starts_with("\"`") {
-                    self.pos += 2;
-                    self.stack.push(State::MdStr);
-                    return self.next_token();
-                }
-                if self.starts_with("\"") {
-                    self.pos += 1;
-                    self.stack.push(State::Str);
-                    return self.next_token();
-                }
-                // Openers apply in any state (`<*>` rules in jison).
-                for (pat, tok, state) in [
-                    ("(-", Tok::EllipseStart, State::EllipseText),
-                    ("([", Tok::StadiumStart, State::Text),
-                    ("[[", Tok::SubroutineStart, State::Text),
-                    ("[(", Tok::CylinderStart, State::Text),
-                    ("(((", Tok::DoubleCircleStart, State::Text),
-                    ("[/", Tok::TrapStart, State::TrapText),
-                    ("[\\", Tok::InvTrapStart, State::TrapText),
-                ] {
-                    if self.starts_with(pat) {
-                        self.pos += pat.chars().count();
-                        self.stack.push(state);
-                        return tok;
-                    }
-                }
-                if self.starts_with("(") {
-                    self.pos += 1;
-                    self.stack.push(State::Text);
-                    return Tok::Ps;
-                }
-                if self.starts_with("[") {
-                    self.pos += 1;
-                    self.stack.push(State::Text);
-                    return Tok::Sqs;
-                }
-                if self.starts_with("{") {
-                    self.pos += 1;
-                    self.stack.push(State::Text);
-                    return Tok::DiamondStart;
-                }
-                // TEXT: [^\[\]\(\)\{\}\|\"]+
-                let mut n = 0;
-                while self
-                    .peek(n)
-                    .is_some_and(|c| !matches!(c, '[' | ']' | '(' | ')' | '{' | '}' | '|' | '"'))
-                {
-                    n += 1;
-                }
-                if n == 0 {
-                    let c = self.take(1);
-                    return Tok::Text(c);
-                }
-                return Tok::Text(self.take(n));
-            }
-            State::EllipseText => {
-                if self.starts_with("-)") || self.starts_with("/)") || self.starts_with("))") {
-                    self.pos += 2;
-                    self.stack.pop();
-                    return Tok::EllipseEnd;
-                }
-                let mut n = 0;
-                while self.peek(n).is_some_and(|c| {
-                    !matches!(c, '(' | ')' | '[' | ']' | '{' | '}')
-                        && (c != '-' || self.peek(n + 1) != Some(')'))
-                }) {
-                    n += 1;
-                }
-                if n == 0 {
-                    let c = self.take(1);
-                    return Tok::Text(c);
-                }
-                return Tok::Text(self.take(n));
-            }
-            State::TrapText => {
-                if self.starts_with("\\]") {
-                    self.pos += 2;
-                    self.stack.pop();
-                    return Tok::TrapEnd;
-                }
-                if self.starts_with("/]") {
-                    self.pos += 2;
-                    self.stack.pop();
-                    return Tok::InvTrapEnd;
-                }
-                let mut n = 0;
-                while let Some(c) = self.peek(n) {
-                    if c == '/' || c == '\\' {
-                        if self.peek(n + 1) == Some(']') {
-                            break;
-                        }
-                        n += 1;
-                        continue;
-                    }
-                    if matches!(c, '[' | ']' | '(' | ')' | '{' | '}') {
-                        break;
-                    }
-                    n += 1;
-                }
-                if n == 0 {
-                    let c = self.take(1);
-                    return Tok::Text(c);
-                }
-                return Tok::Text(self.take(n));
-            }
-            State::Initial => {}
+            self.pos += 1;
+            self.stack.pop();
+            self.stack.push(State::CallbackArgs);
+            return self.next_token();
         }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != '(' && c != '\n') {
+            n += 1;
+        }
+        Tok::CallbackName(self.take(n))
+    }
 
-        // INITIAL state
+    /// Callback argument text up to the closing `)`.
+    fn lex_callback_args(&mut self) -> Tok {
+        if self.starts_with(")") {
+            self.pos += 1;
+            self.stack.pop();
+            return self.next_token();
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| c != ')') {
+            n += 1;
+        }
+        Tok::CallbackArgs(self.take(n))
+    }
+
+    /// Graph direction after the header: a bare newline yields `NoDir`,
+    /// otherwise one of the direction keywords yields `Dir`.
+    fn lex_dir(&mut self) -> Tok {
+        // (\r?\n)*\s*\n → NODIR; \s*XX → DIR
         let rest = self.rest();
+        let mut i = 0;
+        while i < rest.len() && rest[i].is_whitespace() {
+            if rest[i] == '\n' {
+                self.pos += i + 1;
+                self.stack.pop();
+                return Tok::NoDir;
+            }
+            i += 1;
+        }
+        for (pat, dir) in [
+            ("LR", "LR"),
+            ("RL", "RL"),
+            ("TB", "TB"),
+            ("BT", "BT"),
+            ("TD", "TD"),
+            ("BR", "BR"),
+            ("<", "<"),
+            (">", ">"),
+            ("^", "^"),
+            ("v", "v"),
+        ] {
+            let chars: Vec<char> = pat.chars().collect();
+            if rest[i..].starts_with(&chars[..]) {
+                self.pos += i + chars.len();
+                self.stack.pop();
+                return Tok::Dir(dir.to_owned());
+            }
+        }
+        // No direction given on same line; treat as NODIR at newline.
+        self.pos += i;
+        self.stack.pop();
+        self.next_token()
+    }
 
-        // Comments: %% to end of line (mermaid strips them pre-parse, we do it here)
+    /// Edge label text for the `-`, `=` and `.` link kinds. The closing link
+    /// (matched by [`Self::match_link`]) ends the label and pops the state.
+    fn lex_edge_text(&mut self) -> Tok {
+        let kind = match self.state() {
+            State::EdgeText => '-',
+            State::ThickEdgeText => '=',
+            _ => '.',
+        };
+        if let Some((n, body)) = self.match_link(true, kind) {
+            self.pos += n;
+            self.stack.pop();
+            return Tok::Link(body);
+        }
+        // EDGE_TEXT: [^-]|-(?!-)  (analogous for = and .)
+        let c = self.peek(0).expect("non-empty");
+        // Accumulate a run for efficiency, stopping before potential link end.
+        let mut n = 0;
+        while let Some(c2) = self.peek(n) {
+            let stop = match kind {
+                '-' => c2 == '-' && self.peek(n + 1) == Some('-'),
+                '=' => c2 == '=' && self.peek(n + 1) == Some('='),
+                _ => {
+                    (c2 == '.' && self.peek(n + 1) == Some('-'))
+                        || (c2 == '-' && self.peek(n + 1) == Some('.'))
+                }
+            };
+            if stop {
+                break;
+            }
+            n += 1;
+        }
+        if n == 0 {
+            // single char fallthrough
+            let _ = c;
+            n = 1;
+        }
+        Tok::EdgeText(self.take(n))
+    }
+
+    /// Free text inside a shape (`[...]`, `(...)`, `{...}`, ...). Handles the
+    /// shape close tokens, nested string/shape openers, and the text run.
+    fn lex_text(&mut self) -> Tok {
+        // close tokens first
+        for (pat, tok, pop) in [
+            ("])", Tok::StadiumEnd, true),
+            ("]]", Tok::SubroutineEnd, true),
+            (")]", Tok::CylinderEnd, true),
+            (")))", Tok::DoubleCircleEnd, true),
+        ] {
+            if self.starts_with(pat) {
+                self.pos += pat.chars().count();
+                if pop {
+                    self.stack.pop();
+                }
+                return tok;
+            }
+        }
+        if self.starts_with("|") {
+            self.pos += 1;
+            self.stack.pop();
+            return Tok::Pipe;
+        }
+        if self.starts_with(")") {
+            self.pos += 1;
+            self.stack.pop();
+            return Tok::Pe;
+        }
+        if self.starts_with("]") {
+            self.pos += 1;
+            self.stack.pop();
+            return Tok::Sqe;
+        }
+        if self.starts_with("}") {
+            self.pos += 1;
+            self.stack.pop();
+            return Tok::DiamondStop;
+        }
+        if self.starts_with("\"`") {
+            self.pos += 2;
+            self.stack.push(State::MdStr);
+            return self.next_token();
+        }
+        if self.starts_with("\"") {
+            self.pos += 1;
+            self.stack.push(State::Str);
+            return self.next_token();
+        }
+        // Openers apply in any state (`<*>` rules in jison).
+        for (pat, tok, state) in [
+            ("(-", Tok::EllipseStart, State::EllipseText),
+            ("([", Tok::StadiumStart, State::Text),
+            ("[[", Tok::SubroutineStart, State::Text),
+            ("[(", Tok::CylinderStart, State::Text),
+            ("(((", Tok::DoubleCircleStart, State::Text),
+            ("[/", Tok::TrapStart, State::TrapText),
+            ("[\\", Tok::InvTrapStart, State::TrapText),
+        ] {
+            if self.starts_with(pat) {
+                self.pos += pat.chars().count();
+                self.stack.push(state);
+                return tok;
+            }
+        }
+        if self.starts_with("(") {
+            self.pos += 1;
+            self.stack.push(State::Text);
+            return Tok::Ps;
+        }
+        if self.starts_with("[") {
+            self.pos += 1;
+            self.stack.push(State::Text);
+            return Tok::Sqs;
+        }
+        if self.starts_with("{") {
+            self.pos += 1;
+            self.stack.push(State::Text);
+            return Tok::DiamondStart;
+        }
+        // TEXT: [^\[\]\(\)\{\}\|\"]+
+        let mut n = 0;
+        while self
+            .peek(n)
+            .is_some_and(|c| !matches!(c, '[' | ']' | '(' | ')' | '{' | '}' | '|' | '"'))
+        {
+            n += 1;
+        }
+        if n == 0 {
+            let c = self.take(1);
+            return Tok::Text(c);
+        }
+        Tok::Text(self.take(n))
+    }
+
+    /// Text inside an ellipse `(-...-)`, closed by `-)`, `/)` or `))`.
+    fn lex_ellipse_text(&mut self) -> Tok {
+        if self.starts_with("-)") || self.starts_with("/)") || self.starts_with("))") {
+            self.pos += 2;
+            self.stack.pop();
+            return Tok::EllipseEnd;
+        }
+        let mut n = 0;
+        while self.peek(n).is_some_and(|c| {
+            !matches!(c, '(' | ')' | '[' | ']' | '{' | '}')
+                && (c != '-' || self.peek(n + 1) != Some(')'))
+        }) {
+            n += 1;
+        }
+        if n == 0 {
+            let c = self.take(1);
+            return Tok::Text(c);
+        }
+        Tok::Text(self.take(n))
+    }
+
+    /// Text inside a trapezoid `[/.../]` or `[\...\]`, closed by `\]` or `/]`.
+    fn lex_trap_text(&mut self) -> Tok {
+        if self.starts_with("\\]") {
+            self.pos += 2;
+            self.stack.pop();
+            return Tok::TrapEnd;
+        }
+        if self.starts_with("/]") {
+            self.pos += 2;
+            self.stack.pop();
+            return Tok::InvTrapEnd;
+        }
+        let mut n = 0;
+        while let Some(c) = self.peek(n) {
+            if c == '/' || c == '\\' {
+                if self.peek(n + 1) == Some(']') {
+                    break;
+                }
+                n += 1;
+                continue;
+            }
+            if matches!(c, '[' | ']' | '(' | ')' | '{' | '}') {
+                break;
+            }
+            n += 1;
+        }
+        if n == 0 {
+            let c = self.take(1);
+            return Tok::Text(c);
+        }
+        Tok::Text(self.take(n))
+    }
+
+    /// The default (`Initial`) state: try each rule in jison priority order,
+    /// falling back to single-character / atom tokenization.
+    fn lex_initial(&mut self) -> Tok {
+        if let Some(tok) = self.try_comment() {
+            return tok;
+        }
+        if let Some(tok) = self.try_acc() {
+            return tok;
+        }
+        if let Some(tok) = self.try_shape_data_open() {
+            return tok;
+        }
+        if let Some(tok) = self.try_callback() {
+            return tok;
+        }
+        if let Some(tok) = self.try_string_open() {
+            return tok;
+        }
+        if let Some(tok) = self.try_direction() {
+            return tok;
+        }
+        if let Some(tok) = self.try_keyword() {
+            return tok;
+        }
+        if let Some(tok) = self.try_click() {
+            return tok;
+        }
+        if let Some(tok) = self.try_graph() {
+            return tok;
+        }
+        if let Some(tok) = self.try_end() {
+            return tok;
+        }
+        if let Some(tok) = self.try_link_id() {
+            return tok;
+        }
+        if let Some(tok) = self.try_links() {
+            return tok;
+        }
+        if let Some(tok) = self.try_shape_open() {
+            return tok;
+        }
+        self.lex_initial_char()
+    }
+
+    /// `%%` comment to end of line; consumed silently, returning the token that
+    /// follows.
+    fn try_comment(&mut self) -> Option<Tok> {
         if self.starts_with("%%") {
             let mut n = 0;
             while self.peek(n).is_some_and(|c| c != '\n') {
                 n += 1;
             }
             self.pos += n;
-            return self.next_token();
+            return Some(self.next_token());
         }
+        None
+    }
 
-        // Keywords and special prefixes
+    /// `accTitle:` / `accDescr:` (single line) and `accDescr {` (multi-line).
+    fn try_acc(&mut self) -> Option<Tok> {
         if self.starts_with("accTitle") {
             let mut n = "accTitle".len();
             while self.peek(n).is_some_and(char::is_whitespace) {
@@ -650,7 +744,7 @@ impl<'a> Lexer<'a> {
                 }
                 self.pos += n;
                 self.stack.push(State::AccTitle);
-                return Tok::AccTitle;
+                return Some(Tok::AccTitle);
             }
         }
         if self.starts_with("accDescr") {
@@ -665,56 +759,75 @@ impl<'a> Lexer<'a> {
                 }
                 self.pos += n;
                 self.stack.push(State::AccDescr);
-                return Tok::AccDescr;
+                return Some(Tok::AccDescr);
             }
             if self.peek(n) == Some('{') {
                 self.pos += n + 1;
                 self.stack.push(State::AccDescrMultiline);
-                return Tok::AccDescr;
+                return Some(Tok::AccDescr);
             }
         }
+        None
+    }
 
+    /// `@{` opens a shape-data block.
+    fn try_shape_data_open(&mut self) -> Option<Tok> {
         if self.starts_with("@{") {
             self.pos += 2;
             self.stack.push(State::ShapeData);
-            return Tok::ShapeData(String::new());
+            return Some(Tok::ShapeData(String::new()));
         }
+        None
+    }
 
+    /// `call ` opens a callback-name block.
+    fn try_callback(&mut self) -> Option<Tok> {
         if self.starts_with("call ") || self.starts_with("call\t") {
             self.pos += 5;
             self.stack.push(State::CallbackName);
-            return self.next_token();
+            return Some(self.next_token());
         }
+        None
+    }
 
+    /// `"` and `` "` `` open the (markdown) string states.
+    fn try_string_open(&mut self) -> Option<Tok> {
         if self.starts_with("\"`") {
             self.pos += 2;
             self.stack.push(State::MdStr);
-            return self.next_token();
+            return Some(self.next_token());
         }
         if self.starts_with("\"") {
             self.pos += 1;
             self.stack.push(State::Str);
-            return self.next_token();
+            return Some(self.next_token());
         }
+        None
+    }
 
-        // direction statements (before keywords; jison rule `.*direction\s+TB[^\n]*`)
-        {
-            // The jison pattern allows leading characters; in practice it is
-            // used as a standalone statement, possibly indented.
-            let line_start: String = rest.iter().take_while(|&&c| c != '\n').collect();
-            let trimmed = line_start.trim_start();
-            if let Some(rest) = trimmed.strip_prefix("direction") {
-                let after = rest.trim_start();
-                for d in ["TB", "BT", "RL", "LR", "TD"] {
-                    if after.starts_with(d) {
-                        let n = line_start.chars().count();
-                        self.pos += n;
-                        return Tok::Direction((*d).to_owned());
-                    }
+    /// `direction XX` statement (jison rule `.*direction\s+TB[^\n]*`).
+    fn try_direction(&mut self) -> Option<Tok> {
+        // The jison pattern allows leading characters; in practice it is
+        // used as a standalone statement, possibly indented.
+        let rest = self.rest();
+        let line_start: String = rest.iter().take_while(|&&c| c != '\n').collect();
+        let trimmed = line_start.trim_start();
+        if let Some(after) = trimmed.strip_prefix("direction") {
+            let after = after.trim_start();
+            for d in ["TB", "BT", "RL", "LR", "TD"] {
+                if after.starts_with(d) {
+                    let n = line_start.chars().count();
+                    self.pos += n;
+                    return Some(Tok::Direction((*d).to_owned()));
                 }
             }
         }
+        None
+    }
 
+    /// Reserved keywords and link targets. A keyword that is a prefix of a
+    /// longer `NODE_STRING` is rejected so identifiers like `classify` survive.
+    fn try_keyword(&mut self) -> Option<Tok> {
         for (kw, tok) in [
             ("style", Tok::Style),
             ("default", Tok::Default),
@@ -741,14 +854,18 @@ impl<'a> Lexer<'a> {
                             continue;
                         }
                         self.pos += len + 1;
-                        return Tok::Href;
+                        return Some(Tok::Href);
                     }
                     self.pos += len;
-                    return tok;
+                    return Some(tok);
                 }
             }
         }
+        None
+    }
 
+    /// `click ` opens a click-target block, skipping following spaces/tabs.
+    fn try_click(&mut self) -> Option<Tok> {
         if self.starts_with("click") {
             let next = self.peek(5);
             if next.is_some_and(char::is_whitespace) {
@@ -757,10 +874,15 @@ impl<'a> Lexer<'a> {
                     self.pos += 1;
                 }
                 self.stack.push(State::Click);
-                return self.next_token();
+                return Some(self.next_token());
             }
         }
+        None
+    }
 
+    /// `graph` / `flowchart` / `flowchart-elk` header; the first one opens the
+    /// direction state.
+    fn try_graph(&mut self) -> Option<Tok> {
         for kw in ["flowchart-elk", "flowchart", "graph"] {
             if self.starts_with(kw) {
                 let len = kw.chars().count();
@@ -770,46 +892,55 @@ impl<'a> Lexer<'a> {
                         self.first_graph = false;
                         self.stack.push(State::Dir);
                     }
-                    return Tok::Graph;
+                    return Some(Tok::Graph);
                 }
             }
         }
+        None
+    }
+
+    /// `end` keyword (`"end"\b\s*`), not part of a longer identifier or link.
+    fn try_end(&mut self) -> Option<Tok> {
         if self.starts_with("end") {
-            // "end"\b\s*
             let next = self.peek(3);
             if !next.is_some_and(is_node_string_char) && next != Some('-') {
                 self.pos += 3;
                 while self.peek(0).is_some_and(|c| c == ' ' || c == '\t') {
                     self.pos += 1;
                 }
-                return Tok::End;
+                return Some(Tok::End);
             }
         }
+        None
+    }
 
-        // LINK_ID: [^\s"]+@(?=[^{"])
+    /// `LINK_ID`: `[^\s"]+@(?=[^{"])` — an identifier immediately before `@`.
+    fn try_link_id(&mut self) -> Option<Tok> {
+        let mut n = 0;
+        while self
+            .peek(n)
+            .is_some_and(|c| !c.is_whitespace() && c != '"' && c != '@')
         {
-            let mut n = 0;
-            while self
-                .peek(n)
-                .is_some_and(|c| !c.is_whitespace() && c != '"' && c != '@')
-            {
-                n += 1;
-            }
-            if n > 0
-                && self.peek(n) == Some('@')
-                && self.peek(n + 1).is_some_and(|c| c != '{' && c != '"')
-            {
-                let id = self.take(n + 1);
-                return Tok::LinkId(id);
-            }
+            n += 1;
         }
+        if n > 0
+            && self.peek(n) == Some('@')
+            && self.peek(n + 1).is_some_and(|c| c != '{' && c != '"')
+        {
+            let id = self.take(n + 1);
+            return Some(Tok::LinkId(id));
+        }
+        None
+    }
 
-        // Link patterns (longest match before NODE_STRING/punctuation)
+    /// Link tokens: full links first (longest match), then `~~~`, then the
+    /// start-links that open an edge-text state.
+    fn try_links(&mut self) -> Option<Tok> {
         // Full links first (longest), then start links.
         for kind in ['-', '=', '.'] {
             if let Some((n, body)) = self.match_link(true, kind) {
                 self.pos += n;
-                return Tok::Link(body);
+                return Some(Tok::Link(body));
             }
         }
         if self.starts_with("~~~") {
@@ -821,7 +952,7 @@ impl<'a> Lexer<'a> {
             while self.peek(0).is_some_and(|c| c.is_whitespace() && c != '\n') {
                 self.pos += 1;
             }
-            return Tok::Link(body);
+            return Some(Tok::Link(body));
         }
         for (kind, state) in [
             ('-', State::EdgeText),
@@ -831,11 +962,14 @@ impl<'a> Lexer<'a> {
             if let Some((n, body)) = self.match_link(false, kind) {
                 self.pos += n;
                 self.stack.push(state);
-                return Tok::StartLink(body);
+                return Some(Tok::StartLink(body));
             }
         }
+        None
+    }
 
-        // Shape openers
+    /// Shape openers (`([`, `[[`, `[(`, `(((`, `[/`, `[\`, `(-`, `[|`).
+    fn try_shape_open(&mut self) -> Option<Tok> {
         for (pat, tok, state) in [
             ("(-", Tok::EllipseStart, Some(State::EllipseText)),
             ("([", Tok::StadiumStart, Some(State::Text)),
@@ -851,11 +985,16 @@ impl<'a> Lexer<'a> {
                 if let Some(s) = state {
                     self.stack.push(s);
                 }
-                return tok;
+                return Some(tok);
             }
         }
+        None
+    }
 
-        let c = rest[0];
+    /// Single-character punctuation, numbers, node strings, unicode text and
+    /// whitespace — the catch-all once no multi-character rule has matched.
+    fn lex_initial_char(&mut self) -> Tok {
+        let c = self.peek(0).expect("non-empty in initial state");
         match c {
             '>' => {
                 self.pos += 1;
@@ -912,10 +1051,11 @@ impl<'a> Lexer<'a> {
             }
             'v'
                 // single 'v' is DOWN only when not part of NODE_STRING
-                if !self.peek(1).is_some_and(is_node_string_char) => {
-                    self.pos += 1;
-                    return Tok::Down;
-                }
+                if !self.peek(1).is_some_and(is_node_string_char) =>
+            {
+                self.pos += 1;
+                return Tok::Down;
+            }
             _ => {}
         }
 
