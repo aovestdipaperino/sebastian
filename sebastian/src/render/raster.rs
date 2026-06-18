@@ -163,13 +163,3 @@ pub fn rasterize_svg(svg: &str, opts: &RasterOptions) -> Result<Vec<u8>, RasterE
         .encode_png()
         .map_err(|e| RasterError::Encode(e.to_string()))
 }
-
-/// Convenience: render mermaid `source` straight to a PNG (white background, no
-/// overlay). Pairs with [`super::render_diagram`], which returns the SVG.
-///
-/// # Errors
-/// Returns an error if the diagram fails to render or rasterize.
-pub fn render_png(source: &str, id: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let svg = super::render_diagram(source, id)?;
-    Ok(rasterize_svg(&svg, &RasterOptions::default())?)
-}

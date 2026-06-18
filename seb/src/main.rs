@@ -45,7 +45,7 @@ fn main() -> ExitCode {
         }
     };
 
-    match sebastian::render::render_diagram(&source, &id) {
+    match sebastian::render_diagram(&source, &id) {
         Ok(svg) => {
             if let Some(output) = output {
                 if let Err(err) = std::fs::write(&output, svg) {

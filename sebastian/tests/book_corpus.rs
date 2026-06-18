@@ -12,7 +12,7 @@
 //!   below 0.01px from Chrome's arc/extrema arithmetic, plus one space-kern
 //!   case (book274, ≤1px in two labels); compared numerically.
 
-use sebastian::render::render_flowchart;
+use sebastian::render_flowchart;
 
 const ROUGH_RANDOM: &[&str] = &["book262", "book323", "book345"];
 

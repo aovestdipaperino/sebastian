@@ -9,7 +9,7 @@
 //!
 //! Requires the system Trebuchet MS font (present on macOS/Windows).
 
-use sebastian::render::render_flowchart;
+use sebastian::render_flowchart;
 
 const INIT: &str = "%%{init: {'htmlLabels': false, 'flowchart': {'htmlLabels': false}}}%%\n";
 

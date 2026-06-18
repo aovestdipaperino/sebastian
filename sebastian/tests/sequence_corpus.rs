@@ -1,7 +1,7 @@
 //! Corpus test: 24 real-world sequence diagrams extracted from `../books`,
 //! all byte-identical to official mermaid-cli (mermaid 11.15.0) output.
 
-use sebastian::render::render_diagram;
+use sebastian::render_diagram;
 
 #[test]
 fn sequence_corpus() {

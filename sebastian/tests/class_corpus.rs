@@ -3,7 +3,7 @@
 //! rectangle/divider strokes embed mermaid's own `Math.random()` control
 //! points (collinear), so they are compared with the rough payloads masked.
 
-use sebastian::render::render_diagram;
+use sebastian::render_diagram;
 
 /// Masks the rough fill+stroke pair after `outer-path` and divider paths.
 fn mask_rough(svg: &str) -> String {

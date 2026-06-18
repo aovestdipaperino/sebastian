@@ -7,6 +7,7 @@
 
 pub mod classdiag;
 pub mod dagre;
+pub mod diagram;
 pub mod flowchart;
 pub mod graphlib;
 pub mod jsmap;
@@ -16,3 +17,9 @@ pub mod state;
 pub mod svg;
 pub mod text;
 pub mod timeline;
+
+#[cfg(feature = "raster")]
+pub use diagram::render_png;
+pub use diagram::{
+    detect_diagram_type, render_class, render_diagram, render_flowchart, render_state,
+};

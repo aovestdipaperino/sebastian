@@ -7,7 +7,7 @@
 //! itself (collinear, so pixel-identical); they are compared with the rough
 //! path payloads masked.
 
-use sebastian::render::render_diagram;
+use sebastian::render_diagram;
 
 /// Diagrams whose note rectangles carry mermaid's own random control points.
 const ROUGH_RANDOM: &[&str] = &["state007", "state008", "state014"];

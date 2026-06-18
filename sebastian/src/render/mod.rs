@@ -18,7 +18,6 @@ pub mod styles;
 pub mod svg_label;
 pub mod themes;
 
-use crate::flowchart::parser::{ParseError, parse};
 use crate::svg::{append, js_num, new_element, serialize, set_attr, set_text};
 use crate::text::TextMeasurer;
 
@@ -68,134 +67,21 @@ fn render_markers_state(root_g: &crate::svg::Element) -> edges::MarkerState {
 }
 
 /// Diagram-type-specific chrome around the shared dagre pipeline.
-struct DiagramChrome {
-    svg_class: &'static str,
-    aria: &'static str,
+pub(crate) struct DiagramChrome {
+    pub(crate) svg_class: &'static str,
+    pub(crate) aria: &'static str,
     /// Marker/type string (`data4Layout.type`).
-    diagram_type: &'static str,
-    css: String,
-}
-
-/// Detects the mermaid diagram type of `source` from its header keyword.
-#[must_use]
-pub fn detect_diagram_type(source: &str) -> &'static str {
-    for raw in source.lines() {
-        let t = raw.trim();
-        if t.is_empty() || t.starts_with("%%") || t.starts_with('#') {
-            continue;
-        }
-        if t.starts_with("stateDiagram") {
-            return "state";
-        }
-        if t.starts_with("sequenceDiagram") {
-            return "sequence";
-        }
-        if t == "timeline" || t.starts_with("timeline ") {
-            return "timeline";
-        }
-        if t.starts_with("classDiagram") {
-            return "class";
-        }
-        return "flowchart";
-    }
-    "flowchart"
-}
-
-/// Renders any supported mermaid diagram to a complete SVG document string.
-///
-/// # Errors
-/// Returns an error when the source cannot be parsed.
-pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::error::Error>> {
-    match detect_diagram_type(source) {
-        "state" => render_state(source, id).map_err(Into::into),
-        "sequence" => crate::sequence::render_sequence(source, id).map_err(Into::into),
-        "timeline" => crate::timeline::render_timeline(source, id).map_err(Into::into),
-        "class" => render_class(source, id).map_err(Into::into),
-        _ => render_flowchart(source, id).map_err(Into::into),
-    }
-}
-
-/// Renders mermaid stateDiagram-v2 source to a complete SVG document string.
-///
-/// # Errors
-/// Returns a [`crate::state::StateParseError`] when the source is not a
-/// valid state diagram.
-pub fn render_state(source: &str, id: &str) -> Result<String, crate::state::StateParseError> {
-    let mut config = config::detect_init(source);
-    let theme_vars = themes::theme_variables(&config.theme, &config.theme_variables);
-    config.computed_theme.clone_from(&theme_vars);
-    let data = crate::state::get_layout_data(source, id, &config)?;
-    let chrome = DiagramChrome {
-        svg_class: "statediagram",
-        aria: "stateDiagram",
-        diagram_type: "stateDiagram",
-        css: css::themed_statediagram_css(id, &theme_vars),
-    };
-    Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
-}
-
-/// Renders mermaid classDiagram source to a complete SVG document string.
-///
-/// # Errors
-/// Returns a [`crate::classdiag::ClassParseError`] when the source is not a
-/// valid class diagram.
-pub fn render_class(source: &str, id: &str) -> Result<String, crate::classdiag::ClassParseError> {
-    let mut config = config::detect_init(source);
-    let theme_vars = themes::theme_variables(&config.theme, &config.theme_variables);
-    config.computed_theme.clone_from(&theme_vars);
-    let data = crate::classdiag::get_layout_data(source, id)?;
-    let chrome = DiagramChrome {
-        svg_class: "classDiagram",
-        aria: "class",
-        diagram_type: "class",
-        css: css::themed_class_css(id, &theme_vars),
-    };
-    Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
-}
-
-/// Renders mermaid flowchart source to a complete SVG document string.
-///
-/// # Errors
-/// Returns a [`ParseError`] when the source is not a valid flowchart.
-pub fn render_flowchart(source: &str, id: &str) -> Result<String, ParseError> {
-    let mut config = config::detect_init(source);
-    let theme_vars = themes::theme_variables(&config.theme, &config.theme_variables);
-    config.computed_theme.clone_from(&theme_vars);
-    let db = parse(source)?;
-    let data = db.get_data(id, &config);
-
-    let class_list: Vec<(String, Vec<String>, Vec<String>)> = db
-        .classes
-        .iter()
-        .map(|(name, class)| {
-            (
-                name.clone(),
-                class.styles.clone(),
-                class.text_styles.clone(),
-            )
-        })
-        .collect();
-    let chrome = DiagramChrome {
-        svg_class: "flowchart",
-        aria: "flowchart-v2",
-        diagram_type: "flowchart-v2",
-        css: format!(
-            "{}{}{}",
-            css::themed_flowchart_css(id, &theme_vars),
-            css::class_defs_css(id, config.effective_html_labels(), &class_list),
-            if config.is_hand_drawn() {
-                css::hand_drawn_font_css(id)
-            } else {
-                String::new()
-            }
-        ),
-    };
-    Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
+    pub(crate) diagram_type: &'static str,
+    pub(crate) css: String,
 }
 
 /// The shared rendering pipeline (svg scaffold, dagre layout render, defs,
 /// viewport).
-fn render_unified(
+///
+/// Driven by the top-level orchestration layer, which supplies the
+/// already-parsed [`data::LayoutData`] plus the diagram-specific
+/// [`DiagramChrome`].
+pub(crate) fn render_unified(
     data: &data::LayoutData,
     config: &config::RenderConfig,
     theme_vars: &serde_json::Map<String, serde_json::Value>,

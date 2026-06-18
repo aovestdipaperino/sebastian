@@ -3,7 +3,7 @@
 //! seeded PRNG makes sebastian's output deterministic, so we assert the
 //! hand-drawn markers, determinism, and that classic look is unaffected.
 
-use sebastian::render::render_flowchart;
+use sebastian::render_flowchart;
 
 const SRC: &str = "flowchart TD\n  A[Start] --> B{Decision}\n  B -->|yes| C[Do it]\n";
 

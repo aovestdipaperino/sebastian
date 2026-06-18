@@ -8,7 +8,7 @@ sequenceDiagram, classDiagram, timeline** — the output SVG is
 
 The workspace contains two crates:
 
-- **`sebastian`** — the rendering library (`sebastian::render::render_diagram`)
+- **`sebastian`** — the rendering library (`sebastian::render_diagram`)
 - **`seb`** — the CLI
 
 ```
