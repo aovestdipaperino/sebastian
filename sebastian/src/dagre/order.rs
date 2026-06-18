@@ -674,3 +674,88 @@ fn add_subgraph_constraints(g: &LayerGraph, cg: &mut ConstraintGraph, vs: &[Stri
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::dagre::types::{EdgeLabel, GraphLabel, NodeLabel, edge_ref, node_ref};
+    use crate::graphlib::GraphOptions;
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    fn graph() -> LayoutGraph {
+        let mut g: LayoutGraph = Graph::new(GraphOptions {
+            multigraph: Some(true),
+            compound: Some(true),
+            ..Default::default()
+        });
+        g.set_graph(Rc::new(RefCell::new(GraphLabel::default())));
+        g
+    }
+
+    fn n(g: &mut LayoutGraph, id: &str) {
+        g.set_node_with(id, node_ref(NodeLabel::default()));
+    }
+
+    fn e(g: &mut LayoutGraph, v: &str, w: &str) {
+        g.set_edge(v, w, edge_ref(EdgeLabel::default()), None);
+    }
+
+    fn layer(ids: &[&str]) -> Vec<String> {
+        ids.iter().map(|s| (*s).to_owned()).collect()
+    }
+
+    #[test]
+    fn parallel_edges_have_no_crossings() {
+        let mut g = graph();
+        for id in ["a", "b", "c", "d"] {
+            n(&mut g, id);
+        }
+        e(&mut g, "a", "c");
+        e(&mut g, "b", "d");
+        let cc = two_layer_cross_count(&g, &layer(&["a", "b"]), &layer(&["c", "d"]));
+        assert_eq!(cc, 0.0);
+    }
+
+    #[test]
+    fn inverted_edges_cross_once() {
+        let mut g = graph();
+        for id in ["a", "b", "c", "d"] {
+            n(&mut g, id);
+        }
+        e(&mut g, "a", "d");
+        e(&mut g, "b", "c");
+        let cc = two_layer_cross_count(&g, &layer(&["a", "b"]), &layer(&["c", "d"]));
+        assert_eq!(cc, 1.0);
+    }
+
+    #[test]
+    fn full_bipartite_counts_one_crossing() {
+        // a,b -> c,d (all four edges): exactly one inversion (a-d x b-c).
+        let mut g = graph();
+        for id in ["a", "b", "c", "d"] {
+            n(&mut g, id);
+        }
+        e(&mut g, "a", "c");
+        e(&mut g, "a", "d");
+        e(&mut g, "b", "c");
+        e(&mut g, "b", "d");
+        let cc = two_layer_cross_count(&g, &layer(&["a", "b"]), &layer(&["c", "d"]));
+        assert_eq!(cc, 1.0);
+    }
+
+    #[test]
+    fn cross_count_sums_over_adjacent_layers() {
+        let mut g = graph();
+        for id in ["a", "b", "c", "d", "e", "f"] {
+            n(&mut g, id);
+        }
+        // Layer0 [a,b] -> Layer1 [c,d]: crossing. Layer1 -> Layer2 [e,f]: none.
+        e(&mut g, "a", "d");
+        e(&mut g, "b", "c");
+        e(&mut g, "c", "e");
+        e(&mut g, "d", "f");
+        let layering = [layer(&["a", "b"]), layer(&["c", "d"]), layer(&["e", "f"])];
+        assert_eq!(cross_count(&g, &layering), 1.0);
+    }
+}
