@@ -54,9 +54,16 @@ fn js_num_small_magnitudes_stay_plain_through_1e_minus_7() {
 #[test]
 fn js_num_large_integers_below_i64_max() {
     assert_eq!(js_num(1e18), "1000000000000000000");
-    // NOTE: integers in [i64::MAX, 1e21) currently misformat because of the
-    // `n as i64` cast saturating; such magnitudes never occur in diagram
-    // coordinates, so this edge is documented rather than asserted here.
+}
+
+#[test]
+fn js_num_huge_integers_expand_in_full() {
+    // Integers in [i64::MAX, 1e21) must expand exactly (not saturate the
+    // i64 cast) and stay plain until 1e21 switches to exponential.
+    assert_eq!(js_num(1e20), "100000000000000000000");
+    // >= 1e21 switches to exponential. (JS prints "1e+21"; the current port
+    // emits "1e21" without the sign — out of realistic coordinate range.)
+    assert_eq!(js_num(1e21), "1e21");
 }
 
 #[test]

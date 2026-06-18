@@ -12,8 +12,14 @@ pub fn js_num(n: f64) -> String {
         return "0".to_owned();
     }
     if n.fract() == 0.0 && n.abs() < 1e21 {
-        // Integers print without a decimal point.
-        return format!("{}", n as i64);
+        // Integers print without a decimal point. Only the i64-representable
+        // range can use the fast cast; larger integers (up to 1e21) fall
+        // through to the digit-exact expansion below to avoid `as i64`
+        // saturation. (Such magnitudes never arise in diagram coordinates,
+        // but the cast would silently misformat them.)
+        if n.abs() < i64::MAX as f64 {
+            return format!("{}", n as i64);
+        }
     }
     // Shortest representation that round-trips, with ties resolved by
     // round-half-to-even like V8 (Rust's default formatter differs on ties).
