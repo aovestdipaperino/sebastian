@@ -14,6 +14,20 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - `docs/NUANCES.md`: the catalog of Chrome/V8/mermaid behaviors discovered
   while reaching byte-exact output.
+- **Hand-drawn sequence diagrams (sebastian extension, no upstream equivalent).**
+  `look: handDrawn` now also stylizes sequence diagrams: actor/footer/note boxes,
+  straight message lines, and loop borders render with the sketchy
+  `hd_polygon`/`hd_edge_d` primitives. Mermaid's legacy sequence renderer ignores
+  `look`, so this is a deliberate divergence (self-message curves, loop label
+  tabs, lifelines, and arrowhead markers stay crisp by design). Crisp sequence
+  output is byte-for-byte unchanged. See `tests/sequence_handdrawn.rs`.
+- **`raster` feature: SVG → PNG rendering (`render::raster`).** Optional (pulls in
+  resvg) so pure-SVG consumers stay light. Exposes `render_png`, `rasterize_svg`
+  (with background, an extra footer band, and an overlay SVG for callers'
+  watermarks), and `measure_svg`. Ships an embedded Cabin font (SIL OFL 1.1) so
+  output needs no installed fonts and is deterministic across machines
+  (`FontSource::Embedded`, default); `FontSource::System` loads system fonts for
+  pixel-perfect raster comparison against mermaid-cli.
 
 ## [0.1.0] - 2026-06-12
 

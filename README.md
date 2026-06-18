@@ -80,6 +80,46 @@ Trebuchet metrics, so node sizes match the classic look while the rendered
 font is handwritten (sizes are therefore approximate). Pairs naturally with
 `htmlLabels: false` for offline rasterization.
 
+### Sequence diagrams (sebastian extension)
+
+Hand-drawn support for **sequence diagrams** is a sebastian-specific extension
+with **no upstream equivalent** — mermaid's legacy sequence renderer
+(`sequenceRenderer.ts` + `svgDraw.js`) ignores `look` and always draws crisp
+shapes. When `look: handDrawn` is set, sebastian routes the sequence diagram's
+actor boxes, footer boxes, note boxes, straight message lines, and loop/alt
+borders through the same sketchy primitives the flowchart uses. By design it
+leaves a few elements crisp: self-message bezier curves, the loop label tab,
+the thin lifelines, and arrowhead markers. See
+`sebastian/src/sequence/render.rs` (module docs) and
+`sebastian/tests/sequence_handdrawn.rs`.
+
+## Rasterization (PNG) — `raster` feature
+
+The renderers return **SVG** by default. Enable the `raster` feature to also get
+**PNG** via the `render::raster` module (pulls in resvg; off by default so
+SVG-only consumers stay light):
+
+- `render_png(source, id)` — mermaid source straight to PNG bytes.
+- `rasterize_svg(svg, &RasterOptions)` — rasterize any SVG, with an optional
+  background, an extra blank footer band, and an overlay SVG composited on top
+  (e.g. a caller's watermark).
+- `measure_svg(svg)` — the rendered pixel size, for sizing an overlay first.
+
+Fonts are selected by `RasterOptions::fonts`:
+
+- `FontSource::Embedded` (default) bundles **Cabin** (SIL OFL 1.1) and points
+  every generic family at it, so the standard `trebuchet ms, …, sans-serif`
+  stack falls through to Cabin. No installed fonts required; output is
+  deterministic across machines.
+- `FontSource::System` loads the system fonts and leaves family resolution to
+  usvg, so `trebuchet ms` resolves to the installed face — **use this for
+  pixel-perfect raster comparison against mermaid-cli**, whose Chrome renders the
+  same stack.
+
+```bash
+cargo build --features raster
+```
+
 ## Fidelity
 
 Two reference suites assert output against captured `mmdc` SVGs:

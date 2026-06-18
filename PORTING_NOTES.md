@@ -17,6 +17,12 @@ Working notes for the pixel-perfect port. Reference sources:
 - Known non-determinism: rough.js shapes (stadium/odd) — mermaid itself embeds
   Math.random() in curve control points (collinear ⇒ pixel-identical).
   Rasterized diff vs mmdc is within mmdc's own run-to-run variance.
+- Rasterization (`render::raster`, `raster` feature) is sebastian's own, not a
+  port. For **pixel-perfect raster comparison against the mermaid TS output**,
+  rasterize with `FontSource::System` so the emitted `trebuchet ms, …` stack
+  resolves to the same installed faces mmdc's Chrome uses. The default
+  `FontSource::Embedded` (bundled Cabin) is for portable, deterministic output
+  and is NOT comparable pixel-for-pixel with mmdc.
 
 Corpus verification (tests/book_corpus.rs, 553 diagrams from ../books):
 544 byte-identical (including all 17 %%{init}%% directive cases — themes,
@@ -217,6 +223,23 @@ boundMessage/drawNote/drawLoop, actor boxes prepended via d3 .lower()
   uses the CSS-inherited Trebuchet (19/line).
 - drawText valign=center computes y per line lazily (running bbox sums);
   CSSOM style attributes always serialize LAST.
+
+### DEVIATION: hand-drawn look (sebastian extension, 2026-06-18)
+
+Upstream mermaid's sequence renderer ignores `look` entirely — `look: handDrawn`
+only affects the flowchart and unified-renderer diagram types, never the legacy
+`sequenceRenderer.ts` + `svgDraw.js`. There is therefore NO TS reference for
+this; it is a sebastian-original extension, not a port.
+
+When `config.is_hand_drawn()`, `draw_rect` emits an `hd_polygon` group and
+straight segments go through a new `draw_segment` (`hd_edge_d`) helper, gated so
+crisp output is byte-for-byte unchanged (the corpus test still passes). Applied
+to: actor boxes, footer boxes, note boxes, straight message lines, loop borders.
+Left crisp on purpose: self-message bezier curves, the loop label tab, the thin
+`#999` lifelines (whose `y2` is resolved lazily by `fix_lifeline`, so a path
+`d` can't be finalized at creation), and arrowhead markers. Each branch is
+tagged `HAND-DRAWN EXTENSION` in `render.rs`; covered by
+`tests/sequence_handdrawn.rs`.
 
 ## timeline (src/timeline/, 2026-06-12)
 

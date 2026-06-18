@@ -11,6 +11,8 @@ pub mod graph;
 pub mod handdrawn;
 pub mod khroma;
 pub mod markers;
+#[cfg(feature = "raster")]
+pub mod raster;
 pub mod shapes;
 pub mod styles;
 pub mod svg_label;

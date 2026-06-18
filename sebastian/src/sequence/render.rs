@@ -1,10 +1,32 @@
 //! Sequence diagram renderer (port of `sequenceRenderer.ts` + `svgDraw.js`).
+//!
+//! # Hand-drawn look (sebastian extension, not in upstream mermaid)
+//!
+//! Upstream mermaid's `look: handDrawn` (rough.js) is wired into the flowchart
+//! and unified-renderer diagram types only; the legacy sequence renderer ported
+//! here (`sequenceRenderer.ts` + `svgDraw.js`) never consults `look` and always
+//! emits crisp `<rect>`/`<line>`. There is therefore no TypeScript reference for
+//! a sketchy sequence diagram.
+//!
+//! As a sebastian-specific extension, when `config.is_hand_drawn()` is set we
+//! route the box and straight-segment primitives through the same
+//! [`crate::render::handdrawn`] helpers the flowchart uses
+//! ([`hd_polygon`]/[`hd_edge_d`]). Scope, with deliberate exceptions:
+//! - sketchy: actor boxes, footer boxes, note boxes, straight message lines, loop
+//!   borders;
+//! - left crisp (documented): self-message bezier curves, the loop label tab,
+//!   thin lifelines, and arrowhead markers — keeping these clean reads better and
+//!   avoids wobbling geometry that is resolved lazily (lifeline `y2`).
+//!
+//! Every hand-drawn branch below is marked `HAND-DRAWN EXTENSION`.
 
 use super::{
     Actor, BIDIRECTIONAL_DOTTED, BIDIRECTIONAL_SOLID, DOTTED, DOTTED_CROSS, DOTTED_OPEN,
     DOTTED_POINT, LEFTOF, LOOP_END, LOOP_START, NOTE, OVER, RIGHTOF, SOLID, SOLID_CROSS,
     SOLID_OPEN, SOLID_POINT, SeqMessage, SeqParseError, SequenceDb,
 };
+use crate::dagre::types::Point;
+use crate::render::handdrawn::{hd_edge_d, hd_polygon, seed_from};
 use crate::svg::{
     Element, append, insert_first, js_num, new_element, serialize, set_attr, set_text,
 };
@@ -232,7 +254,34 @@ struct RectData<'a> {
     class: &'a str,
 }
 
-fn draw_rect(parent: &Element, r: &RectData<'_>) -> Element {
+fn draw_rect(parent: &Element, r: &RectData<'_>, hand_drawn: bool) -> Element {
+    // HAND-DRAWN EXTENSION: render the box as a sketchy filled polygon (rounded
+    // corners are dropped — sketchy boxes are square). Returns the `<g>` wrapper;
+    // `rx` and post-hoc `height` edits do not apply, so callers that resize after
+    // text layout (notes) must compute the height before calling this.
+    if hand_drawn {
+        let pts = [
+            Point { x: r.x, y: r.y },
+            Point {
+                x: r.x + r.width,
+                y: r.y,
+            },
+            Point {
+                x: r.x + r.width,
+                y: r.y + r.height,
+            },
+            Point {
+                x: r.x,
+                y: r.y + r.height,
+            },
+        ];
+        let g = hd_polygon(parent, &pts, r.fill, r.stroke, "1", "", seed_from(r.x, r.y));
+        set_attr(&g, "class", r.class);
+        if let Some(n) = r.name {
+            set_attr(&g, "name", n);
+        }
+        return g;
+    }
     let rect = append(parent, "rect");
     set_attr(&rect, "x", js_num(r.x));
     set_attr(&rect, "y", js_num(r.y));
@@ -249,6 +298,26 @@ fn draw_rect(parent: &Element, r: &RectData<'_>) -> Element {
     }
     set_attr(&rect, "class", r.class);
     rect
+}
+
+/// A straight segment between two points. Crisp mode emits a `<line>`; the
+/// HAND-DRAWN EXTENSION emits a sketchy `<path>` (a single rough pass via
+/// [`hd_edge_d`]). Either way the returned element accepts the same `class`,
+/// `stroke`, `marker-end`, and `style` attributes the callers set afterward.
+fn draw_segment(parent: &Element, x1: f64, y1: f64, x2: f64, y2: f64, hand_drawn: bool) -> Element {
+    if hand_drawn {
+        let el = append(parent, "path");
+        let pts = [Point { x: x1, y: y1 }, Point { x: x2, y: y2 }];
+        set_attr(&el, "d", hd_edge_d(&pts, seed_from(x1, y1)));
+        el
+    } else {
+        let el = append(parent, "line");
+        set_attr(&el, "x1", js_num(x1));
+        set_attr(&el, "y1", js_num(y1));
+        set_attr(&el, "x2", js_num(x2));
+        set_attr(&el, "y2", js_num(y2));
+        el
+    }
 }
 
 /// Inserts a defs>symbol icon.
@@ -307,6 +376,9 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
     let mut db = super::parse(source)?;
     let measurer = SeqMeasurer::new();
     let config = crate::render::config::detect_init(source);
+    // HAND-DRAWN EXTENSION: sketchy shapes when `look: handDrawn` is set (see
+    // module docs — this has no upstream sequence-renderer equivalent).
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
 
     // SVG scaffold.
@@ -515,7 +587,7 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         match msg.ty {
             NOTE => {
                 let mut nm = note_models.get(&msg.id).cloned().unwrap_or_default();
-                draw_note(&svg, &mut nm, &msg.id, &mut bounds);
+                draw_note(&svg, &mut nm, &msg.id, &mut bounds, hand_drawn);
             }
             LOOP_START => {
                 // adjustLoopHeightForWrap(pre=boxMargin, post=boxMargin+boxTextMargin)
@@ -547,7 +619,7 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
             }
             LOOP_END => {
                 if let Some(model) = bounds.sequence_items.pop() {
-                    draw_loop(&svg, &model, "loop", &msg.id);
+                    draw_loop(&svg, &model, "loop", &msg.id, hand_drawn);
                     let stopy = model.stopy.unwrap_or(bounds.vertical_pos);
                     bounds.bump_vertical_pos(stopy - bounds.vertical_pos);
                 }
@@ -573,12 +645,21 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
     let keys: Vec<String> = db.actors.keys().cloned().collect();
     for k in &keys {
         let a = &mut db.actors[k];
-        draw_actor_top(&svg, a, &mut actor_cnt);
+        draw_actor_top(&svg, a, &mut actor_cnt, hand_drawn);
     }
 
     // --- draw queued messages ---
     for q in &to_draw {
-        draw_message(&svg, &q.model, q.line_start_y, &q.id, &q.from, &q.to, id);
+        draw_message(
+            &svg,
+            &q.model,
+            q.line_start_y,
+            &q.id,
+            &q.from,
+            &q.to,
+            id,
+            hand_drawn,
+        );
     }
 
     // --- drawActors (footer, mirrorActors) ---
@@ -589,7 +670,7 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         if a.stopy.is_none() {
             a.stopy = Some(bounds.vertical_pos);
         }
-        draw_actor_footer(&svg, a);
+        draw_actor_footer(&svg, a, hand_drawn);
         max_footer_height = max_footer_height.max(a.height);
     }
     bounds.bump_vertical_pos(max_footer_height + BOX_MARGIN);
@@ -747,7 +828,7 @@ fn build_note_model(msg: &SeqMessage, db: &SequenceDb, measurer: &SeqMeasurer) -
 }
 
 /// `drawNote`.
-fn draw_note(svg: &Element, nm: &mut NoteModel, id: &str, bounds: &mut Bounds) {
+fn draw_note(svg: &Element, nm: &mut NoteModel, id: &str, bounds: &mut Bounds, hand_drawn: bool) {
     bounds.bump_vertical_pos(BOX_MARGIN);
     nm.height = BOX_MARGIN;
     nm.starty = bounds.vertical_pos;
@@ -755,20 +836,6 @@ fn draw_note(svg: &Element, nm: &mut NoteModel, id: &str, bounds: &mut Bounds) {
     let g = append(svg, "g");
     set_attr(&g, "data-et", "note");
     set_attr(&g, "data-id", format!("i{id}"));
-    let rect = draw_rect(
-        &g,
-        &RectData {
-            x: nm.startx,
-            y: nm.starty,
-            fill: "#EDF2AE",
-            stroke: "#666",
-            width: nm.width,
-            height: 100.0,
-            name: None,
-            rx: 0.0,
-            class: "note",
-        },
-    );
 
     let mut td = TextData {
         x: nm.startx,
@@ -782,10 +849,42 @@ fn draw_note(svg: &Element, nm: &mut NoteModel, id: &str, bounds: &mut Bounds) {
         text_margin: Some(NOTE_MARGIN),
         valign_center: true,
     };
-    let lines = draw_text(&g, &mut td);
+
+    let note_rect = |g: &Element, height: f64| {
+        draw_rect(
+            g,
+            &RectData {
+                x: nm.startx,
+                y: nm.starty,
+                fill: "#EDF2AE",
+                stroke: "#666",
+                width: nm.width,
+                height,
+                name: None,
+                rx: 0.0,
+                class: "note",
+            },
+            hand_drawn,
+        )
+    };
+
     #[allow(clippy::cast_precision_loss)]
-    let text_height = round(drawn_line_height() * lines as f64);
-    set_attr(&rect, "height", js_num(text_height + 2.0 * NOTE_MARGIN));
+    let text_height = if hand_drawn {
+        // HAND-DRAWN EXTENSION: a sketchy box can't be resized after creation, so
+        // lay out the text first to learn its height, then draw the box at the
+        // final size. `hd_polygon` inserts itself first, so it still sits behind
+        // the text despite being added afterward.
+        let lines = draw_text(&g, &mut td);
+        let text_height = round(drawn_line_height() * lines as f64);
+        note_rect(&g, text_height + 2.0 * NOTE_MARGIN);
+        text_height
+    } else {
+        let rect = note_rect(&g, 100.0);
+        let lines = draw_text(&g, &mut td);
+        let text_height = round(drawn_line_height() * lines as f64);
+        set_attr(&rect, "height", js_num(text_height + 2.0 * NOTE_MARGIN));
+        text_height
+    };
     nm.height += text_height + 2.0 * NOTE_MARGIN;
     bounds.bump_vertical_pos(text_height + 2.0 * NOTE_MARGIN);
     nm.stopy = nm.starty + text_height + 2.0 * NOTE_MARGIN;
@@ -838,6 +937,7 @@ fn bound_message(model: &mut MsgModel, measurer: &SeqMeasurer, bounds: &mut Boun
 }
 
 /// `drawMessage`.
+#[allow(clippy::too_many_arguments)]
 fn draw_message(
     svg: &Element,
     model: &MsgModel,
@@ -846,6 +946,7 @@ fn draw_message(
     from: &str,
     to: &str,
     diagram_id: &str,
+    hand_drawn: bool,
 ) {
     let mut td = TextData {
         x: model.startx.min(model.stopx),
@@ -881,12 +982,16 @@ fn draw_message(
         );
         line
     } else {
-        let line = append(svg, "line");
-        set_attr(&line, "x1", js_num(model.startx));
-        set_attr(&line, "y1", js_num(line_start_y));
-        set_attr(&line, "x2", js_num(model.stopx));
-        set_attr(&line, "y2", js_num(line_start_y));
-        line
+        // HAND-DRAWN EXTENSION: straight messages become sketchy paths; the
+        // self-message bezier above is left smooth on purpose.
+        draw_segment(
+            svg,
+            model.startx,
+            line_start_y,
+            model.stopx,
+            line_start_y,
+            hand_drawn,
+        )
     };
 
     let dotted = matches!(
@@ -938,7 +1043,7 @@ fn draw_message(
 }
 
 /// `drawLoop` (loop label box + title).
-fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str) {
+fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str, hand_drawn: bool) {
     let g = append(svg, "g");
     set_attr(&g, "data-et", "control-structure");
     set_attr(&g, "data-id", format!("i{msg_id}"));
@@ -946,12 +1051,10 @@ fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str) {
     let stopx = model.stopx.unwrap_or(0.0);
     let starty = model.starty_opt.unwrap_or(model.starty);
     let stopy = model.stopy.unwrap_or(0.0);
+    // HAND-DRAWN EXTENSION: the four loop borders become sketchy segments; the
+    // cut-corner label tab below stays crisp.
     let line = |x1: f64, y1: f64, x2: f64, y2: f64| {
-        let l = append(&g, "line");
-        set_attr(&l, "x1", js_num(x1));
-        set_attr(&l, "y1", js_num(y1));
-        set_attr(&l, "x2", js_num(x2));
-        set_attr(&l, "y2", js_num(y2));
+        let l = draw_segment(&g, x1, y1, x2, y2, hand_drawn);
         set_attr(&l, "class", "loopLine");
     };
     line(startx, starty, stopx, starty);
@@ -1012,7 +1115,7 @@ fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str) {
 }
 
 /// Top actor: lifeline + box group, prepended to the svg.
-fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize) {
+fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, hand_drawn: bool) {
     let center = actor.x + actor.width / 2.0;
     let center_y = actor.starty + actor.height;
 
@@ -1050,6 +1153,7 @@ fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize) {
             rx: 3.0,
             class: "actor actor-top",
         },
+        hand_drawn,
     );
 
     set_attr(&inner, "data-et", "participant");
@@ -1060,7 +1164,7 @@ fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize) {
 }
 
 /// Footer actor: rect + text only, prepended.
-fn draw_actor_footer(svg: &Element, actor: &Actor) {
+fn draw_actor_footer(svg: &Element, actor: &Actor, hand_drawn: bool) {
     let group = insert_first(svg, "g");
     let y = actor.stopy.unwrap_or(0.0);
     draw_rect(
@@ -1076,6 +1180,7 @@ fn draw_actor_footer(svg: &Element, actor: &Actor) {
             rx: 3.0,
             class: "actor actor-bottom",
         },
+        hand_drawn,
     );
     draw_actor_text(&group, actor, y);
 }
