@@ -1,0 +1,415 @@
+=== header_td ===
+  Graph
+  Dir("TD")
+  Eof
+
+=== header_lr ===
+  Graph
+  Dir("LR")
+  Eof
+
+=== header_elk ===
+  Graph
+  Dir("TB")
+  Eof
+
+=== header_nodir ===
+  Graph
+  NoDir
+  NodeString("A")
+  Eof
+
+=== direction ===
+  Graph
+  NoDir
+  Direction("RL")
+  Eof
+
+=== link_arrow ===
+  NodeString("A")
+  Link("-->")
+  NodeString("B")
+  Eof
+
+=== link_thick ===
+  NodeString("A")
+  Link("==>")
+  NodeString("B")
+  Eof
+
+=== link_dotted ===
+  NodeString("A")
+  Link("-.->")
+  NodeString("B")
+  Eof
+
+=== link_open ===
+  NodeString("A")
+  Link("---")
+  NodeString("B")
+  Eof
+
+=== link_tilde ===
+  NodeString("A")
+  Link("~~~")
+  NodeString("B")
+  Eof
+
+=== link_circle_end ===
+  NodeString("A")
+  Link("--o")
+  NodeString("B")
+  Eof
+
+=== link_cross_end ===
+  NodeString("A")
+  Link("--x")
+  NodeString("B")
+  Eof
+
+=== edge_label ===
+  NodeString("A")
+  StartLink("--")
+  EdgeText("yes ")
+  Link("-->")
+  NodeString("B")
+  Eof
+
+=== edge_label_thick ===
+  NodeString("A")
+  StartLink("==")
+  EdgeText("no ")
+  Link("==>")
+  NodeString("B")
+  Eof
+
+=== edge_label_dotted ===
+  NodeString("A")
+  StartLink("-.")
+  EdgeText("maybe ")
+  Link(".->")
+  NodeString("B")
+  Eof
+
+=== pipe_label ===
+  NodeString("A")
+  Link("-->")
+  Pipe
+  Text("go")
+  Pipe
+  NodeString("B")
+  Eof
+
+=== link_id ===
+  LinkId("e1@")
+  Link("-->")
+  NodeString("B")
+  Eof
+
+=== shape_square ===
+  NodeString("A")
+  Sqs
+  Text("label")
+  Sqe
+  Eof
+
+=== shape_round ===
+  NodeString("A")
+  Ps
+  Text("label")
+  Pe
+  Eof
+
+=== shape_diamond ===
+  NodeString("A")
+  DiamondStart
+  Text("label")
+  DiamondStop
+  Eof
+
+=== shape_stadium ===
+  NodeString("A")
+  StadiumStart
+  Text("label")
+  StadiumEnd
+  Eof
+
+=== shape_subroutine ===
+  NodeString("A")
+  SubroutineStart
+  Text("label")
+  SubroutineEnd
+  Eof
+
+=== shape_cylinder ===
+  NodeString("A")
+  CylinderStart
+  Text("db")
+  CylinderEnd
+  Eof
+
+=== shape_double_circle ===
+  NodeString("A")
+  DoubleCircleStart
+  Text("x")
+  DoubleCircleEnd
+  Eof
+
+=== shape_ellipse ===
+  NodeString("A")
+  EllipseStart
+  Text("x")
+  EllipseEnd
+  Eof
+
+=== shape_trap ===
+  NodeString("A")
+  TrapStart
+  Text("x")
+  InvTrapEnd
+  Eof
+
+=== shape_inv_trap ===
+  NodeString("A")
+  InvTrapStart
+  Text("x")
+  TrapEnd
+  Eof
+
+=== vertex_props ===
+  NodeString("A")
+  VertexWithPropsStart
+  NodeString("prop")
+  Pipe
+  Sqe
+  Eof
+
+=== string_label ===
+  NodeString("A")
+  Sqs
+  Str("hi there")
+  Sqe
+  Eof
+
+=== md_string ===
+  NodeString("A")
+  Sqs
+  MdStr("**bold**")
+  Sqe
+  Eof
+
+=== subgraph ===
+  Subgraph
+  Space
+  NodeString("one")
+  Newline
+  NodeString("A")
+  Newline
+  End
+  Eof
+
+=== classdef ===
+  ClassDef
+  Space
+  NodeString("big")
+  Space
+  NodeString("fill")
+  Colon
+  Brkt
+  NodeString("f00")
+  Eof
+
+=== class_apply ===
+  Class
+  Space
+  NodeString("A")
+  Space
+  NodeString("big")
+  Eof
+
+=== class_shorthand ===
+  NodeString("A")
+  StyleSeparator
+  NodeString("big")
+  Eof
+
+=== style ===
+  Style
+  Space
+  NodeString("A")
+  Space
+  NodeString("fill")
+  Colon
+  Brkt
+  NodeString("fff")
+  Eof
+
+=== linkstyle ===
+  LinkStyle
+  Space
+  Num("0")
+  Space
+  NodeString("stroke")
+  Colon
+  NodeString("red")
+  Eof
+
+=== interpolate ===
+  LinkStyle
+  Space
+  Default
+  Space
+  Interpolate
+  Space
+  NodeString("basis")
+  Eof
+
+=== click_href ===
+  Click("A")
+  Href
+  Str("http://x")
+  Space
+  LinkTarget("_blank")
+  Eof
+
+=== click_call ===
+  Click("A")
+  CallbackName("cb")
+  CallbackArgs("1,2")
+  Eof
+
+=== acc_title ===
+  AccTitle
+  Str("A diagram")
+  Eof
+
+=== acc_descr ===
+  AccDescr
+  Str("Some description")
+  Eof
+
+=== acc_descr_ml ===
+  AccDescr
+  Str("\nmany\nlines\n")
+  Eof
+
+=== shape_data ===
+  NodeString("A")
+  ShapeData("")
+  ShapeData(" shape: rounded ")
+  Eof
+
+=== shape_data_str ===
+  NodeString("A")
+  ShapeData("")
+  ShapeData(" label: ")
+  ShapeData("")
+  ShapeData("hi")
+  ShapeData("")
+  ShapeData(" ")
+  Eof
+
+=== comment ===
+  Newline
+  NodeString("A")
+  Link("-->")
+  NodeString("B")
+  Eof
+
+=== number ===
+  NodeString("A123")
+  Link("-->")
+  Num("456")
+  Eof
+
+=== unicode ===
+  NodeString("A")
+  Sqs
+  Text("日本語")
+  Sqe
+  Link("-->")
+  NodeString("B")
+  Eof
+
+=== ampersand ===
+  NodeString("A")
+  Space
+  Amp
+  Space
+  NodeString("B")
+  Link("-->")
+  NodeString("C")
+  Eof
+
+=== semicolons ===
+  NodeString("A")
+  Link("-->")
+  NodeString("B")
+  Semi
+  Newline
+  NodeString("C")
+  Link("-->")
+  NodeString("D")
+  Semi
+  Eof
+
+=== tag_html ===
+  NodeString("A")
+  Link("-->")
+  Pipe
+  Text("<b>x</b>")
+  Pipe
+  NodeString("B")
+  Eof
+
+=== multi ===
+  Graph
+  Dir("LR")
+  Newline
+  Space
+  Space
+  NodeString("A")
+  Sqs
+  Text("Start")
+  Sqe
+  Link("-->")
+  Pipe
+  Text("go")
+  Pipe
+  NodeString("B")
+  DiamondStart
+  Text("Q")
+  DiamondStop
+  Newline
+  Space
+  Space
+  NodeString("B")
+  Link("-->")
+  NodeString("C")
+  DoubleCircleStart
+  Text("End")
+  DoubleCircleEnd
+  Newline
+  Space
+  Space
+  ClassDef
+  Space
+  NodeString("x")
+  Space
+  NodeString("fill")
+  Colon
+  Brkt
+  NodeString("0f0")
+  Newline
+  Space
+  Space
+  Class
+  Space
+  NodeString("A")
+  Comma
+  NodeString("B")
+  Space
+  NodeString("x")
+  Newline
+  Eof
+
