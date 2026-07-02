@@ -74,6 +74,10 @@ pub struct Actor {
     pub starty: f64,
     pub stopy: Option<f64>,
     pub actor_cnt: Option<usize>,
+    /// Index into [`SequenceDb::boxes`] when declared inside a `box`.
+    pub box_index: Option<usize>,
+    /// `"participant"` or `"actor"` (stick figure).
+    pub is_actor_man: bool,
 }
 
 /// A message/event row from the db.
@@ -91,11 +95,22 @@ pub struct SeqMessage {
     pub autonumber: Option<(f64, f64, bool)>,
 }
 
+/// A `box` grouping of participants.
+#[derive(Debug, Clone, Default)]
+pub struct SeqBox {
+    /// Title text; `None` when the box line only carried a color.
+    pub name: Option<String>,
+    pub fill: String,
+    pub actor_keys: Vec<String>,
+}
+
 /// Parsed database.
 #[derive(Debug, Default)]
 pub struct SequenceDb {
     pub actors: indexmap::IndexMap<String, Actor>,
     pub messages: Vec<SeqMessage>,
+    pub boxes: Vec<SeqBox>,
+    current_box: Option<usize>,
 }
 
 impl SequenceDb {
@@ -110,12 +125,17 @@ impl SequenceDb {
         if let Some(p) = &prev {
             self.actors[p].next_actor = Some(id.to_owned());
         }
+        let box_index = self.current_box;
+        if let Some(bi) = box_index {
+            self.boxes[bi].actor_keys.push(id.to_owned());
+        }
         self.actors.insert(
             id.to_owned(),
             Actor {
                 name: id.to_owned(),
                 description: description.unwrap_or_else(|| id.to_owned()),
                 prev_actor: prev,
+                box_index,
                 ..Actor::default()
             },
         );
@@ -132,6 +152,201 @@ impl SequenceDb {
             ..SeqMessage::default()
         });
     }
+}
+
+/// CSS named colors (`CSS.supports('color', x)` for the `\w*` capture).
+const CSS_NAMED_COLORS: &[&str] = &[
+    "aliceblue",
+    "antiquewhite",
+    "aqua",
+    "aquamarine",
+    "azure",
+    "beige",
+    "bisque",
+    "black",
+    "blanchedalmond",
+    "blue",
+    "blueviolet",
+    "brown",
+    "burlywood",
+    "cadetblue",
+    "chartreuse",
+    "chocolate",
+    "coral",
+    "cornflowerblue",
+    "cornsilk",
+    "crimson",
+    "cyan",
+    "darkblue",
+    "darkcyan",
+    "darkgoldenrod",
+    "darkgray",
+    "darkgreen",
+    "darkgrey",
+    "darkkhaki",
+    "darkmagenta",
+    "darkolivegreen",
+    "darkorange",
+    "darkorchid",
+    "darkred",
+    "darksalmon",
+    "darkseagreen",
+    "darkslateblue",
+    "darkslategray",
+    "darkslategrey",
+    "darkturquoise",
+    "darkviolet",
+    "deeppink",
+    "deepskyblue",
+    "dimgray",
+    "dimgrey",
+    "dodgerblue",
+    "firebrick",
+    "floralwhite",
+    "forestgreen",
+    "fuchsia",
+    "gainsboro",
+    "ghostwhite",
+    "gold",
+    "goldenrod",
+    "gray",
+    "green",
+    "greenyellow",
+    "grey",
+    "honeydew",
+    "hotpink",
+    "indianred",
+    "indigo",
+    "ivory",
+    "khaki",
+    "lavender",
+    "lavenderblush",
+    "lawngreen",
+    "lemonchiffon",
+    "lightblue",
+    "lightcoral",
+    "lightcyan",
+    "lightgoldenrodyellow",
+    "lightgray",
+    "lightgreen",
+    "lightgrey",
+    "lightpink",
+    "lightsalmon",
+    "lightseagreen",
+    "lightskyblue",
+    "lightslategray",
+    "lightslategrey",
+    "lightsteelblue",
+    "lightyellow",
+    "lime",
+    "limegreen",
+    "linen",
+    "magenta",
+    "maroon",
+    "mediumaquamarine",
+    "mediumblue",
+    "mediumorchid",
+    "mediumpurple",
+    "mediumseagreen",
+    "mediumslateblue",
+    "mediumspringgreen",
+    "mediumturquoise",
+    "mediumvioletred",
+    "midnightblue",
+    "mintcream",
+    "mistyrose",
+    "moccasin",
+    "navajowhite",
+    "navy",
+    "oldlace",
+    "olive",
+    "olivedrab",
+    "orange",
+    "orangered",
+    "orchid",
+    "palegoldenrod",
+    "palegreen",
+    "paleturquoise",
+    "palevioletred",
+    "papayawhip",
+    "peachpuff",
+    "peru",
+    "pink",
+    "plum",
+    "powderblue",
+    "purple",
+    "rebeccapurple",
+    "red",
+    "rosybrown",
+    "royalblue",
+    "saddlebrown",
+    "salmon",
+    "sandybrown",
+    "seagreen",
+    "seashell",
+    "sienna",
+    "silver",
+    "skyblue",
+    "slateblue",
+    "slategray",
+    "slategrey",
+    "snow",
+    "springgreen",
+    "steelblue",
+    "tan",
+    "teal",
+    "thistle",
+    "tomato",
+    "transparent",
+    "turquoise",
+    "violet",
+    "wheat",
+    "white",
+    "whitesmoke",
+    "yellow",
+    "yellowgreen",
+    "currentcolor",
+    "inherit",
+    "initial",
+    "unset",
+    "revert",
+    "revert-layer",
+];
+
+/// `parseBoxData`: leading color token (or rgb()/hsl() function) + title.
+fn parse_box_data(s: &str) -> (String, Option<String>) {
+    let lower = s.to_lowercase();
+    let (color, rest) = if ["rgb", "rgba", "hsl", "hsla"].iter().any(|f| {
+        lower
+            .strip_prefix(f)
+            .is_some_and(|r| r.trim_start().starts_with('('))
+    }) {
+        // `\(.*\)` is greedy: through the last ')'.
+        s.rfind(')').map_or((s, ""), |i| (&s[..=i], &s[i + 1..]))
+    } else {
+        let end = s
+            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+            .unwrap_or(s.len());
+        (&s[..end], &s[end..])
+    };
+    let color_ok = if color.is_empty() {
+        false
+    } else if color.contains('(') {
+        true
+    } else {
+        CSS_NAMED_COLORS.contains(&color.to_lowercase().as_str())
+    };
+    let (color, title) = if color_ok {
+        (color.to_owned(), rest.trim())
+    } else {
+        ("transparent".to_owned(), s.trim())
+    };
+    let title = if title.is_empty() {
+        None
+    } else {
+        Some(title.to_owned())
+    };
+    (color, title)
 }
 
 /// `parseMessage`: trim and strip <wrap:/nowrap>: prefixes.
@@ -157,6 +372,7 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
     let mut db = SequenceDb::default();
     let mut found_header = false;
     let mut block_stack: Vec<i32> = Vec::new();
+    let mut in_box = false;
     let lines_iter = source.lines().peekable();
     for raw in lines_iter {
         let line = raw.trim();
@@ -175,15 +391,22 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
 
         let lower = line.to_lowercase();
 
-        if let Some(rest) =
-            strip_keyword(line, "participant").or_else(|| strip_keyword(line, "actor"))
-        {
+        let participant = strip_keyword(line, "participant").map(|r| (r, false));
+        let participant = participant.or_else(|| strip_keyword(line, "actor").map(|r| (r, true)));
+        if let Some((rest, is_actor_man)) = participant {
             // participant X [as Alias]
             let rest = rest.trim();
-            if let Some((id, alias)) = split_as(rest) {
+            let id = if let Some((id, alias)) = split_as(rest) {
                 db.add_actor(id.trim(), Some(alias.trim().to_owned()));
+                id.trim().to_owned()
             } else {
                 db.add_actor(rest, None);
+                rest.to_owned()
+            };
+            if is_actor_man {
+                if let Some(a) = db.actors.get_mut(&id) {
+                    a.is_actor_man = true;
+                }
             }
             continue;
         }
@@ -243,6 +466,18 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
             continue;
         }
 
+        if let Some(rest) = strip_keyword(line, "box") {
+            let (fill, name) = parse_box_data(rest.trim());
+            db.boxes.push(SeqBox {
+                name,
+                fill,
+                actor_keys: Vec::new(),
+            });
+            db.current_box = Some(db.boxes.len() - 1);
+            in_box = true;
+            continue;
+        }
+
         let mut block_start = None;
         for (kw, start, end) in [
             ("loop", LOOP_START, LOOP_END),
@@ -288,6 +523,11 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
             continue;
         }
         if lower == "end" {
+            if in_box {
+                in_box = false;
+                db.current_box = None;
+                continue;
+            }
             let end = block_stack.pop().unwrap_or(LOOP_END);
             let id = db.messages.len().to_string();
             db.messages.push(SeqMessage {

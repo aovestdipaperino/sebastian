@@ -495,6 +495,9 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
             a.height = HEIGHT;
             max_height = max_height.max(a.height);
         }
+        for k in &keys {
+            db.actors[k].margin = ACTOR_MARGIN;
+        }
         for (k, mw) in &max_message_width {
             if !db.actors.contains_key(k) {
                 continue;
@@ -511,15 +514,78 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         conf_height = conf_height.max(max_height);
     }
 
+    // Box layout data, parallel to db.boxes.
+    #[derive(Debug, Clone, Default)]
+    struct BoxRender {
+        x: f64,
+        y: f64,
+        width: f64,
+        margin: f64,
+    }
+    let mut box_rd: Vec<BoxRender> = vec![BoxRender::default(); db.boxes.len()];
+    let has_boxes = !db.boxes.is_empty();
+    let has_box_titles = db.boxes.iter().any(|b| b.name.is_some());
+    let mut box_text_max_height = 0.0f64;
+    {
+        for b in &db.boxes {
+            let name = b.name.clone().unwrap_or_default();
+            let (_, h) = measurer.text_dimensions(&name, FONT_SIZE);
+            box_text_max_height = box_text_max_height.max(h);
+        }
+        for (i, b) in db.boxes.iter().enumerate() {
+            let mut total_width: f64 = b
+                .actor_keys
+                .iter()
+                .map(|k| db.actors[k].width + db.actors[k].margin)
+                .sum();
+            total_width += BOX_MARGIN * 8.0;
+            total_width -= 2.0 * BOX_TEXT_MARGIN;
+            let name = b.name.clone().unwrap_or_default();
+            let (bw, _) = measurer.text_dimensions(&name, FONT_SIZE);
+            let min_width = total_width.max(bw + 2.0 * WRAP_PADDING);
+            box_rd[i].margin = BOX_TEXT_MARGIN;
+            if total_width < min_width {
+                box_rd[i].margin += (min_width - total_width) / 2.0;
+            }
+        }
+    }
+
     let mut bounds = Bounds::default();
+    if has_boxes {
+        bounds.bump_vertical_pos(BOX_MARGIN);
+        if has_box_titles {
+            bounds.bump_vertical_pos(box_text_max_height);
+        }
+    }
 
     // --- addActorRenderingData ---
+    // Boxes in the order they close (bounds.models.addBox).
+    let mut box_order: Vec<usize> = Vec::new();
     {
         let mut prev_width = 0.0f64;
         let mut prev_margin = 0.0f64;
         let mut max_height = 0.0f64;
+        let mut prev_box: Option<usize> = None;
         let keys: Vec<String> = db.actors.keys().cloned().collect();
         for k in &keys {
+            let bi = db.actors[k].box_index;
+
+            // end of box
+            if let Some(pb) = prev_box {
+                if prev_box != bi {
+                    box_order.push(pb);
+                    prev_margin += BOX_MARGIN + box_rd[pb].margin;
+                }
+            }
+            // new box
+            if let Some(i) = bi {
+                if bi != prev_box {
+                    box_rd[i].x = prev_width + prev_margin;
+                    box_rd[i].y = 0.0;
+                    prev_margin += box_rd[i].margin;
+                }
+            }
+
             let a = &mut db.actors[k];
             a.width = a.width.max(WIDTH);
             a.height = a.height.max(conf_height);
@@ -528,12 +594,19 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
             }
             max_height = max_height.max(a.height);
             a.x = prev_width + prev_margin;
-            a.starty = 0.0;
+            a.starty = bounds.vertical_pos;
             let (x, w, h) = (a.x, a.width, a.height);
             let m = a.margin;
             bounds.insert(x, 0.0, x + w, h);
             prev_width += w + prev_margin;
+            if let Some(i) = bi {
+                box_rd[i].width = prev_width + box_rd[i].margin - box_rd[i].x;
+            }
             prev_margin = m;
+            prev_box = bi;
+        }
+        if let Some(pb) = prev_box {
+            box_order.push(pb);
         }
         bounds.bump_vertical_pos(max_height);
     }
@@ -832,7 +905,11 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         if a.stopy.is_none() {
             a.stopy = Some(bounds.vertical_pos);
         }
-        draw_actor_footer(&svg, a, hand_drawn);
+        if a.is_actor_man {
+            draw_actor_man(&svg, a, &mut actor_cnt, true);
+        } else {
+            draw_actor_footer(&svg, a, hand_drawn);
+        }
         max_footer_height = max_footer_height.max(a.height);
     }
     bounds.bump_vertical_pos(max_footer_height + BOX_MARGIN);
@@ -849,6 +926,39 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
             // The line is inside the prepended top-actor group; find it by id.
             fix_lifeline(&svg, cnt, stopy);
         }
+    }
+
+    // --- draw boxes ---
+    for &i in &box_order {
+        let b = &box_rd[i];
+        let height = bounds.vertical_pos - b.y;
+        bounds.insert(b.x, b.y, b.x + b.width, height);
+        let box_padding = BOX_MARGIN * 2.0;
+        let startx = b.x - box_padding;
+        let starty = b.y - box_padding * 0.25;
+        let stopx = startx + b.width + 2.0 * box_padding;
+        let stopy = starty + height + box_padding * 0.75;
+        let g = insert_first(&svg, "g"); // append + g.lower()
+        let rect = append(&g, "rect");
+        set_attr(&rect, "x", js_num(startx));
+        set_attr(&rect, "y", js_num(starty));
+        set_attr(&rect, "fill", db.boxes[i].fill.clone());
+        set_attr(&rect, "stroke", "rgb(0,0,0, 0.5)");
+        set_attr(&rect, "width", js_num(stopx - startx));
+        set_attr(&rect, "height", js_num(stopy - starty));
+        set_attr(&rect, "class", "rect");
+        if let Some(name) = &db.boxes[i].name {
+            by_tspan(
+                &g,
+                name,
+                b.x + b.width / 2.0,
+                b.y + BOX_TEXT_MARGIN + box_text_max_height / 2.0,
+                "text",
+            );
+        }
+    }
+    if has_boxes {
+        bounds.bump_vertical_pos(BOX_MARGIN);
     }
 
     // --- viewport ---
@@ -1433,6 +1543,10 @@ fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str, h
 
 /// Top actor: lifeline + box group, prepended to the svg.
 fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, hand_drawn: bool) {
+    if actor.is_actor_man {
+        draw_actor_man(svg, actor, actor_cnt, false);
+        return;
+    }
     let center = actor.x + actor.width / 2.0;
     let center_y = actor.starty + actor.height;
 
@@ -1480,6 +1594,126 @@ fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, hand_
     draw_actor_text(&inner, actor, actor.starty);
 }
 
+/// `drawActorTypeActor`: stick figure. The lifeline group is prepended
+/// (empty for the footer); the figure group is appended.
+const ACTOR_TYPE_WIDTH: f64 = 18.0 * 2.0;
+
+fn draw_actor_man(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, is_footer: bool) {
+    let actor_y = if is_footer {
+        actor.stopy.unwrap_or(0.0)
+    } else {
+        actor.starty
+    };
+    let center = actor.x + actor.width / 2.0;
+    let center_y = actor_y + 80.0;
+
+    let line_g = insert_first(svg, "g");
+    let cnt;
+    if is_footer {
+        // Footer ids reuse the counter as-is (post top pass), off by one.
+        cnt = actor_cnt.saturating_sub(1);
+    } else {
+        cnt = *actor_cnt;
+        *actor_cnt += 1;
+        actor.actor_cnt = Some(cnt);
+        let line = append(&line_g, "line");
+        set_attr(&line, "id", format!("actor{cnt}"));
+        set_attr(&line, "x1", js_num(center));
+        set_attr(&line, "y1", js_num(center_y));
+        set_attr(&line, "x2", js_num(center));
+        set_attr(&line, "y2", "2000");
+        set_attr(&line, "class", "actor-line 200");
+        set_attr(&line, "stroke-width", "0.5px");
+        set_attr(&line, "stroke", "#999");
+        set_attr(&line, "name", actor.name.clone());
+        set_attr(&line, "data-et", "life-line");
+        set_attr(&line, "data-id", actor.name.clone());
+    }
+
+    let g = append(svg, "g");
+    set_attr(
+        &g,
+        "class",
+        if is_footer {
+            "actor-man actor-bottom"
+        } else {
+            "actor-man actor-top"
+        },
+    );
+    set_attr(&g, "name", actor.name.clone());
+    if !is_footer {
+        set_attr(&g, "data-et", "participant");
+        set_attr(&g, "data-type", "actor");
+        set_attr(&g, "data-id", actor.name.clone());
+    }
+
+    let seg = |x1: f64, y1: f64, x2: f64, y2: f64, id: Option<String>| {
+        let l = append(&g, "line");
+        if let Some(id) = id {
+            set_attr(&l, "id", id);
+        }
+        set_attr(&l, "x1", js_num(x1));
+        set_attr(&l, "y1", js_num(y1));
+        set_attr(&l, "x2", js_num(x2));
+        set_attr(&l, "y2", js_num(y2));
+    };
+    let half = ACTOR_TYPE_WIDTH / 2.0;
+    seg(
+        center,
+        actor_y + 25.0,
+        center,
+        actor_y + 45.0,
+        Some(format!("actor-man-torso{cnt}")),
+    );
+    seg(
+        center - half,
+        actor_y + 33.0,
+        center + half,
+        actor_y + 33.0,
+        Some(format!("actor-man-arms{cnt}")),
+    );
+    seg(center - half, actor_y + 60.0, center, actor_y + 45.0, None);
+    seg(
+        center,
+        actor_y + 45.0,
+        center + (half - 2.0),
+        actor_y + 60.0,
+        None,
+    );
+
+    let circle = append(&g, "circle");
+    set_attr(&circle, "cx", js_num(center));
+    set_attr(&circle, "cy", js_num(actor_y + 10.0));
+    set_attr(&circle, "r", "15");
+    set_attr(&circle, "width", js_num(actor.width));
+    set_attr(&circle, "height", js_num(actor.height));
+
+    // getBBox of the stickman: circle top (y+10-15) to leg bottom (y+60).
+    actor.height = 65.0;
+
+    set_attr(&g, "style", "stroke: rgb(147, 112, 219);");
+
+    for (i, line) in split_breaks(&actor.description).iter().enumerate() {
+        #[allow(clippy::cast_precision_loss)]
+        let dy = i as f64 * FONT_SIZE;
+        let text = append(&g, "text");
+        set_attr(&text, "x", js_num(center));
+        set_attr(&text, "y", js_num(actor_y + 35.0 + actor.height / 2.0));
+        let span = append(&text, "tspan");
+        set_attr(&span, "x", js_num(center));
+        set_attr(&span, "dy", js_num(dy));
+        set_text(&span, line);
+        set_attr(&text, "dominant-baseline", "central");
+        set_attr(&text, "alignment-baseline", "central");
+        set_attr(&text, "class", "actor actor-man");
+        set_attr(
+            &text,
+            "style",
+            "text-anchor: middle; font-size: 16px; font-weight: 400;",
+        );
+    }
+}
+
 /// Footer actor: rect + text only, prepended.
 fn draw_actor_footer(svg: &Element, actor: &Actor, hand_drawn: bool) {
     let group = insert_first(svg, "g");
@@ -1500,6 +1734,29 @@ fn draw_actor_footer(svg: &Element, actor: &Actor, hand_drawn: bool) {
         hand_drawn,
     );
     draw_actor_text(&group, actor, y);
+}
+
+/// `byTspan` one-line label (box titles).
+fn by_tspan(g: &Element, content: &str, x: f64, y: f64, class: &str) {
+    for (i, line) in split_breaks(content).iter().enumerate() {
+        #[allow(clippy::cast_precision_loss)]
+        let dy = i as f64 * FONT_SIZE;
+        let text = append(g, "text");
+        set_attr(&text, "x", js_num(x));
+        set_attr(&text, "y", js_num(y));
+        let span = append(&text, "tspan");
+        set_attr(&span, "x", js_num(x));
+        set_attr(&span, "dy", js_num(dy));
+        set_text(&span, line);
+        set_attr(&text, "dominant-baseline", "central");
+        set_attr(&text, "alignment-baseline", "central");
+        set_attr(&text, "class", class);
+        set_attr(
+            &text,
+            "style",
+            "text-anchor: middle; font-size: 16px; font-weight: 400;",
+        );
+    }
 }
 
 /// `byTspan` actor label.
