@@ -1164,7 +1164,7 @@ pub fn insert_node_shape(
                 &note_border,
             );
             set_attr(&rect, "class", "basic label-container outer-path");
-            set_path_styles(&rect, "");
+            set_path_styles(&rect, &node_styles);
             n.width = f32q(total_width);
             n.height = f32q(total_height);
             n.intersect = Some(IntersectShape::Rect);
@@ -1541,9 +1541,13 @@ fn class_box(
 
     let label_group = append(&shape_svg, "g");
     set_attr(&label_group, "class", "label-group text");
+    // Generic titles are stored escaped (`Box&lt;T&gt;`): the Times wrap
+    // width measures the raw string, the layout bbox and the rendered HTML
+    // see the decoded one.
+    let label_decoded = crate::flowchart::db::decode_html_entities(&n.label);
     let (label_w, label_h) = add_text(
         &label_group,
-        &n.label,
+        &label_decoded,
         &n.label,
         "font-weight: bolder",
         0.0,

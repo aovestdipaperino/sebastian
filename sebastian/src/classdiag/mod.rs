@@ -33,7 +33,10 @@ const NONE: i32 = -1;
 struct ClassDef {
     id: String,
     label: String,
+    /// Generic parameter from `Name~T~`.
+    generic: String,
     dom_id: String,
+    parent: Option<String>,
     annotations: Vec<String>,
     members: Vec<(String, String)>,
     methods: Vec<(String, String)>,
@@ -55,28 +58,94 @@ struct Relation {
 struct ClassDb {
     classes: indexmap::IndexMap<String, ClassDef>,
     relations: Vec<Relation>,
+    /// `note [for Class] "text"` entries: (text, class).
+    notes: Vec<(String, Option<String>)>,
+    /// `namespace` blocks: (id, label).
+    namespaces: Vec<String>,
+    /// Lollipop interfaces: (id, label).
+    interfaces: Vec<(String, String)>,
     class_counter: usize,
+    current_namespace: Option<String>,
     direction: String,
+}
+
+/// `splitClassNameAndType`: `Box~T~` -> ("Box", "T").
+fn split_class_name_and_type(id: &str) -> (String, String) {
+    if let Some(pos) = id.find('~')
+        && pos > 0
+    {
+        let mut parts = id.split('~');
+        let name = parts.next().unwrap_or_default().to_owned();
+        let ty = parts.next().unwrap_or_default().to_owned();
+        (name, ty)
+    } else {
+        (id.to_owned(), String::new())
+    }
+}
+
+/// `parseGenericTypes`: rewrites `~...~` pairs to `<...>`, outermost first
+/// (`Array~Array~string~~` -> `Array<Array<string>>`).
+fn parse_generic_types(input: &str) -> String {
+    let mut out = input.to_owned();
+    loop {
+        let Some(first) = out.find('~') else {
+            break;
+        };
+        let Some(last) = out.rfind('~') else { break };
+        if last <= first {
+            break;
+        }
+        out.replace_range(last..=last, ">");
+        out.replace_range(first..=first, "<");
+    }
+    out
 }
 
 impl ClassDb {
     fn add_class(&mut self, id: &str) {
-        if self.classes.contains_key(id) {
+        let (name, generic) = split_class_name_and_type(id);
+        if self.classes.contains_key(&name) {
             return;
         }
         let def = ClassDef {
-            id: id.to_owned(),
-            label: id.to_owned(),
-            dom_id: format!("classId-{id}-{}", self.class_counter),
+            id: name.clone(),
+            label: name.clone(),
+            generic,
+            dom_id: format!("classId-{name}-{}", self.class_counter),
+            parent: self.current_namespace.clone(),
             ..ClassDef::default()
         };
         self.class_counter += 1;
-        self.classes.insert(id.to_owned(), def);
+        self.classes.insert(name, def);
+    }
+
+    /// `addRelation` lollipop handling: rewires one end to a fresh
+    /// invisible interface node.
+    fn add_relation(&mut self, mut rel: Relation) {
+        let invalid = [LOLLIPOP, AGGREGATION, COMPOSITION, DEPENDENCY, EXTENSION];
+        if rel.type1 == LOLLIPOP && !invalid.contains(&rel.type2) {
+            self.add_class(&rel.id2);
+            let iid = format!("interface{}", self.interfaces.len());
+            self.interfaces.push((iid.clone(), rel.id1.clone()));
+            rel.id1 = iid;
+        } else if rel.type2 == LOLLIPOP && !invalid.contains(&rel.type1) {
+            self.add_class(&rel.id1);
+            let iid = format!("interface{}", self.interfaces.len());
+            self.interfaces.push((iid.clone(), rel.id2.clone()));
+            rel.id2 = iid;
+        } else {
+            self.add_class(&rel.id1);
+            self.add_class(&rel.id2);
+        }
+        rel.id1 = split_class_name_and_type(&rel.id1).0;
+        rel.id2 = split_class_name_and_type(&rel.id2).0;
+        self.relations.push(rel);
     }
 
     fn add_member(&mut self, id: &str, raw: &str) {
         self.add_class(id);
-        let class = self.classes.get_mut(id).expect("just added");
+        let name = split_class_name_and_type(id).0;
+        let class = self.classes.get_mut(&name).expect("just added");
         let member = parse_member(raw);
         if raw.contains('(') {
             class.methods.push(member);
@@ -129,7 +198,10 @@ fn parse_member(raw: &str) -> (String, String) {
         if !return_type.is_empty() {
             let _ = std::fmt::Write::write_fmt(&mut display, format_args!(" : {return_type}"));
         }
-        (display.trim().to_owned(), classifier_style(&classifier))
+        (
+            parse_generic_types(display.trim()),
+            classifier_style(&classifier),
+        )
     } else {
         // attribute
         let (visibility, rest) = match input.chars().next() {
@@ -145,7 +217,7 @@ fn parse_member(raw: &str) -> (String, String) {
             (t, String::new())
         };
         (
-            format!("{visibility}{text}").trim().to_owned(),
+            parse_generic_types(format!("{visibility}{text}").trim()),
             classifier_style(&classifier),
         )
     }
@@ -243,6 +315,35 @@ fn parse(source: &str) -> Result<ClassDb, ClassParseError> {
             rest.trim().clone_into(&mut db.direction);
             continue;
         }
+        if line == "}" {
+            db.current_namespace = None;
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("namespace ") {
+            let name = rest.trim().trim_end_matches('{').trim();
+            db.namespaces.push(name.to_owned());
+            db.current_namespace = Some(name.to_owned());
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("note ") {
+            let rest = rest.trim();
+            let (class, text) = if let Some(r) = rest.strip_prefix("for ") {
+                let r = r.trim();
+                let Some(q) = r.find('"') else {
+                    return Err(ClassParseError {
+                        message: format!("bad note statement: {line}"),
+                    });
+                };
+                (
+                    Some(r[..q].trim().to_owned()),
+                    r[q..].trim_matches('"').to_owned(),
+                )
+            } else {
+                (None, rest.trim_matches('"').to_owned())
+            };
+            db.notes.push((text, class));
+            continue;
+        }
         if let Some(rest) = line.strip_prefix("class ") {
             let rest = rest.trim();
             if let Some(name) = rest.strip_suffix('{') {
@@ -268,14 +369,12 @@ fn parse(source: &str) -> Result<ClassDb, ClassParseError> {
         // or relation: `A <|-- B [: label]`
         if let Some((head, label)) = split_relation(line) {
             let (id1, arrow, id2, t1, t2) = head;
-            db.add_class(&id1);
-            db.add_class(&id2);
             let Some((type1, type2, line_type)) = parse_relation_arrow(&arrow) else {
                 return Err(ClassParseError {
                     message: format!("bad relation arrow: {arrow}"),
                 });
             };
-            db.relations.push(Relation {
+            db.add_relation(Relation {
                 id1,
                 id2,
                 title: label,
@@ -371,20 +470,100 @@ pub fn get_layout_data(source: &str, id: &str) -> Result<LayoutData, ClassParseE
     let mut nodes: Vec<Rc<RefCell<RenderNode>>> = Vec::new();
     let mut edges: Vec<Rc<RefCell<RenderEdge>>> = Vec::new();
 
+    for ns in &db.namespaces {
+        let node = RenderNode {
+            id: ns.clone(),
+            label: ns.clone(),
+            label_raw: ns.clone(),
+            is_group: true,
+            // `'cluster ' + undefined` upstream.
+            css_classes: "undefined".to_owned(),
+            shape: "rect".to_owned(),
+            look: "classic".to_owned(),
+            padding: 16.0,
+            ..RenderNode::default()
+        };
+        nodes.push(Rc::new(RefCell::new(node)));
+    }
+
     for class in db.classes.values() {
+        // Upstream stores the escaped form and measures it verbatim.
+        let text = if class.generic.is_empty() {
+            class.label.clone()
+        } else {
+            format!("{}&lt;{}&gt;", class.label, class.generic)
+        };
         let node = RenderNode {
             id: class.id.clone(),
-            label: class.label.clone(),
-            label_raw: class.label.clone(),
+            label: text.clone(),
+            label_raw: text,
             label_type: "markdown".to_owned(),
             shape: "classBox".to_owned(),
             dom_id: class.dom_id.clone(),
             css_classes: "default".to_owned(),
             look: "classic".to_owned(),
             padding: 12.0,
+            parent_id: class.parent.clone(),
             class_annotations: class.annotations.clone(),
             class_members: class.members.clone(),
             class_methods: class.methods.clone(),
+            ..RenderNode::default()
+        };
+        nodes.push(Rc::new(RefCell::new(node)));
+    }
+
+    for (index, (text, class)) in db.notes.iter().enumerate() {
+        let node = RenderNode {
+            id: format!("note{index}"),
+            label: text.clone(),
+            label_raw: text.clone(),
+            label_type: "markdown".to_owned(),
+            shape: "note".to_owned(),
+            css_classes: "undefined".to_owned(),
+            css_styles: vec![
+                "text-align: left".to_owned(),
+                "white-space: nowrap".to_owned(),
+                "fill: #fff5ad".to_owned(),
+                "stroke: #aaaa33".to_owned(),
+            ],
+            look: "classic".to_owned(),
+            padding: 6.0,
+            ..RenderNode::default()
+        };
+        nodes.push(Rc::new(RefCell::new(node)));
+
+        if let Some(class) = class
+            && db.classes.contains_key(class)
+        {
+            let edge = RenderEdge {
+                id: format!("edgeNote{index}"),
+                start: format!("note{index}"),
+                end: class.clone(),
+                thickness: "normal".to_owned(),
+                classes: "relation".to_owned(),
+                arrow_type_start: "none".to_owned(),
+                arrow_type_end: "none".to_owned(),
+                style: vec!["fill: none".to_owned()],
+                label_style: vec![String::new()],
+                pattern: "dotted".to_owned(),
+                look: "classic".to_owned(),
+                minlen: 1.0,
+                curve: "basis".to_owned(),
+                ..RenderEdge::default()
+            };
+            edges.push(Rc::new(RefCell::new(edge)));
+        }
+    }
+
+    for (iid, label) in &db.interfaces {
+        let node = RenderNode {
+            id: iid.clone(),
+            label: label.clone(),
+            label_raw: label.clone(),
+            shape: "rect".to_owned(),
+            css_classes: "undefined".to_owned(),
+            css_styles: vec!["opacity: 0;".to_owned()],
+            look: "classic".to_owned(),
             ..RenderNode::default()
         };
         nodes.push(Rc::new(RefCell::new(node)));

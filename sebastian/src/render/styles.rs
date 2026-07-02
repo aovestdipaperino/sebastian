@@ -72,28 +72,45 @@ pub fn styles2string(
 /// does after `applyStyle(div, labelStyle)` + the base `.style()` calls.
 #[must_use]
 pub fn div_style_attr(label_style: &str, base: &str) -> String {
-    let mut out = String::new();
-    for decl in label_style.split(';') {
-        let decl = decl.trim();
-        if decl.is_empty() {
-            continue;
+    // CSSOM merge: the label style declarations are applied first, then the
+    // base declarations via setProperty — an existing property is updated in
+    // place (value and priority), a new one is appended.
+    let mut props: Vec<(String, String, bool)> = Vec::new();
+    let mut apply = |decls: &str| {
+        for decl in decls.split(';') {
+            let decl = decl.trim();
+            if decl.is_empty() {
+                continue;
+            }
+            let mut parts = decl.splitn(2, ':');
+            let prop = parts.next().unwrap_or("").trim().to_owned();
+            let value = parts.next().unwrap_or("").trim();
+            let (value, important) = match value.strip_suffix("!important") {
+                Some(v) => (v.trim(), true),
+                None => (value, false),
+            };
+            let value = super::css::cssom_color_value(&prop, value);
+            if let Some(existing) = props.iter_mut().find(|(p, _, _)| *p == prop) {
+                existing.1 = value;
+                existing.2 = important;
+            } else {
+                props.push((prop, value, important));
+            }
         }
-        let mut parts = decl.splitn(2, ':');
-        let prop = parts.next().unwrap_or("").trim();
-        let value = parts.next().unwrap_or("").trim();
-        let (value, important) = match value.strip_suffix("!important") {
-            Some(v) => (v.trim(), true),
-            None => (value, false),
-        };
-        let value = super::css::cssom_color_value(prop, value);
-        out.push_str(prop);
+    };
+    apply(label_style);
+    apply(base);
+    let mut out = String::new();
+    for (prop, value, important) in props {
+        out.push_str(&prop);
         out.push_str(": ");
         out.push_str(&value);
         if important {
             out.push_str(" !important");
         }
-        out.push_str("; ");
+        out.push(';');
+        out.push(' ');
     }
-    out.push_str(base);
+    out.pop();
     out
 }
