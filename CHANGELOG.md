@@ -12,6 +12,19 @@ project adheres to [Semantic Versioning](https://semver.org/).
   CLI crate.
 
 ### Added
+- **Sequence diagram gap features**, byte-exact: `alt`/`opt`/`par`/`critical`/
+  `break`/`rect` blocks (with `else`/`and`/`option` sections), activations
+  (`+`/`-` shorthand and `activate`/`deactivate`, stacked), `autonumber`
+  (sequence-number circles and start/step), `box` participant groupings, and
+  `actor` stick figures. Corpus grew to 34 cases.
+- **State diagram gap features**: `<<fork>>`/`<<join>>`/`<<choice>>` shapes,
+  composite states (`roundedWithTitle` clusters), concurrency dividers (`--`,
+  including upstream's trailing-section `generateId()` quirk), and `classDef`/
+  `class` styling with generated CSS. Corpus grew to 29 cases.
+- **Class diagram gap features**: `Name~T~` generics (escaped-title
+  measurement quirk included), `note` / `note for` with dotted note edges,
+  `namespace` clusters, and lollipop interfaces (`--()`), plus a faithful
+  CSSOM merge for label div styles. Corpus grew to 9 cases.
 - `docs/NUANCES.md`: the catalog of Chrome/V8/mermaid behaviors discovered
   while reaching byte-exact output.
 - **Hand-drawn sequence diagrams (sebastian extension, no upstream equivalent).**

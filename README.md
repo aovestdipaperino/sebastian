@@ -139,12 +139,15 @@ Two reference suites assert output against captured `mmdc` SVGs:
   ≤0.07px / 1 f32 ULP because Chrome sizes SVG-text nodes from glyph ink
   extents (`getBBox`) while this port uses advance widths — invisible when
   rasterized.
-- `sebastian/tests/state_corpus.rs` — 23 stateDiagram-v2 diagrams from the same
-  books (20 byte-identical, 3 note diagrams modulo rough randomness).
-- `sebastian/tests/sequence_corpus.rs` — 24 sequence diagrams, all byte-identical.
+- `sebastian/tests/state_corpus.rs` — 29 stateDiagram-v2 diagrams (23
+  byte-identical; 6 compared modulo mermaid's own rough-path randomness
+  and its random divider `generateId()` token).
+- `sebastian/tests/sequence_corpus.rs` — 34 sequence diagrams (blocks,
+  activations, autonumber, boxes, actor figures), all byte-identical.
 - `sebastian/tests/timeline_corpus.rs` — 4 timeline diagrams, all byte-identical.
-- `sebastian/tests/class_corpus.rs` — 5 class diagrams, byte-identical modulo the
-  rough rectangle/divider randomness mermaid itself embeds.
+- `sebastian/tests/class_corpus.rs` — 9 class diagrams (generics, notes,
+  namespaces, lollipop interfaces), byte-identical modulo the rough
+  rectangle/divider randomness mermaid itself embeds.
 
 Reproducing the corpus required matching Chrome's text pipeline in detail:
 HTML-entity decoding via innerHTML semantics, DOMPurify tag/attribute

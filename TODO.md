@@ -7,9 +7,9 @@ SVG serializer) each type reuses.
 
 Already done:
 - **flowchart / graph** (781 corpus blocks, byte-exact vs mmdc)
-- **stateDiagram-v2** (23 corpus cases: 20 byte-exact, 3 rough-masked)
-- **sequenceDiagram** (24 corpus cases, all byte-exact)
-- **classDiagram** (5 hand-made cases, byte-exact modulo rough randomness)
+- **stateDiagram-v2** (29 corpus cases: 23 byte-exact, 6 rough/randid-masked)
+- **sequenceDiagram** (34 corpus cases, all byte-exact - incl. blocks, activations, autonumber, boxes, actor figures)
+- **classDiagram** (9 hand-made cases, byte-exact modulo rough randomness - incl. generics, notes, namespaces, lollipop)
 - **timeline** (4 cases, byte-exact)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
