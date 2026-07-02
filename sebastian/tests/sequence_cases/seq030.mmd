@@ -1,0 +1,8 @@
+sequenceDiagram
+    activate Worker
+    Client->>Worker: process
+    Worker-->>Client: done
+    deactivate Worker
+    loop retry
+        Client->>Worker: again
+    end

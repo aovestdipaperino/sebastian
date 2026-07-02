@@ -21,9 +21,12 @@
 //! Every hand-drawn branch below is marked `HAND-DRAWN EXTENSION`.
 
 use super::{
-    Actor, BIDIRECTIONAL_DOTTED, BIDIRECTIONAL_SOLID, DOTTED, DOTTED_CROSS, DOTTED_OPEN,
-    DOTTED_POINT, LEFTOF, LOOP_END, LOOP_START, NOTE, OVER, RIGHTOF, SOLID, SOLID_CROSS,
-    SOLID_OPEN, SOLID_POINT, SeqMessage, SeqParseError, SequenceDb,
+    ACTIVE_END, ACTIVE_START, ALT_ELSE, ALT_END, ALT_START, AUTONUMBER, Actor,
+    BIDIRECTIONAL_DOTTED, BIDIRECTIONAL_SOLID, BREAK_END, BREAK_START, CRITICAL_END,
+    CRITICAL_OPTION, CRITICAL_START, DOTTED, DOTTED_CROSS, DOTTED_OPEN, DOTTED_POINT, LEFTOF,
+    LOOP_END, LOOP_START, NOTE, OPT_END, OPT_START, OVER, PAR_AND, PAR_END, PAR_START, RECT_END,
+    RECT_START, RIGHTOF, SOLID, SOLID_CROSS, SOLID_OPEN, SOLID_POINT, SeqMessage, SeqParseError,
+    SequenceDb,
 };
 use crate::dagre::types::Point;
 use crate::render::handdrawn::{hd_edge_d, hd_polygon, seed_from};
@@ -45,6 +48,7 @@ const WRAP_PADDING: f64 = 10.0;
 const LABEL_BOX_WIDTH: f64 = 50.0;
 const LABEL_BOX_HEIGHT: f64 = 20.0;
 const BOTTOM_MARGIN_ADJ: f64 = 1.0;
+const ACTIVATION_WIDTH: f64 = 10.0;
 const FONT_SIZE: f64 = 16.0;
 
 /// JS `Math.round`.
@@ -93,6 +97,22 @@ struct LoopModel {
     stopx: Option<f64>,
     stopy: Option<f64>,
     title: String,
+    /// Background fill for `rect` blocks.
+    fill: Option<String>,
+    /// `(y, height)` per section (alt/else, par/and, critical/option).
+    sections: Vec<f64>,
+    section_titles: Vec<String>,
+}
+
+/// An activation in progress (`bounds.activations` entry).
+#[derive(Debug, Clone)]
+struct Activation {
+    startx: f64,
+    starty: f64,
+    stopx: f64,
+    actor: String,
+    /// DOM anchor the activation rect is drawn into (z-order).
+    anchored: Option<Element>,
 }
 
 #[derive(Debug, Default)]
@@ -103,6 +123,7 @@ struct Bounds {
     stopy: Option<f64>,
     vertical_pos: f64,
     sequence_items: Vec<LoopModel>,
+    activations: Vec<Activation>,
 }
 
 impl Bounds {
@@ -126,6 +147,17 @@ impl Bounds {
             Self::update_max(&mut item.stopx, stopx + n * BOX_MARGIN);
             Self::update_min(&mut self.starty, starty - n * BOX_MARGIN);
             Self::update_max(&mut self.stopy, stopy + n * BOX_MARGIN);
+        }
+        // updateBounds visits open activations with the same shared counter,
+        // so n keeps decreasing past the loop stack (0, -1, ...). Activations
+        // only take the item starty min plus the diagram startx/stopx.
+        // The shared counter works out to n = -idx for the idx-th activation.
+        for (idx, act) in self.activations.iter_mut().enumerate() {
+            #[allow(clippy::cast_precision_loss)]
+            let n = -(idx as f64);
+            act.starty = act.starty.min(starty - n * BOX_MARGIN);
+            Self::update_min(&mut self.startx, startx - n * BOX_MARGIN);
+            Self::update_max(&mut self.stopx, stopx + n * BOX_MARGIN);
         }
     }
 
@@ -520,17 +552,47 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
             width: f64,
         }
         let mut stack: Vec<Stk> = Vec::new();
+        let mut activations: Vec<Activation> = Vec::new();
         for msg in &db.messages {
             match msg.ty {
-                LOOP_START => stack.push(Stk {
-                    id: msg.id.clone(),
-                    from: f64::MAX,
-                    to: f64::MIN,
-                    width: 0.0,
-                }),
-                LOOP_END => {
+                LOOP_START | ALT_START | OPT_START | PAR_START | CRITICAL_START | BREAK_START => {
+                    stack.push(Stk {
+                        id: msg.id.clone(),
+                        from: f64::MAX,
+                        to: f64::MIN,
+                        width: 0.0,
+                    });
+                }
+                ALT_ELSE | PAR_AND | CRITICAL_OPTION => {
+                    if !msg.message.is_empty()
+                        && let Some(cur) = stack.pop()
+                    {
+                        loop_widths.insert(cur.id.clone(), cur.width);
+                        loop_widths.insert(msg.id.clone(), cur.width);
+                        stack.push(cur);
+                    }
+                }
+                LOOP_END | ALT_END | OPT_END | PAR_END | CRITICAL_END | BREAK_END => {
                     if let Some(cur) = stack.pop() {
                         loop_widths.insert(cur.id.clone(), cur.width);
+                    }
+                }
+                ACTIVE_START => {
+                    let actor = &db.actors[&msg.from];
+                    #[allow(clippy::cast_precision_loss)]
+                    let stacked = activations.iter().filter(|a| a.actor == msg.from).count() as f64;
+                    let x = actor.x + actor.width / 2.0 + (stacked - 1.0) * ACTIVATION_WIDTH / 2.0;
+                    activations.push(Activation {
+                        startx: x,
+                        starty: 0.0,
+                        stopx: x + ACTIVATION_WIDTH,
+                        actor: msg.from.clone(),
+                        anchored: None,
+                    });
+                }
+                ACTIVE_END => {
+                    if let Some(idx) = activations.iter().rposition(|a| a.actor == msg.from) {
+                        activations.remove(idx);
                     }
                 }
                 _ => {}
@@ -545,7 +607,7 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
                 }
                 note_models.insert(msg.id.clone(), nm);
             } else if is_line_type(msg.ty) {
-                let mm = build_message_model(msg, &db, &measurer);
+                let mm = build_message_model(msg, &db, &measurer, &activations);
                 if mm.startx != 0.0 && mm.stopx != 0.0 && !stack.is_empty() {
                     for stk in &mut stack {
                         if (mm.startx - mm.stopx).abs() < f64::EPSILON {
@@ -580,8 +642,36 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         id: String,
         from: String,
         to: String,
+        sequence_index: f64,
+        sequence_visible: bool,
     }
+    // adjustLoopHeightForWrap: bumps pre, runs f, bumps post (+ wrapped title
+    // height when the block has a title).
+    let adjust_block =
+        |bounds: &mut Bounds, msg: &SeqMessage, pre: f64, post: f64| -> (String, f64) {
+            bounds.bump_vertical_pos(pre);
+            let mut height_adjust = post;
+            let mut title = msg.message.clone();
+            if !msg.message.is_empty()
+                && let Some(lw) = loop_widths.get(&msg.id)
+            {
+                title = wrap_label(
+                    &format!("[{}]", msg.message),
+                    lw - 2.0 * WRAP_PADDING,
+                    &measurer,
+                );
+                let (_, th) = measurer.text_dimensions(&title, FONT_SIZE);
+                let total_offset = th.max(LABEL_BOX_HEIGHT);
+                height_adjust = post + total_offset;
+            }
+            (title, height_adjust)
+        };
     let mut to_draw: Vec<QueuedMessage> = Vec::new();
+    let mut backgrounds: Vec<LoopModel> = Vec::new();
+    let mut sequence_index = 1.0f64;
+    let mut sequence_step = 1.0f64;
+    let mut show_numbers = false;
+    bounds.activations.clear();
     let messages = db.messages.clone();
     for msg in &messages {
         match msg.ty {
@@ -589,26 +679,59 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
                 let mut nm = note_models.get(&msg.id).cloned().unwrap_or_default();
                 draw_note(&svg, &mut nm, &msg.id, &mut bounds, hand_drawn);
             }
-            LOOP_START => {
-                // adjustLoopHeightForWrap(pre=boxMargin, post=boxMargin+boxTextMargin)
-                bounds.bump_vertical_pos(BOX_MARGIN);
-                let mut height_adjust = BOX_MARGIN + BOX_TEXT_MARGIN;
-                let mut title = msg.message.clone();
-                let mut width = 0.0;
-                if !msg.message.is_empty()
-                    && let Some(lw) = loop_widths.get(&msg.id)
-                {
-                    width = *lw;
-                    title = wrap_label(
-                        &format!("[{}]", msg.message),
-                        lw - 2.0 * WRAP_PADDING,
-                        &measurer,
-                    );
-                    let (_, th) = measurer.text_dimensions(&title, FONT_SIZE);
-                    let total_offset = th.max(LABEL_BOX_HEIGHT);
-                    height_adjust = BOX_MARGIN + BOX_TEXT_MARGIN + total_offset;
+            AUTONUMBER => {
+                if let Some((start, step, visible)) = msg.autonumber {
+                    if start != 0.0 {
+                        sequence_index = start;
+                    }
+                    if step != 0.0 {
+                        sequence_step = step;
+                    }
+                    show_numbers = visible;
                 }
-                let _ = width;
+            }
+            ACTIVE_START => {
+                // bounds.newActivation
+                let actor = &db.actors[&msg.from];
+                #[allow(clippy::cast_precision_loss)]
+                let stacked = bounds
+                    .activations
+                    .iter()
+                    .filter(|a| a.actor == msg.from)
+                    .count() as f64;
+                let x = actor.x + actor.width / 2.0 + (stacked - 1.0) * ACTIVATION_WIDTH / 2.0;
+                let anchored = append(&svg, "g");
+                bounds.activations.push(Activation {
+                    startx: x,
+                    starty: bounds.vertical_pos + 2.0,
+                    stopx: x + ACTIVATION_WIDTH,
+                    actor: msg.from.clone(),
+                    anchored: Some(anchored),
+                });
+            }
+            ACTIVE_END => {
+                if let Some(idx) = bounds.activations.iter().rposition(|a| a.actor == msg.from) {
+                    let data = bounds.activations.remove(idx);
+                    let mut vertical_pos = bounds.vertical_pos;
+                    let mut starty = data.starty;
+                    if starty + 18.0 > vertical_pos {
+                        starty = vertical_pos - 6.0;
+                        vertical_pos += 12.0;
+                    }
+                    let remaining = bounds
+                        .activations
+                        .iter()
+                        .filter(|a| a.actor == msg.from)
+                        .count();
+                    if let Some(anchor) = &data.anchored {
+                        draw_activation(anchor, &data, starty, vertical_pos, remaining);
+                    }
+                    bounds.insert(data.startx, vertical_pos - 10.0, data.stopx, vertical_pos);
+                }
+            }
+            LOOP_START | ALT_START | OPT_START | PAR_START | CRITICAL_START | BREAK_START => {
+                let (title, height_adjust) =
+                    adjust_block(&mut bounds, msg, BOX_MARGIN, BOX_MARGIN + BOX_TEXT_MARGIN);
                 bounds.sequence_items.push(LoopModel {
                     starty: bounds.vertical_pos,
                     starty_opt: Some(bounds.vertical_pos),
@@ -617,9 +740,43 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
                 });
                 bounds.bump_vertical_pos(height_adjust);
             }
-            LOOP_END => {
+            ALT_ELSE | PAR_AND | CRITICAL_OPTION => {
+                let (title, height_adjust) =
+                    adjust_block(&mut bounds, msg, BOX_MARGIN + BOX_TEXT_MARGIN, BOX_MARGIN);
+                if let Some(cur) = bounds.sequence_items.last_mut() {
+                    cur.sections.push(bounds.vertical_pos);
+                    cur.section_titles.push(title);
+                }
+                bounds.bump_vertical_pos(height_adjust);
+            }
+            RECT_START => {
+                let (_, height_adjust) = adjust_block(&mut bounds, msg, BOX_MARGIN, BOX_MARGIN);
+                bounds.sequence_items.push(LoopModel {
+                    starty: bounds.vertical_pos,
+                    starty_opt: Some(bounds.vertical_pos),
+                    fill: Some(msg.message.clone()),
+                    ..LoopModel::default()
+                });
+                bounds.bump_vertical_pos(height_adjust);
+            }
+            RECT_END => {
                 if let Some(model) = bounds.sequence_items.pop() {
-                    draw_loop(&svg, &model, "loop", &msg.id, hand_drawn);
+                    let stopy = model.stopy.unwrap_or(bounds.vertical_pos);
+                    backgrounds.push(model);
+                    bounds.bump_vertical_pos(stopy - bounds.vertical_pos);
+                }
+            }
+            LOOP_END | ALT_END | OPT_END | PAR_END | CRITICAL_END | BREAK_END => {
+                if let Some(model) = bounds.sequence_items.pop() {
+                    let label = match msg.ty {
+                        ALT_END => "alt",
+                        OPT_END => "opt",
+                        PAR_END => "par",
+                        CRITICAL_END => "critical",
+                        BREAK_END => "break",
+                        _ => "loop",
+                    };
+                    draw_loop(&svg, &model, label, &msg.id, hand_drawn);
                     let stopy = model.stopy.unwrap_or(bounds.vertical_pos);
                     bounds.bump_vertical_pos(stopy - bounds.vertical_pos);
                 }
@@ -634,7 +791,10 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
                     id: msg.id.clone(),
                     from: msg.from.clone(),
                     to: msg.to.clone(),
+                    sequence_index,
+                    sequence_visible: show_numbers,
                 });
+                sequence_index = ((sequence_index + sequence_step) * 100.0).round() / 100.0;
             }
             _ => {}
         }
@@ -659,6 +819,8 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
             &q.to,
             id,
             hand_drawn,
+            q.sequence_index,
+            q.sequence_visible,
         );
     }
 
@@ -674,6 +836,11 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         max_footer_height = max_footer_height.max(a.height);
     }
     bounds.bump_vertical_pos(max_footer_height + BOX_MARGIN);
+
+    // --- backgrounds (rect blocks), prepended via .lower() ---
+    for bg in &backgrounds {
+        draw_background_rect(&svg, bg);
+    }
 
     // --- fixLifeLineHeights ---
     for k in &keys {
@@ -737,14 +904,27 @@ fn is_line_type(t: i32) -> bool {
 }
 
 /// `buildMessageModel`.
-fn build_message_model(msg: &SeqMessage, db: &SequenceDb, measurer: &SeqMeasurer) -> MsgModel {
-    let from = &db.actors[&msg.from];
-    let to = &db.actors[&msg.to];
-    // activationBounds without activations:
-    let from_left = from.x + from.width / 2.0 - 1.0;
-    let from_right = from.x + from.width / 2.0 + 1.0;
-    let to_left = to.x + to.width / 2.0 - 1.0;
-    let to_right = to.x + to.width / 2.0 + 1.0;
+/// `activationBounds`.
+fn activation_bounds(actor_name: &str, db: &SequenceDb, activations: &[Activation]) -> (f64, f64) {
+    let actor = &db.actors[actor_name];
+    let center = actor.x + actor.width / 2.0;
+    let mut left = center - 1.0;
+    let mut right = center + 1.0;
+    for a in activations.iter().filter(|a| a.actor == actor_name) {
+        left = left.min(a.startx);
+        right = right.max(a.stopx);
+    }
+    (left, right)
+}
+
+fn build_message_model(
+    msg: &SeqMessage,
+    db: &SequenceDb,
+    measurer: &SeqMeasurer,
+    activations: &[Activation],
+) -> MsgModel {
+    let (from_left, from_right) = activation_bounds(&msg.from, db, activations);
+    let (to_left, to_right) = activation_bounds(&msg.to, db, activations);
     let is_arrow_to_right = from_left <= to_left;
     let mut startx = if is_arrow_to_right {
         from_right
@@ -754,9 +934,13 @@ fn build_message_model(msg: &SeqMessage, db: &SequenceDb, measurer: &SeqMeasurer
     let mut stopx = if is_arrow_to_right { to_left } else { to_right };
     let adjust = |v: f64| if is_arrow_to_right { -v } else { v };
 
+    let is_arrow_to_activation = (to_left - to_right).abs() > 2.0;
     if msg.from == msg.to {
         stopx = startx;
     } else {
+        if msg.activate && !is_arrow_to_activation {
+            stopx += adjust(ACTIVATION_WIDTH / 2.0 - 1.0);
+        }
         if !matches!(msg.ty, SOLID_OPEN | DOTTED_OPEN) {
             stopx += adjust(3.0);
         }
@@ -947,6 +1131,8 @@ fn draw_message(
     to: &str,
     diagram_id: &str,
     hand_drawn: bool,
+    sequence_index: f64,
+    sequence_visible: bool,
 ) {
     let mut td = TextData {
         x: model.startx.min(model.stopx),
@@ -1040,6 +1226,108 @@ fn draw_message(
     } else {
         set_attr(&line, "style", "fill: none;");
     }
+
+    // "add node number" — autonumber circle + index text.
+    if sequence_visible {
+        let radius = 6.0;
+        let bidirectional = matches!(model.ty, BIDIRECTIONAL_SOLID | BIDIRECTIONAL_DOTTED);
+        if bidirectional {
+            let x1 = if model.startx < model.stopx {
+                model.startx + radius * 2.0
+            } else {
+                model.startx - radius
+            };
+            set_attr(&line, "x1", js_num(x1));
+        } else {
+            // Applied even to self-message paths, matching upstream.
+            set_attr(&line, "x1", js_num(model.startx + radius));
+        }
+
+        let self_message = (model.startx - model.stopx).abs() < f64::EPSILON;
+        let autonumber_x = if self_message || model.startx <= model.stopx {
+            model.from_bounds + 1.0
+        } else {
+            model.to_bounds - 1.0
+        };
+
+        let digits = js_num(sequence_index).len();
+        let font_size = if digits > 5 {
+            "7px"
+        } else if digits > 3 {
+            "9px"
+        } else {
+            "12px"
+        };
+
+        let nline = append(svg, "line");
+        set_attr(&nline, "x1", js_num(autonumber_x));
+        set_attr(&nline, "y1", js_num(line_start_y));
+        set_attr(&nline, "x2", js_num(autonumber_x));
+        set_attr(&nline, "y2", js_num(line_start_y));
+        set_attr(&nline, "stroke-width", "0");
+        set_attr(
+            &nline,
+            "marker-start",
+            format!("url(#{diagram_id}-sequencenumber)"),
+        );
+
+        let ntext = append(svg, "text");
+        set_attr(&ntext, "x", js_num(autonumber_x));
+        set_attr(&ntext, "y", js_num(line_start_y + 4.0));
+        set_attr(&ntext, "font-family", "sans-serif");
+        set_attr(&ntext, "font-size", font_size);
+        set_attr(&ntext, "text-anchor", "middle");
+        set_attr(&ntext, "class", "sequenceNumber");
+        crate::svg::set_text(&ntext, &js_num(sequence_index));
+    }
+}
+
+/// `drawActivation`: rect into the DOM anchor created at ACTIVE_START.
+fn draw_activation(
+    anchor: &Element,
+    data: &Activation,
+    starty: f64,
+    vertical_pos: f64,
+    remaining_count: usize,
+) {
+    draw_rect(
+        anchor,
+        &RectData {
+            x: data.startx,
+            y: starty,
+            fill: "#EDF2AE",
+            stroke: "#666",
+            width: data.stopx - data.startx,
+            height: vertical_pos - starty,
+            name: None,
+            rx: 0.0,
+            class: match remaining_count % 3 {
+                1 => "activation1",
+                2 => "activation2",
+                _ => "activation0",
+            },
+        },
+        false,
+    );
+}
+
+/// `drawBackgroundRect` for `rect` blocks — prepended (d3 `.lower()`).
+fn draw_background_rect(svg: &Element, model: &LoopModel) {
+    let rect = crate::svg::insert_first(svg, "rect");
+    set_attr(&rect, "x", js_num(model.startx.unwrap_or(0.0)));
+    set_attr(&rect, "y", js_num(model.starty_opt.unwrap_or(model.starty)));
+    set_attr(&rect, "fill", model.fill.clone().unwrap_or_default());
+    set_attr(
+        &rect,
+        "width",
+        js_num(model.stopx.unwrap_or(0.0) - model.startx.unwrap_or(0.0)),
+    );
+    set_attr(
+        &rect,
+        "height",
+        js_num(model.stopy.unwrap_or(0.0) - model.starty_opt.unwrap_or(model.starty)),
+    );
+    set_attr(&rect, "class", "rect");
 }
 
 /// `drawLoop` (loop label box + title).
@@ -1061,6 +1349,15 @@ fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str, h
     line(stopx, starty, stopx, stopy);
     line(startx, stopy, stopx, stopy);
     line(startx, starty, startx, stopy);
+    for &section_y in &model.sections {
+        let l = append(&g, "line");
+        set_attr(&l, "x1", js_num(startx));
+        set_attr(&l, "y1", js_num(section_y));
+        set_attr(&l, "x2", js_num(stopx));
+        set_attr(&l, "y2", js_num(section_y));
+        set_attr(&l, "class", "loopLine");
+        set_attr(&l, "style", "stroke-dasharray: 3, 3;");
+    }
 
     // drawLabel polygon.
     let cut = 7.0;
@@ -1112,6 +1409,26 @@ fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str, h
         valign_center: true,
     };
     draw_text(&g, &mut title_td);
+
+    // sectionTitles (alt/else, par/and, critical/option).
+    for (idx, item) in model.section_titles.iter().enumerate() {
+        if item.is_empty() {
+            continue;
+        }
+        let mut td = TextData {
+            x: startx + (stopx - startx) / 2.0,
+            y: model.sections[idx] + BOX_MARGIN + BOX_TEXT_MARGIN,
+            width: None,
+            anchor: Some("middle"),
+            text: item.clone(),
+            class: Some("sectionTitle"),
+            dy: None,
+            tspan: false,
+            text_margin: Some(BOX_TEXT_MARGIN),
+            valign_center: true,
+        };
+        draw_text(&g, &mut td);
+    }
 }
 
 /// Top actor: lifeline + box group, prepended to the svg.

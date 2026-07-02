@@ -30,6 +30,21 @@ pub const SOLID_OPEN: i32 = 5;
 pub const DOTTED_OPEN: i32 = 6;
 pub const LOOP_START: i32 = 10;
 pub const LOOP_END: i32 = 11;
+pub const ALT_START: i32 = 12;
+pub const ALT_ELSE: i32 = 13;
+pub const ALT_END: i32 = 14;
+pub const OPT_START: i32 = 15;
+pub const OPT_END: i32 = 16;
+pub const PAR_START: i32 = 19;
+pub const PAR_AND: i32 = 20;
+pub const PAR_END: i32 = 21;
+pub const RECT_START: i32 = 22;
+pub const RECT_END: i32 = 23;
+pub const CRITICAL_START: i32 = 27;
+pub const CRITICAL_OPTION: i32 = 28;
+pub const CRITICAL_END: i32 = 29;
+pub const BREAK_START: i32 = 30;
+pub const BREAK_END: i32 = 31;
 pub const ACTIVE_START: i32 = 17;
 pub const ACTIVE_END: i32 = 18;
 pub const SOLID_POINT: i32 = 24;
@@ -62,7 +77,7 @@ pub struct Actor {
 }
 
 /// A message/event row from the db.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SeqMessage {
     pub id: String,
     pub from: String,
@@ -72,6 +87,8 @@ pub struct SeqMessage {
     pub ty: i32,
     pub placement: Option<i32>,
     pub activate: bool,
+    /// `autonumber` statement payload: (start, step, visible).
+    pub autonumber: Option<(f64, f64, bool)>,
 }
 
 /// Parsed database.
@@ -104,15 +121,15 @@ impl SequenceDb {
         );
     }
 
-    fn add_signal(&mut self, from: &str, to: &str, message: &str, ty: i32) {
+    fn add_signal(&mut self, from: &str, to: &str, message: &str, ty: i32, activate: bool) {
         self.messages.push(SeqMessage {
             id: self.messages.len().to_string(),
             from: from.to_owned(),
             to: to.to_owned(),
             message: message.to_owned(),
             ty,
-            placement: None,
-            activate: false,
+            activate,
+            ..SeqMessage::default()
         });
     }
 }
@@ -139,6 +156,7 @@ fn parse_message(text: &str) -> String {
 pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
     let mut db = SequenceDb::default();
     let mut found_header = false;
+    let mut block_stack: Vec<i32> = Vec::new();
     let lines_iter = source.lines().peekable();
     for raw in lines_iter {
         let line = raw.trim();
@@ -220,52 +238,101 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
                 message: text,
                 ty: NOTE,
                 placement: Some(placement),
-                activate: false,
+                ..SeqMessage::default()
             });
             continue;
         }
 
-        if let Some(rest) = strip_keyword(line, "loop") {
+        let mut block_start = None;
+        for (kw, start, end) in [
+            ("loop", LOOP_START, LOOP_END),
+            ("alt", ALT_START, ALT_END),
+            ("opt", OPT_START, OPT_END),
+            ("par", PAR_START, PAR_END),
+            ("critical", CRITICAL_START, CRITICAL_END),
+            ("break", BREAK_START, BREAK_END),
+            ("rect", RECT_START, RECT_END),
+        ] {
+            if let Some(rest) = strip_keyword(line, kw) {
+                block_start = Some((rest, start, end));
+                break;
+            }
+        }
+        if let Some((rest, start, end)) = block_start {
+            block_stack.push(end);
             let id = db.messages.len().to_string();
             db.messages.push(SeqMessage {
                 id,
-                from: String::new(),
-                to: String::new(),
                 message: parse_message(rest),
-                ty: LOOP_START,
-                placement: None,
-                activate: false,
+                ty: start,
+                ..SeqMessage::default()
+            });
+            continue;
+        }
+        let mut section = None;
+        if let Some(rest) = strip_keyword(line, "else") {
+            section = Some((rest, ALT_ELSE));
+        } else if let Some(rest) = strip_keyword(line, "and") {
+            section = Some((rest, PAR_AND));
+        } else if let Some(rest) = strip_keyword(line, "option") {
+            section = Some((rest, CRITICAL_OPTION));
+        }
+        if let Some((rest, ty)) = section {
+            let id = db.messages.len().to_string();
+            db.messages.push(SeqMessage {
+                id,
+                message: parse_message(rest),
+                ty,
+                ..SeqMessage::default()
             });
             continue;
         }
         if lower == "end" {
+            let end = block_stack.pop().unwrap_or(LOOP_END);
             let id = db.messages.len().to_string();
             db.messages.push(SeqMessage {
                 id,
-                from: String::new(),
-                to: String::new(),
-                message: String::new(),
-                ty: LOOP_END,
-                placement: None,
-                activate: false,
+                ty: end,
+                ..SeqMessage::default()
             });
             continue;
         }
         if lower.starts_with("autonumber") {
+            // autonumber [off] [start [step]]
+            let rest = line["autonumber".len()..].trim();
+            let (visible, nums) = if rest.eq_ignore_ascii_case("off") {
+                (false, Vec::new())
+            } else {
+                (
+                    true,
+                    rest.split_whitespace()
+                        .filter_map(|t| t.parse::<f64>().ok())
+                        .collect::<Vec<_>>(),
+                )
+            };
+            let id = db.messages.len().to_string();
+            db.messages.push(SeqMessage {
+                id,
+                ty: AUTONUMBER,
+                autonumber: Some((
+                    nums.first().copied().unwrap_or(0.0),
+                    nums.get(1).copied().unwrap_or(0.0),
+                    visible,
+                )),
+                ..SeqMessage::default()
+            });
             continue;
         }
         if let Some(rest) = strip_keyword(line, "activate") {
             let id = db.messages.len().to_string();
             let actor = rest.trim().to_owned();
-            db.add_actor(&actor, None);
             db.messages.push(SeqMessage {
                 id,
                 from: actor,
                 to: String::new(),
                 message: String::new(),
                 ty: ACTIVE_START,
-                placement: None,
-                activate: false,
+                ..SeqMessage::default()
             });
             continue;
         }
@@ -278,8 +345,7 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
                 to: String::new(),
                 message: String::new(),
                 ty: ACTIVE_END,
-                placement: None,
-                activate: false,
+                ..SeqMessage::default()
             });
             continue;
         }
@@ -297,14 +363,19 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
                 None => (to_part.trim(), String::new()),
             };
             // Trailing +/- activation shorthand on the target.
-            let (activate_plus, to_clean) = if let Some(stripped) = to_raw.strip_prefix('+') {
-                (true, stripped.trim())
+            #[derive(PartialEq)]
+            enum Act {
+                None,
+                Plus,
+                Minus,
+            }
+            let (act, to_clean) = if let Some(stripped) = to_raw.strip_prefix('+') {
+                (Act::Plus, stripped.trim())
             } else if let Some(stripped) = to_raw.strip_prefix('-') {
-                (false, stripped.trim())
+                (Act::Minus, stripped.trim())
             } else {
-                (false, to_raw)
+                (Act::None, to_raw)
             };
-            let _ = activate_plus;
             let ty = match arrow {
                 "->>" => SOLID,
                 "-->>" => DOTTED,
@@ -325,7 +396,28 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
             let from = from.trim();
             db.add_actor(from, None);
             db.add_actor(to_clean, None);
-            db.add_signal(from, to_clean, &text, ty);
+            db.add_signal(from, to_clean, &text, ty, act == Act::Plus);
+            match act {
+                Act::Plus => {
+                    let id = db.messages.len().to_string();
+                    db.messages.push(SeqMessage {
+                        id,
+                        from: to_clean.to_owned(),
+                        ty: ACTIVE_START,
+                        ..SeqMessage::default()
+                    });
+                }
+                Act::Minus => {
+                    let id = db.messages.len().to_string();
+                    db.messages.push(SeqMessage {
+                        id,
+                        from: from.to_owned(),
+                        ty: ACTIVE_END,
+                        ..SeqMessage::default()
+                    });
+                }
+                Act::None => {}
+            }
             continue;
         }
 
