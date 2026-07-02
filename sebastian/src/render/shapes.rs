@@ -1170,6 +1170,65 @@ pub fn insert_node_shape(
             n.intersect = Some(IntersectShape::Rect);
             result.shape_svg
         }
+        "fork" | "join" | "forkJoin" => {
+            let theme = &config.computed_theme;
+            let line_color = super::themes::get(theme, "lineColor");
+            let shape_svg = append(parent, "g");
+            set_attr(&shape_svg, "class", get_node_classes(node));
+            set_attr(&shape_svg, "id", node.borrow().dom_id.clone());
+            let (mut width, mut height) = {
+                let n = node.borrow();
+                (70.0f64.max(n.width), 10.0f64.max(n.height))
+            };
+            if config.direction == "LR" {
+                let n = node.borrow();
+                width = 10.0f64.max(n.width);
+                height = 70.0f64.max(n.height);
+            }
+            let x = -width / 2.0;
+            let y = -height / 2.0;
+            let shape = rough_rectangle(&shape_svg, x, y, width, height, &line_color, &line_color);
+            set_path_styles(&shape, "");
+            let mut n = node.borrow_mut();
+            n.width = f32q(width);
+            n.height = f32q(height);
+            // state.padding default 8: node grows by padding / 2.
+            n.width += 4.0;
+            n.height += 4.0;
+            n.intersect = Some(IntersectShape::Rect);
+            shape_svg
+        }
+        "choice" => {
+            let shape_svg = append(parent, "g");
+            set_attr(&shape_svg, "class", get_node_classes(node));
+            set_attr(&shape_svg, "id", node.borrow().dom_id.clone());
+            let s_dim = 28.0f64.max(node.borrow().width);
+            let points = vec![
+                Point {
+                    x: 0.0,
+                    y: s_dim / 2.0,
+                },
+                Point {
+                    x: s_dim / 2.0,
+                    y: 0.0,
+                },
+                Point {
+                    x: 0.0,
+                    y: -s_dim / 2.0,
+                },
+                Point {
+                    x: -s_dim / 2.0,
+                    y: 0.0,
+                },
+            ];
+            let shape = rough_polygon(&shape_svg, &points, "");
+            set_path_styles(&shape, "");
+            let mut n = node.borrow_mut();
+            n.width = 28.0;
+            n.height = 28.0;
+            n.intersect = Some(IntersectShape::Polygon(points));
+            shape_svg
+        }
         "classBox" => class_box(parent, node, measurer, config),
         other => panic!("no such shape: {other}. Please check your syntax."),
     }

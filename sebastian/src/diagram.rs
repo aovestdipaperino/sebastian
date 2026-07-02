@@ -57,12 +57,16 @@ pub fn render_state(source: &str, id: &str) -> Result<String, crate::state::Stat
     let mut config = render::config::detect_init(source);
     let theme_vars = render::themes::theme_variables(&config.theme, &config.theme_variables);
     config.computed_theme.clone_from(&theme_vars);
-    let data = crate::state::get_layout_data(source, id, &config)?;
+    let (data, class_list) = crate::state::get_layout_data_and_classes(source, id, &config)?;
     let chrome = DiagramChrome {
         svg_class: "statediagram",
         aria: "stateDiagram",
         diagram_type: "stateDiagram",
-        css: render::css::themed_statediagram_css(id, &theme_vars),
+        css: format!(
+            "{}{}",
+            render::css::themed_statediagram_css(id, &theme_vars),
+            render::css::class_defs_css(id, config.effective_html_labels(), &class_list),
+        ),
     };
     Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
 }

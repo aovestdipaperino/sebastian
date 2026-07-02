@@ -122,6 +122,122 @@ pub fn insert_cluster(
         };
     }
 
+    if n.shape == "divider" {
+        let shape_svg = append(parent, "g");
+        set_attr(&shape_svg, "class", n.css_classes.trim());
+        set_attr(&shape_svg, "id", n.dom_id.clone());
+        set_attr(&shape_svg, "data-look", n.look.clone());
+        let outer_g = insert_first(&shape_svg, "g");
+        let width = n.width;
+        n.diff = -n.padding;
+        let height = n.height;
+        let x = n.x - width / 2.0;
+        let y = n.y - height / 2.0;
+        n.width = width;
+        let rect = insert_first(&outer_g, "rect");
+        set_attr(&rect, "class", "divider");
+        set_attr(&rect, "x", js_num(x));
+        set_attr(&rect, "y", js_num(y));
+        set_attr(&rect, "width", js_num(width));
+        set_attr(&rect, "height", js_num(height));
+        set_attr(&rect, "data-look", n.look.clone());
+        n.height = super::shapes::f32q(height);
+        n.offset_x = 0.0;
+        n.offset_y = 0.0;
+        n.intersect = Some(super::data::IntersectShape::Rect);
+        return InsertedCluster {
+            cluster: shape_svg,
+            label_bbox: BBox {
+                width: 0.0,
+                height: 0.0,
+                wrapped: false,
+            },
+        };
+    }
+
+    if n.shape == "roundedWithTitle" {
+        let compiled = super::styles::styles2string(&n.css_compiled_styles, &n.css_styles, &[]);
+        let shape_svg = append(parent, "g");
+        set_attr(&shape_svg, "class", n.css_classes.trim());
+        set_attr(&shape_svg, "id", n.dom_id.clone());
+        set_attr(&shape_svg, "data-id", n.id.clone());
+        set_attr(&shape_svg, "data-look", n.look.clone());
+
+        let outer_g = insert_first(&shape_svg, "g");
+        let label_el = append(&shape_svg, "g");
+        set_attr(&label_el, "class", "cluster-label");
+        let inner_rect = append(&shape_svg, "rect");
+
+        let font_size =
+            super::shapes::font_size_from_styles_or(&compiled.label_styles, config.font_size());
+        let bbox = super::shapes::measure_label_sized(measurer, &n.label, f64::INFINITY, font_size);
+        let fo = append(&label_el, "foreignObject");
+        set_attr(&fo, "width", js_num(bbox.width));
+        set_attr(&fo, "height", js_num(bbox.height));
+        let div = crate::svg::append_xhtml(&fo, "div");
+        set_attr(&div, "xmlns", "http://www.w3.org/1999/xhtml");
+        set_attr(
+            &div,
+            "style",
+            "display: table-cell; white-space: nowrap; line-height: 1.5;",
+        );
+        let span = crate::svg::append_xhtml(&div, "span");
+        set_attr(&span, "class", "nodeLabel");
+        if !compiled.label_styles.is_empty() {
+            set_attr(&span, "style", compiled.label_styles.clone());
+        }
+        super::shapes::write_label_paragraph(&span, &n.label);
+
+        let width = if n.width <= bbox.width + n.padding {
+            bbox.width + n.padding
+        } else {
+            n.width
+        };
+        if n.width <= bbox.width + n.padding {
+            n.diff = (width - n.width) / 2.0 - n.padding;
+        } else {
+            n.diff = -n.padding;
+        }
+        let height = n.height;
+        let inner_height = n.height - bbox.height - 6.0;
+        let x = n.x - width / 2.0;
+        let y = n.y - height / 2.0;
+        n.width = width;
+        let inner_y = n.y - n.height / 2.0 + bbox.height + 2.0;
+
+        let rect = insert_first(&outer_g, "rect");
+        set_attr(&rect, "class", "outer");
+        set_attr(&rect, "x", js_num(x));
+        set_attr(&rect, "y", js_num(y));
+        set_attr(&rect, "width", js_num(width));
+        set_attr(&rect, "height", js_num(height));
+        set_attr(&rect, "data-look", n.look.clone());
+        set_attr(&inner_rect, "class", "inner");
+        set_attr(&inner_rect, "x", js_num(x));
+        set_attr(&inner_rect, "y", js_num(inner_y));
+        set_attr(&inner_rect, "width", js_num(width));
+        set_attr(&inner_rect, "height", js_num(inner_height));
+
+        set_attr(
+            &label_el,
+            "transform",
+            format!(
+                "translate({}, {})",
+                js_num(n.x - bbox.width / 2.0),
+                js_num(y + 1.0)
+            ),
+        );
+
+        n.height = super::shapes::f32q(height);
+        n.offset_x = 0.0;
+        n.offset_y = bbox.height - n.padding / 2.0;
+        n.intersect = Some(super::data::IntersectShape::Rect);
+        return InsertedCluster {
+            cluster: shape_svg,
+            label_bbox: bbox,
+        };
+    }
+
     let compiled = super::styles::styles2string(&n.css_compiled_styles, &n.css_styles, &[]);
 
     let shape_svg = append(parent, "g");

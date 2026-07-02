@@ -44,6 +44,7 @@ pub struct RenderCtx {
 
 /// Port of the top-level `render(data4Layout, svg)`.
 pub fn render(data: &LayoutData, svg_root_g: &Element, ctx: &mut RenderCtx) {
+    ctx.config.direction.clone_from(&data.direction);
     let mut graph = new_render_graph(RenderGraphLabel {
         rankdir: data.direction.clone(),
         nodesep: ctx.config.node_spacing,
@@ -169,7 +170,7 @@ pub fn recursive_render(
 
     // Insert nodes (and recursively render cluster nodes).
     for v in graph.nodes() {
-        let node = graph.node(&v).expect("graph node");
+        let node = graph.node(&v).unwrap_or_else(|| panic!("graph node {v}"));
         if let Some(parent_cluster) = parent_cluster {
             // Reattach loose nodes under a fresh copy of the parent
             // cluster's original data (JS clones `clusterData`).

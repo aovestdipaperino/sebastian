@@ -12,6 +12,54 @@ use sebastian::render_diagram;
 /// Diagrams whose note rectangles carry mermaid's own random control points.
 const ROUGH_RANDOM: &[&str] = &["state007", "state008", "state014"];
 
+/// Gap-feature diagrams with rough shapes (fork/join/choice) and/or the
+/// random `generateId()` token mermaid embeds in trailing divider groups.
+const DYNAMIC: &[&str] = &["state100", "state101", "state105"];
+
+/// Masks every rough path payload (any `d="...C..."`) and normalizes the
+/// `id-<random>-<n>` tokens from mermaid's `generateId()`.
+fn mask_dynamic(svg: &str) -> String {
+    let mut out = String::with_capacity(svg.len());
+    let bytes = svg.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if svg[i..].starts_with("d=\"") {
+            let start = i + 3;
+            if let Some(len) = svg[start..].find('\"') {
+                let payload = &svg[start..start + len];
+                if payload.contains('C') {
+                    out.push_str("d=\"ROUGH\"");
+                    i = start + len + 1;
+                    continue;
+                }
+            }
+        }
+        if svg[i..].starts_with("id-") {
+            let tail = &svg[i + 3..];
+            let run = tail
+                .bytes()
+                .take_while(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
+                .count();
+            if run > 0 && tail[run..].starts_with('-') {
+                let digits = tail[run + 1..]
+                    .bytes()
+                    .take_while(u8::is_ascii_digit)
+                    .count();
+                if digits > 0 {
+                    out.push_str("id-MASK");
+                    out.push_str(&tail[run..run + 1 + digits]);
+                    i += 3 + run + 1 + digits;
+                    continue;
+                }
+            }
+        }
+        let ch = svg[i..].chars().next().expect("char");
+        out.push(ch);
+        i += ch.len_utf8();
+    }
+    out
+}
+
 fn dir() -> String {
     format!("{}/tests/state_cases", env!("CARGO_MANIFEST_DIR"))
 }
@@ -85,6 +133,10 @@ fn state_corpus() {
         if ROUGH_RANDOM.contains(&case.as_str())
             && mask_rough_paths(&svg) == mask_rough_paths(&reference)
         {
+            continue;
+        }
+
+        if DYNAMIC.contains(&case.as_str()) && mask_dynamic(&svg) == mask_dynamic(&reference) {
             continue;
         }
 

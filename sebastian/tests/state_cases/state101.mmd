@@ -1,0 +1,5 @@
+stateDiagram-v2
+    state check <<choice>>
+    [*] --> check
+    check --> Big: if n > 10
+    check --> Small: if n <= 10

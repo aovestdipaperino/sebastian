@@ -471,28 +471,52 @@ pub fn get_layout_data(
     id: &str,
     config: &crate::render::config::RenderConfig,
 ) -> Result<LayoutData, StateParseError> {
+    Ok(get_layout_data_and_classes(source, id, config)?.0)
+}
+
+/// [`get_layout_data`] plus the classDef list `(name, styles, text_styles)`
+/// for stylesheet generation.
+///
+/// # Errors
+/// Returns a [`StateParseError`] when the source is not a valid state diagram.
+#[allow(clippy::type_complexity)]
+pub fn get_layout_data_and_classes(
+    source: &str,
+    id: &str,
+    config: &crate::render::config::RenderConfig,
+) -> Result<(LayoutData, Vec<(String, Vec<String>, Vec<String>)>), StateParseError> {
     let mut db = StateDb {
         root_doc: parse(source)?,
         ..StateDb::default()
     };
     db.translate_and_extract(config);
-    Ok(db.get_data(id, config))
+    let classes = db
+        .classes
+        .iter()
+        .map(|(name, c)| (name.clone(), c.styles.clone(), c.text_styles.clone()))
+        .collect();
+    Ok((db.get_data(id, config), classes))
 }
 
 impl StateDb {
     /// `docTranslator` + `extract` + `dataFetcher`.
     fn translate_and_extract(&mut self, _config: &crate::render::config::RenderConfig) {
         let mut doc = std::mem::take(&mut self.root_doc);
-        // Assign divider ids (parser leaves them empty).
-        for stmt in &mut doc {
-            if let Stmt::State(s) = stmt
-                && s.ty == "divider"
-                && s.id.is_empty()
-            {
-                self.divider_count += 1;
-                s.id = format!("divider-id-{}", self.divider_count);
+        // Assign divider ids in document order (parser leaves them empty).
+        fn assign_divider_ids(doc: &mut Vec<Stmt>, count: &mut usize) {
+            for stmt in doc {
+                if let Stmt::State(s) = stmt {
+                    if s.ty == "divider" && s.id.is_empty() {
+                        *count += 1;
+                        s.id = format!("divider-id-{count}");
+                    }
+                    if let Some(inner) = &mut s.doc {
+                        assign_divider_ids(inner, count);
+                    }
+                }
             }
         }
+        assign_divider_ids(&mut doc, &mut self.divider_count);
         Self::doc_translator_root(&mut doc);
         self.root_doc = doc;
 
@@ -532,64 +556,68 @@ impl StateDb {
     /// `docTranslator` applied to the root document: renames `[*]` states
     /// and groups divider sections.
     fn doc_translator_root(doc: &mut Vec<Stmt>) {
-        Self::doc_translator("root", doc);
+        Self::group_dividers(doc);
+        for stmt in doc.iter_mut() {
+            Self::doc_translator("root", stmt, true);
+        }
     }
 
-    fn doc_translator(parent_id: &str, doc: &mut Vec<Stmt>) {
-        for stmt in doc.iter_mut() {
-            match stmt {
-                Stmt::Relation { state1, state2, .. } => {
-                    Self::translate_node(parent_id, state1, true);
-                    Self::translate_node(parent_id, state2, false);
-                }
-                Stmt::State(s) => {
-                    Self::translate_node(parent_id, s, true);
-                }
-                _ => {}
-            }
-        }
-        // Divider grouping (only when dividers are present).
-        let has_divider = doc
-            .iter()
-            .any(|s| matches!(s, Stmt::State(st) if st.ty == "divider"));
-        if has_divider {
-            let mut new_doc: Vec<Stmt> = Vec::new();
-            let mut current: Vec<Stmt> = Vec::new();
-            for stmt in doc.drain(..) {
-                if let Stmt::State(mut st) = stmt {
-                    if st.ty == "divider" {
-                        st.doc = Some(std::mem::take(&mut current));
-                        new_doc.push(Stmt::State(st));
-                        continue;
+    /// Upstream `docTranslator(parent, node, first)`: renames `[*]`, groups
+    /// this node's doc by dividers, then recurses with this node as parent.
+    fn doc_translator(parent_id: &str, node: &mut Stmt, first: bool) {
+        match node {
+            Stmt::Relation { state1, state2, .. } => {
+                Self::translate_node(parent_id, state1, true);
+                Self::translate_node(parent_id, state2, false);
+                for st in [state1, state2] {
+                    if let Some(doc) = &mut st.doc {
+                        Self::group_dividers(doc);
+                        let id = st.id.clone();
+                        for d in doc.iter_mut() {
+                            Self::doc_translator(&id, d, true);
+                        }
                     }
-                    current.push(Stmt::State(st));
-                } else {
-                    current.push(stmt);
                 }
             }
-            if !new_doc.is_empty() && !current.is_empty() {
-                new_doc.push(Stmt::State(StateStmt {
-                    id: generate_id(),
-                    ty: "divider".to_owned(),
-                    doc: Some(current),
-                    ..StateStmt::default()
-                }));
+            Stmt::State(st) => {
+                Self::translate_node(parent_id, st, first);
+                if let Some(doc) = &mut st.doc {
+                    Self::group_dividers(doc);
+                    let id = st.id.clone();
+                    for d in doc.iter_mut() {
+                        Self::doc_translator(&id, d, true);
+                    }
+                }
             }
-            *doc = new_doc;
+            _ => {}
         }
-        // Recurse into child documents.
-        for stmt in doc.iter_mut() {
-            let states: Vec<&mut StateStmt> = match stmt {
-                Stmt::State(s) => vec![s],
-                Stmt::Relation { state1, state2, .. } => vec![state1, state2],
-                _ => vec![],
-            };
-            for s in states {
-                let sid = s.id.clone();
-                if let Some(d) = &mut s.doc {
-                    Self::doc_translator(&sid, d);
-                }
+    }
+
+    /// Divider grouping. Upstream only replaces the doc when there is a
+    /// trailing non-divider section; a doc that ends exactly at a divider
+    /// is left untouched (the grouped clones are discarded).
+    fn group_dividers(doc: &mut Vec<Stmt>) {
+        let mut new_doc: Vec<Stmt> = Vec::new();
+        let mut current: Vec<Stmt> = Vec::new();
+        for stmt in doc.iter() {
+            if let Stmt::State(st) = stmt
+                && st.ty == "divider"
+            {
+                let mut group = st.clone();
+                group.doc = Some(std::mem::take(&mut current));
+                new_doc.push(Stmt::State(group));
+            } else {
+                current.push(stmt.clone());
             }
+        }
+        if !new_doc.is_empty() && !current.is_empty() {
+            new_doc.push(Stmt::State(StateStmt {
+                id: generate_id(),
+                ty: "divider".to_owned(),
+                doc: Some(current),
+                ..StateStmt::default()
+            }));
+            *doc = new_doc;
         }
     }
 
@@ -656,7 +684,9 @@ impl StateDb {
             graph_item_count: 0,
             config,
         };
-        fetcher.setup_doc(None, &self.root_doc, true);
+        // Upstream: dataFetcher(undefined, root, ..., altFlag=true) recurses
+        // into the root doc via setupDoc(!altFlag) = false.
+        fetcher.setup_doc(None, &self.root_doc, false);
 
         let mut direction = "TB".to_owned();
         for stmt in &self.root_doc {
@@ -680,7 +710,13 @@ impl StateDb {
 
 /// `generateId` from utils.ts (random in JS; only used for divider tails).
 fn generate_id() -> String {
-    "divider-tail".to_owned()
+    // Upstream: 'id-' + Math.random().toString(36).substr(2, 12) + '-' + cnt.
+    // The random block makes upstream output nondeterministic; we emit a
+    // fixed block so our output is stable (tests mask this token).
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    static CNT: AtomicUsize = AtomicUsize::new(0);
+    let n = CNT.fetch_add(1, Ordering::Relaxed) + 1;
+    format!("id-000000000000-{n}")
 }
 
 struct DataFetcher<'a> {

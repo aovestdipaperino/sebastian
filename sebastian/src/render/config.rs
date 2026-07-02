@@ -24,6 +24,8 @@ pub struct RenderConfig {
     /// Computed theme variables (populated by the render entry points;
     /// consumed by shapes that need theme colors).
     pub computed_theme: Map<String, Value>,
+    /// Graph direction (`data4Layout.direction`), consumed by forkJoin.
+    pub direction: String,
 }
 
 impl Default for RenderConfig {
@@ -40,6 +42,7 @@ impl Default for RenderConfig {
             wrapping_width: 200.0,
             curve: None,
             computed_theme: Map::new(),
+            direction: "TB".to_owned(),
         }
     }
 }
