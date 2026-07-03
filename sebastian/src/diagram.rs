@@ -53,6 +53,9 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         if t == "packet" || t == "packet-beta" || t.starts_with("packet ") {
             return "packet";
         }
+        if t.starts_with("radar-beta") {
+            return "radar";
+        }
         return "flowchart";
     }
     "flowchart"
@@ -73,6 +76,7 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
         "journey" => crate::journey::render_journey(source, id).map_err(Into::into),
         "quadrant" => crate::quadrant::render_quadrant(source, id).map_err(Into::into),
         "packet" => crate::packet::render_packet(source, id).map_err(Into::into),
+        "radar" => crate::radar::render_radar(source, id).map_err(Into::into),
         "sequence" => crate::sequence::render_sequence(source, id).map_err(Into::into),
         "timeline" => crate::timeline::render_timeline(source, id).map_err(Into::into),
         "class" => render_class(source, id).map_err(Into::into),

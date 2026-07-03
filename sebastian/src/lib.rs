@@ -18,6 +18,7 @@ pub mod jsmap;
 pub mod packet;
 pub mod pie;
 pub mod quadrant;
+pub mod radar;
 pub mod render;
 pub mod sequence;
 pub mod state;

@@ -18,6 +18,13 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 ## [Unreleased]
 
 ### Added
+- **radar / radar-beta** — radar (spider) charts, byte-exact vs mermaid-cli
+  11.15.0. Ports the langium radar grammar (axes, curves with plain or
+  axis-referenced entries, and `showLegend`/`ticks`/`max`/`min`/`graticule`
+  options), `db.ts`, and the self-contained polar `renderer.ts`
+  (circle/polygon graticule, axes, Catmull-Rom `closedRoundCurve`, legend,
+  title). No text measurement; all coordinates come from `Math.cos`/`Math.sin`
+  via the `core-math` crate (V8-matching) and constants. Three corpus cases.
 - **packet / packet-beta** — bit-field packet diagrams, byte-exact vs
   mermaid-cli 11.15.0. Ports the langium packet grammar (`start(-end)?` and
   `+bits` block forms), `db.ts` (`populate` / `getNextFittingBlock` row

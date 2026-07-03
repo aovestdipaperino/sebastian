@@ -472,6 +472,68 @@ pub fn themed_quadrant_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The radar stylesheet (port of `diagrams/radar/styles.ts`). Radar sub-option
+/// numeric defaults are theme constants; `axisColor` follows `lineColor`.
+#[must_use]
+pub fn themed_radar_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    let font_size = v("fontSize");
+    let title_color = v("titleColor");
+    let axis_color = v("lineColor");
+    rule(
+        &mut o,
+        &i,
+        &[" .radarTitle"],
+        &format!(
+            "font-size:{font_size};color:{title_color};dominant-baseline:hanging;text-anchor:middle;"
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .radarAxisLine"],
+        &format!("stroke:{axis_color};stroke-width:2;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .radarAxisLabel"],
+        &format!("dominant-baseline:middle;text-anchor:middle;font-size:12px;color:{axis_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .radarGraticule"],
+        "fill:#DEDEDE;fill-opacity:0.3;stroke:#DEDEDE;stroke-width:1;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .radarLegendText"],
+        "text-anchor:start;font-size:12px;dominant-baseline:hanging;",
+    );
+    for n in 0..12i32 {
+        let c = v(&format!("cScale{n}"));
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .radarCurve-{n}")],
+            &format!("color:{c};fill:{c};fill-opacity:0.5;stroke:{c};stroke-width:2;"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .radarLegendBox-{n}")],
+            &format!("fill:{c};fill-opacity:0.5;stroke:{c};"),
+        );
+    }
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The packet stylesheet (port of `diagrams/packet/styles.ts`, fixed defaults).
 #[must_use]
 pub fn themed_packet_css(id: &str, vars: &Map<String, Value>) -> String {
