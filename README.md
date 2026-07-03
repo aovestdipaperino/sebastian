@@ -1,4 +1,4 @@
-# sebastian 🦀🧜
+# sebastian
 
 <p align="center">
   <img src="sebastian/resources/LOGO.png" alt="sebastian logo" width="256">
