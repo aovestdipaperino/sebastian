@@ -12,16 +12,20 @@ project adheres to [Semantic Versioning](https://semver.org/).
   CLI crate.
 
 ### Added
+- **`seb` CLI logo banner** — the embedded `sebastian/resources/LOGO.png`
+  is rendered as true-color terminal ANSI art (via the `logo-art` crate)
+  on the no-args usage banner and the explicit `seb --logo` flag.
 - **gitGraph** (`LR` orientation) — commit/branch/merge/cherry-pick parsing,
   branch lanes, commit bullets and labels, and the themed git palette.
   Byte-exact modulo the `Math.random()`-seeded auto-generated commit ids and
   a single-f32-ulp viewBox difference in Blink's rotated-rect bbox mapping.
 - **journey** (user-journey) — task/section parsing, actor legend, the
   section color scale, and the smiley score faces. All fixtures byte-exact.
-- **quadrantChart** (experimental) — parser and renderer wired into
-  `render_diagram`, not yet covered by a byte-exact corpus and therefore
-  unverified against `mmdc`. Contributions welcome; see the README status
-  table.
+- **quadrantChart** — quadrant rects, external/internal borders, axis
+  labels (center vs left anchor by paired-label presence), and data points
+  via d3 scaleLinear interpolation. Reproduces the upstream
+  operator-precedence bug that renders point fills as
+  `hsl(240, 100%, NaN%)`. All fixtures byte-exact.
 - **Four diagram types, byte-exact vs mermaid-cli 11.15.0:**
   - **pie** — d3 arc sectors (digits-3 path serializer), theme pie1-12
     palette, CSSOM legend styles.

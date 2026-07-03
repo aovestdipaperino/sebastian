@@ -4,8 +4,8 @@ A pixel-perfect Rust port of the [mermaid.js](https://mermaid.js.org)
 diagram renderers (mermaid 11.15.0). Named after the crab from the
 mermaid. For supported diagram types — **flowchart, stateDiagram-v2,
 sequenceDiagram, classDiagram, timeline, pie, erDiagram, xychart-beta,
-gantt, gitGraph, journey** — the output SVG is **byte-for-byte identical**
-to the official `mmdc` (mermaid-cli) output.
+gantt, gitGraph, journey, quadrantChart** — the output SVG is
+**byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
 
 The workspace contains two crates:
 
@@ -15,6 +15,10 @@ The workspace contains two crates:
 ```
 cargo run -p seb -- -i diagram.mmd -o diagram.svg
 ```
+
+Run `seb` with no arguments (or `seb --logo`) to print the sebastian logo
+as true-color terminal art, rendered from `sebastian/resources/LOGO.png`
+via the [`logo-art`](https://crates.io/crates/logo-art) crate.
 
 The non-obvious Chrome/V8/mermaid behaviors this required are cataloged
 in [docs/NUANCES.md](docs/NUANCES.md).
@@ -40,7 +44,7 @@ mermaid itself embeds, so no port can match those bytes.
 | xychart-beta | ✅ done | 2 | byte-exact |
 | gitGraph (`LR`) | ✅ done | 2 | byte-exact modulo random commit ids + 1-ulp viewBox |
 | journey | ✅ done | 2 | byte-exact |
-| quadrantChart | 🚧 experimental | 0 | renders, but no byte-exact corpus yet — **needs verification** |
+| quadrantChart | ✅ done | 2 | byte-exact |
 | gitGraph (`TB` / `BT`) | ❌ not started | — | only the `LR` orientation is ported |
 | flowchart ELK layout | ❌ not started | — | `defaultRenderer: elk`; a large engine port, scoped below |
 | mindmap / architecture | ❌ not planned | — | force layouts (cose-bilkent / cytoscape), non-deterministic |

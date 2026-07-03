@@ -14,7 +14,10 @@ Already done:
 - **pie** (2 cases, byte-exact)
 - **erDiagram** (2 cases, byte-exact / rough-masked)
 - **xychart-beta** (2 cases, byte-exact)
-- **gantt** (2 cases, byte-exact modulo the render-time today marker)
+- **gantt** (5 cases, byte-exact modulo the render-time today marker)
+- **gitGraph** (`LR`; 2 cases, byte-exact modulo random commit ids)
+- **journey** (2 cases, byte-exact)
+- **quadrantChart** (2 cases, byte-exact)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 
@@ -84,7 +87,7 @@ effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 - **mindmap / architecture** — depend on cose-bilkent / cytoscape force
   layouts; non-deterministic and a large port for niche demand.
-- **gitGraph, journey, quadrant, C4, sankey, block, packet, kanban,
+- **C4, sankey, block, packet, kanban,
   requirement, radar, treemap** — no corpus demand; revisit if fixtures
   show up.
 
