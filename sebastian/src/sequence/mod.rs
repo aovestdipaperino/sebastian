@@ -422,7 +422,7 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
                     if let Some(c) = after.find(':') {
                         let val = after[c + 1..].trim();
                         let val = val.trim_matches(|ch| ch == '"' || ch == ',' || ch == ' ');
-                        meta_type = val.to_owned();
+                        val.clone_into(&mut meta_type);
                     }
                 }
                 rest = rest[..at].trim();
