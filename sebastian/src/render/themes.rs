@@ -312,6 +312,22 @@ fn update_default(vars: &mut Vars) {
     set_if(vars, "rowEven", |v| {
         super::khroma::lighten(&get(v, "primaryColor"), 1.0)
     });
+    // gitGraph extras: gitInv computed only on the first updateColors pass
+    // (from the single-darkened git colors).
+    set_if(vars, "gitInv0", |v| {
+        super::khroma::darken(&super::khroma::invert(&get(v, "git0")), 25.0)
+    });
+    for i in 1..8 {
+        let key = format!("gitInv{i}");
+        set_if(vars, &key, |v| {
+            super::khroma::invert(&get(v, &format!("git{i}")))
+        });
+    }
+    set_if(vars, "commitLabelColor", |_| "#000021".to_owned());
+    set_if(vars, "commitLabelBackground", |v| get(v, "secondaryColor"));
+    set_if(vars, "tagLabelColor", |v| get(v, "primaryTextColor"));
+    set_if(vars, "tagLabelBackground", |v| get(v, "primaryColor"));
+    set_if(vars, "tagLabelBorder", |v| get(v, "primaryBorderColor"));
     // Pie colors (theme-default "pie" block); taskTextDarkColor is 'black'.
     set(vars, "taskTextDarkColor", "black");
     set_if(vars, "pie1", |v| get(v, "primaryColor"));

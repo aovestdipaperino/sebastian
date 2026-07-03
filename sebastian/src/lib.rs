@@ -11,6 +11,7 @@ pub mod diagram;
 pub mod er;
 pub mod flowchart;
 pub mod gantt;
+pub mod gitgraph;
 pub mod graphlib;
 pub mod jsmap;
 pub mod pie;

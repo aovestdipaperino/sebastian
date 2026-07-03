@@ -462,6 +462,140 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The gitGraph stylesheet (port of `diagrams/git/styles.js`).
+#[must_use]
+pub fn themed_gitgraph_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    let font = v("fontFamily");
+    rule(
+        &mut o,
+        &i,
+        &[" .commit-id", " .commit-msg", " .branch-label"],
+        "fill:lightgrey;color:lightgrey;font-family:'trebuchet ms',verdana,arial,sans-serif;font-family:var(--mermaid-font-family);",
+    );
+    let _ = font;
+    for n in 0..12 {
+        let git = v(&format!("git{}", n % 8));
+        let inv = v(&format!("gitInv{}", n % 8));
+        let label = v(&format!("gitBranchLabel{}", n % 8));
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .branch-label{n}")],
+            &format!("fill:{label};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .commit{n}")],
+            &format!("stroke:{git};fill:{git};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .commit-highlight{n}")],
+            &format!("stroke:{inv};fill:{inv};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .label{n}")],
+            &format!("fill:{git};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .arrow{n}")],
+            &format!("stroke:{git};"),
+        );
+    }
+    rule(
+        &mut o,
+        &i,
+        &[" .branch"],
+        &format!(
+            "stroke-width:1;stroke:{};stroke-dasharray:2;",
+            v("gitBranchLabelColor_line")
+                .is_empty()
+                .then_some(())
+                .map_or_else(|| v("lineColor"), |()| v("lineColor"))
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .commit-label"],
+        &format!("font-size:10px;fill:{};", v("commitLabelColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .commit-label-bkg"],
+        &format!(
+            "font-size:10px;fill:{};opacity:0.5;",
+            v("commitLabelBackground")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .tag-label"],
+        &format!("font-size:10px;fill:{};", v("tagLabelColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .tag-label-bkg"],
+        &format!(
+            "fill:{};stroke:{};",
+            v("tagLabelBackground"),
+            v("tagLabelBorder")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .tag-hole"],
+        &format!("fill:{};", v("textColor")),
+    );
+    let main_bkg = v("mainBkg");
+    rule(
+        &mut o,
+        &i,
+        &[" .commit-merge"],
+        &format!("stroke:{main_bkg};fill:{main_bkg};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .commit-reverse"],
+        &format!("stroke:{main_bkg};fill:{main_bkg};stroke-width:3;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .commit-highlight-inner"],
+        &format!("stroke:{main_bkg};fill:{main_bkg};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .arrow"],
+        "stroke-width:8;stroke-linecap:round;fill:none;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .gitTitleText"],
+        &format!("text-anchor:middle;font-size:18px;fill:{};", v("textColor")),
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The gantt stylesheet (port of `diagrams/gantt/styles.js`).
 #[must_use]
 #[allow(clippy::too_many_lines)]

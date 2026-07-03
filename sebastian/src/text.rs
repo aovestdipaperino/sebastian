@@ -214,6 +214,29 @@ impl TextMeasurer {
         f64::from(width as f32)
     }
 
+    /// SVG text `getBBox` height (Trebuchet): the integer font box
+    /// (round(ascender) + round(descender)) extended by glyph ink beyond it.
+    #[must_use]
+    pub fn ink_height(&self, text: &str, font_size: f64) -> f64 {
+        let face = self.face();
+        let upem = self.inner.units_per_em;
+        let asc = (1923.0 * font_size / 2048.0).round();
+        let desc = (455.0 * font_size / 2048.0).round();
+        let mut top = -asc;
+        let mut bottom = desc;
+        for ch in text.chars() {
+            let Some(gid) = face.glyph_index(ch) else {
+                continue;
+            };
+            if let Some(b) = face.glyph_bounding_box(gid) {
+                top = top.min(-f64::from(b.y_max) * font_size / upem);
+                bottom = bottom.max(-f64::from(b.y_min) * font_size / upem);
+            }
+        }
+        #[allow(clippy::cast_possible_truncation)]
+        f64::from((bottom - top) as f32)
+    }
+
     /// Raw advance-sum width in CSS pixels (no `LayoutUnit` snapping).
     #[must_use]
     pub fn measure_advance(&self, text: &str, font_size: f64) -> f64 {

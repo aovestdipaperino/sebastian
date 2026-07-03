@@ -248,6 +248,15 @@ pub fn element_bbox(el: &Element) -> Rect {
 impl Rect {
     /// Builds a rect from f64 geometry (f32-rounded), for callers that
     /// union extra boxes (e.g. text elements) manually.
+    ///
+    /// A line's bbox: unions even at zero area (Blink `line_valid`).
+    #[must_use]
+    pub fn from_line_geometry(x: f64, y: f64, w: f64, h: f64) -> Self {
+        let mut r = Self::from_geometry(x, y, w, h);
+        r.line_valid = true;
+        r
+    }
+
     #[must_use]
     pub fn from_geometry(x: f64, y: f64, w: f64, h: f64) -> Self {
         Self::from_xywh(x, y, w, h)
