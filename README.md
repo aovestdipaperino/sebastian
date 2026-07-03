@@ -1,8 +1,13 @@
 # sebastian 🦀🧜
 
+<p align="center">
+  <img src="sebastian/resources/LOGO.png" alt="sebastian logo" width="256">
+</p>
+
 A pixel-perfect Rust port of the [mermaid.js](https://mermaid.js.org)
-diagram renderers (mermaid 11.15.0). Named after the crab from the
-mermaid. For supported diagram types — **flowchart, stateDiagram-v2,
+diagram renderers (mermaid 11.15.0). Named after Sebastian, the crab
+from Disney's *The Little Mermaid* — a fitting mascot for a
+mermaid renderer. For supported diagram types — **flowchart, stateDiagram-v2,
 sequenceDiagram, classDiagram, timeline, pie, erDiagram, xychart-beta,
 gantt, gitGraph, journey, quadrantChart** — the output SVG is
 **byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
