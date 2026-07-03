@@ -35,6 +35,9 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         if t.starts_with("erDiagram") {
             return "er";
         }
+        if t.starts_with("xychart-beta") {
+            return "xychart";
+        }
         return "flowchart";
     }
     "flowchart"
@@ -49,6 +52,7 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
         "state" => render_state(source, id).map_err(Into::into),
         "pie" => crate::pie::render_pie(source, id).map_err(Into::into),
         "er" => render_er(source, id).map_err(Into::into),
+        "xychart" => crate::xychart::render_xychart(source, id).map_err(Into::into),
         "sequence" => crate::sequence::render_sequence(source, id).map_err(Into::into),
         "timeline" => crate::timeline::render_timeline(source, id).map_err(Into::into),
         "class" => render_class(source, id).map_err(Into::into),

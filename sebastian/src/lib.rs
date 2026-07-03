@@ -19,6 +19,7 @@ pub mod state;
 pub mod svg;
 pub mod text;
 pub mod timeline;
+pub mod xychart;
 
 #[cfg(feature = "raster")]
 pub use diagram::render_png;

@@ -462,6 +462,17 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The xychart stylesheet: no diagram-specific rules, just the shared
+/// prefix and suffix.
+#[must_use]
+pub fn themed_xychart_css(id: &str, vars: &Map<String, Value>) -> String {
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The erDiagram stylesheet (port of `diagrams/er/styles.ts`).
 #[must_use]
 pub fn themed_er_css(id: &str, vars: &Map<String, Value>) -> String {
