@@ -387,6 +387,49 @@ impl SeqMeasurer {
         f64::from(snapped as f32)
     }
 
+    /// SVG text bbox width with glyph ink: `max(advance run end, ink
+    /// right) - min(0, ink left)`, snapped to the 1/64px grid as f32.
+    /// (Blink's getBBox unions glyph ink with the run advance; `PK` in
+    /// Times is wider than its advance sum because of K's right ink.)
+    #[must_use]
+    pub fn line_ink_width(&self, text: &str, font_size: f64) -> f64 {
+        let face = self.face();
+        let upem = f64::from(face.units_per_em());
+        let mut pen = 0.0f64;
+        let mut ink_left = 0.0f64;
+        let mut ink_right = 0.0f64;
+        for ch in text.chars() {
+            let gid = face.glyph_index(ch).unwrap_or(ttf_parser::GlyphId(0));
+            if let Some(b) = face.glyph_bounding_box(gid) {
+                ink_left = ink_left.min(pen + f64::from(b.x_min) * font_size / upem);
+                ink_right = ink_right.max(pen + f64::from(b.x_max) * font_size / upem);
+            }
+            pen += f64::from(face.glyph_hor_advance(gid).unwrap_or(0)) * font_size / upem;
+        }
+        // The advance-run end is rounded half-up to the 1/64px grid; glyph
+        // ink positions are used raw (1/128 grid at 16px/2048upem).
+        let pen_rounded = (pen * 64.0 + 0.5).floor() / 64.0;
+        let width = pen_rounded.max(ink_right) - ink_left.min(0.0);
+        #[allow(clippy::cast_possible_truncation)]
+        f64::from(width as f32)
+    }
+
+    /// `utils.calculateTextDimensions` with the ink-aware width (ER boxes):
+    /// width = max over lines of Math.round(ink bbox width); height = sum of
+    /// rounded line heights.
+    #[must_use]
+    pub fn ink_text_dimensions(&self, text: &str, font_size: f64) -> (f64, f64) {
+        let lines = split_breaks(text);
+        let mut width = 0.0f64;
+        let mut height = 0.0f64;
+        for line in &lines {
+            let w = (self.line_ink_width(line, font_size) + 0.5).floor();
+            width = width.max(w);
+            height += (self.line_bbox_height(line, font_size) + 0.5).floor();
+        }
+        (width, height)
+    }
+
     /// SVG text bbox height: the integer font box (round(ascender) +
     /// round(descender)) extended by glyph ink that reaches beyond it.
     #[must_use]

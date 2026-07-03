@@ -279,6 +279,18 @@ fn update_default(vars: &mut Vars) {
         let darkened = darken(&get(vars, &key), 25.0);
         set(vars, &key, darkened);
     }
+    // ER row colors.
+    set_if(vars, "rowOdd", |v| {
+        let l = super::khroma::lighten(&get(v, "primaryColor"), 75.0);
+        if l.is_empty() {
+            "#ffffff".to_owned()
+        } else {
+            l
+        }
+    });
+    set_if(vars, "rowEven", |v| {
+        super::khroma::lighten(&get(v, "primaryColor"), 1.0)
+    });
     // Pie colors (theme-default "pie" block); taskTextDarkColor is 'black'.
     set(vars, "taskTextDarkColor", "black");
     set_if(vars, "pie1", |v| get(v, "primaryColor"));

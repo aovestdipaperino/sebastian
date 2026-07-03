@@ -183,9 +183,134 @@ pub fn insert_markers(elem: &Element, diagram_type: &str, id: &str) {
         insert_class_markers(elem, diagram_type, id);
         return;
     }
+    if diagram_type == "er" {
+        insert_er_markers(elem, diagram_type, id);
+        return;
+    }
     for spec in marker_specs() {
         let marker = create_marker(elem, &spec, diagram_type, id);
         let _ = marker;
+    }
+}
+
+/// ER crow's-foot markers (rendering-elements/markers.js `onlyOne` ..
+/// `zeroOrMore`), each in its own `<defs>`.
+fn insert_er_markers(elem: &Element, diagram_type: &str, id: &str) {
+    struct Er {
+        name: &'static str,
+        class: &'static str,
+        ref_x: &'static str,
+        ref_y: &'static str,
+        w: &'static str,
+        h: &'static str,
+        circle: Option<(&'static str, &'static str)>,
+        path: &'static str,
+    }
+    let markers = [
+        Er {
+            name: "onlyOneStart",
+            class: "onlyOne",
+            ref_x: "0",
+            ref_y: "9",
+            w: "18",
+            h: "18",
+            circle: None,
+            path: "M9,0 L9,18 M15,0 L15,18",
+        },
+        Er {
+            name: "onlyOneEnd",
+            class: "onlyOne",
+            ref_x: "18",
+            ref_y: "9",
+            w: "18",
+            h: "18",
+            circle: None,
+            path: "M3,0 L3,18 M9,0 L9,18",
+        },
+        Er {
+            name: "zeroOrOneStart",
+            class: "zeroOrOne",
+            ref_x: "0",
+            ref_y: "9",
+            w: "30",
+            h: "18",
+            circle: Some(("21", "9")),
+            path: "M9,0 L9,18",
+        },
+        Er {
+            name: "zeroOrOneEnd",
+            class: "zeroOrOne",
+            ref_x: "30",
+            ref_y: "9",
+            w: "30",
+            h: "18",
+            circle: Some(("9", "9")),
+            path: "M21,0 L21,18",
+        },
+        Er {
+            name: "oneOrMoreStart",
+            class: "oneOrMore",
+            ref_x: "18",
+            ref_y: "18",
+            w: "45",
+            h: "36",
+            circle: None,
+            path: "M0,18 Q 18,0 36,18 Q 18,36 0,18 M42,9 L42,27",
+        },
+        Er {
+            name: "oneOrMoreEnd",
+            class: "oneOrMore",
+            ref_x: "27",
+            ref_y: "18",
+            w: "45",
+            h: "36",
+            circle: None,
+            path: "M3,9 L3,27 M9,18 Q27,0 45,18 Q27,36 9,18",
+        },
+        Er {
+            name: "zeroOrMoreStart",
+            class: "zeroOrMore",
+            ref_x: "18",
+            ref_y: "18",
+            w: "57",
+            h: "36",
+            circle: Some(("48", "18")),
+            path: "M0,18 Q18,0 36,18 Q18,36 0,18",
+        },
+        Er {
+            name: "zeroOrMoreEnd",
+            class: "zeroOrMore",
+            ref_x: "39",
+            ref_y: "18",
+            w: "57",
+            h: "36",
+            circle: Some(("9", "18")),
+            path: "M21,18 Q39,0 57,18 Q39,36 21,18",
+        },
+    ];
+    for m in markers {
+        let defs = append(elem, "defs");
+        let marker = append(&defs, "marker");
+        set_attr(&marker, "id", format!("{id}_{diagram_type}-{}", m.name));
+        set_attr(
+            &marker,
+            "class",
+            format!("marker {} {diagram_type}", m.class),
+        );
+        set_attr(&marker, "refX", m.ref_x);
+        set_attr(&marker, "refY", m.ref_y);
+        set_attr(&marker, "markerWidth", m.w);
+        set_attr(&marker, "markerHeight", m.h);
+        set_attr(&marker, "orient", "auto");
+        if let Some((cx, cy)) = m.circle {
+            let c = append(&marker, "circle");
+            set_attr(&c, "fill", "white");
+            set_attr(&c, "cx", cx);
+            set_attr(&c, "cy", cy);
+            set_attr(&c, "r", "6");
+        }
+        let p = append(&marker, "path");
+        set_attr(&p, "d", m.path);
     }
 }
 

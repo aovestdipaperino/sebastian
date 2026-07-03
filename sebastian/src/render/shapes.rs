@@ -515,8 +515,9 @@ fn draw_rect(
     );
     let mut n = node.borrow_mut();
 
-    let total_width = f64::max(result.bbox.width + label_padding_x * 2.0, 0.0);
-    let total_height = f64::max(result.bbox.height + label_padding_y * 2.0, 0.0);
+    // drawRect maxes with any preset node.width/height (ER min entity size).
+    let total_width = f64::max(result.bbox.width + label_padding_x * 2.0, n.width);
+    let total_height = f64::max(result.bbox.height + label_padding_y * 2.0, n.height);
     let x = -total_width / 2.0;
     let y = -total_height / 2.0;
 
@@ -1229,9 +1230,327 @@ pub fn insert_node_shape(
             n.intersect = Some(IntersectShape::Polygon(points));
             shape_svg
         }
+        "erBox" => er_box(parent, node, measurer, config),
         "classBox" => class_box(parent, node, measurer, config),
         other => panic!("no such shape: {other}. Please check your syntax."),
     }
+}
+
+/// `erBox`: entity name row plus an attribute grid (type / name / keys /
+/// comment columns), drawn with rough rectangles and hairline polygon
+/// dividers. Ported from `rendering-elements/shapes/erBox.ts` (classic look).
+#[allow(clippy::too_many_lines, clippy::similar_names)]
+fn er_box(
+    parent: &Element,
+    node: &NodeRef,
+    measurer: &TextMeasurer,
+    config: &super::config::RenderConfig,
+) -> Element {
+    {
+        let mut n = node.borrow_mut();
+        if !n.er_alias.is_empty() {
+            let alias = n.er_alias.clone();
+            n.label = alias.clone();
+            n.label_raw = alias;
+        }
+    }
+    let theme = &config.computed_theme;
+    let v = |k: &str| super::themes::get(theme, k);
+    let main_bkg = v("mainBkg");
+    let node_border = v("nodeBorder");
+    let row_even = v("rowEven");
+    let row_odd = v("rowOdd");
+    let seq = crate::text::SeqMeasurer::new();
+
+    // Root config.htmlLabels is undefined upstream, so the attribute-grid
+    // paddings get the !htmlLabels 1.25 scaling even though the labels are
+    // still HTML.
+    let base_padding = 20.0; // er.diagramPadding
+    let base_text_padding = 15.0; // er.entityPadding
+
+    let attributes = node.borrow().er_attributes.clone();
+    let label = node.borrow().label.clone();
+
+    if attributes.is_empty() && !label.is_empty() {
+        // drawRect branch (uses the unscaled paddings).
+        let times_w = seq.ink_text_dimensions(&label, 16.0).0;
+        if times_w + base_padding * 2.0 < 100.0 {
+            node.borrow_mut().width = 100.0;
+        }
+        let compiled = {
+            let n = node.borrow();
+            super::styles::styles2string(&n.css_compiled_styles, &n.css_styles, &[])
+        };
+        return draw_rect(
+            parent,
+            node,
+            0.0,
+            base_padding,
+            base_padding * 1.5,
+            measurer,
+            &compiled.node_styles,
+            config,
+        );
+    }
+
+    let padding = base_padding * 1.25;
+    let text_padding = base_text_padding * 1.25;
+
+    let shape_svg = append(parent, "g");
+    set_attr(&shape_svg, "class", get_node_classes(node));
+    set_attr(&shape_svg, "id", node.borrow().dom_id.clone());
+
+    // Measure all labels first (addText bboxes).
+    let measure = |text: &str| -> (f64, f64) {
+        if text.is_empty() {
+            return (0.0, 0.0);
+        }
+        let wrap = seq.ink_text_dimensions(text, 16.0).0 + 100.0;
+        let bbox = measure_label_sized(measurer, text, wrap, 16.0);
+        (bbox.width, bbox.height)
+    };
+
+    let name_bbox = measure(&label);
+    let mut name_h = name_bbox.1 + text_padding;
+    let name_w = name_bbox.0;
+    let _ = &mut name_h;
+
+    struct Row {
+        y_offset: f64,
+        row_height: f64,
+        cells: [(String, f64, f64); 4], // (text, w, h)
+    }
+    let mut rows: Vec<Row> = Vec::new();
+    let mut max_type_w = 0.0f64;
+    let mut max_name_w = 0.0f64;
+    let mut max_keys_w = 0.0f64;
+    let mut max_comment_w = 0.0f64;
+    let mut y_offset = 0.0f64;
+    for (ty, name, keys, comment) in &attributes {
+        let t = measure(ty);
+        let n_ = measure(name);
+        let k = measure(keys);
+        let c = measure(comment);
+        max_type_w = max_type_w.max(t.0 + padding);
+        max_name_w = max_name_w.max(n_.0 + padding);
+        max_keys_w = max_keys_w.max(k.0 + padding);
+        max_comment_w = max_comment_w.max(c.0 + padding);
+        let row_height = t.1.max(n_.1).max(k.1).max(c.1) + text_padding;
+        rows.push(Row {
+            y_offset,
+            row_height,
+            cells: [
+                (ty.clone(), t.0, t.1),
+                (name.clone(), n_.0, n_.1),
+                (keys.clone(), k.0, k.1),
+                (comment.clone(), c.0, c.1),
+            ],
+        });
+        y_offset += row_height;
+    }
+
+    let mut total_width_sections = 4.0;
+    let mut keys_present = true;
+    let mut comment_present = true;
+    if max_keys_w <= padding {
+        keys_present = false;
+        max_keys_w = 0.0;
+        total_width_sections -= 1.0;
+    }
+    if max_comment_w <= padding {
+        comment_present = false;
+        max_comment_w = 0.0;
+        total_width_sections -= 1.0;
+    }
+
+    // getBBox of the labels laid out at x=0: the widest label.
+    let mut shape_bbox_w = name_w;
+    for r in &rows {
+        for (_, w, _) in &r.cells {
+            shape_bbox_w = shape_bbox_w.max(*w);
+        }
+    }
+
+    if name_w + padding * 2.0 - (max_type_w + max_name_w + max_keys_w + max_comment_w) > 0.0 {
+        let difference =
+            name_w + padding * 2.0 - (max_type_w + max_name_w + max_keys_w + max_comment_w);
+        max_type_w += difference / total_width_sections;
+        max_name_w += difference / total_width_sections;
+        if max_keys_w > 0.0 {
+            max_keys_w += difference / total_width_sections;
+        }
+        if max_comment_w > 0.0 {
+            max_comment_w += difference / total_width_sections;
+        }
+    }
+    let max_width = max_type_w + max_name_w + max_keys_w + max_comment_w;
+
+    let total_rows_h: f64 = rows.iter().map(|r| r.row_height).sum();
+    let w = (shape_bbox_w + padding * 2.0)
+        .max(node.borrow().width)
+        .max(max_width);
+    let h = (total_rows_h + name_h).max(node.borrow().height);
+    let x = -w / 2.0;
+    let y = -h / 2.0;
+
+    // Element order: outer rect, row rects, labels, dividers.
+    let outer = rough_rectangle(&shape_svg, x, y, w, h, &main_bkg, &node_border);
+    set_attr(&outer, "class", "outer-path");
+    set_attr(&outer, "style", "");
+
+    for (i, row) in rows.iter().enumerate() {
+        let content_row_index = i + 1;
+        let is_even = content_row_index % 2 == 0 && row.y_offset != 0.0;
+        let fill = if is_even { &row_even } else { &row_odd };
+        let g = rough_rectangle_appended(
+            &shape_svg,
+            x,
+            name_h + y + row.y_offset,
+            w,
+            row.row_height,
+            fill,
+            &node_border,
+        );
+        set_attr(&g, "style", "");
+        set_attr(
+            &g,
+            "class",
+            if is_even {
+                "row-rect-even"
+            } else {
+                "row-rect-odd"
+            },
+        );
+    }
+
+    // Labels.
+    let er_label = |text: &str, w_: f64, h_: f64, classes: &str, tx: f64, ty: f64| {
+        let g = append(&shape_svg, "g");
+        set_attr(&g, "class", format!("label {classes}"));
+        set_attr(
+            &g,
+            "transform",
+            format!("translate({}, {})", js_num(tx), js_num(ty)),
+        );
+        set_attr(&g, "style", "");
+        let fo = append(&g, "foreignObject");
+        set_attr(&fo, "width", js_num(w_));
+        set_attr(&fo, "height", js_num(h_));
+        let div = crate::svg::append_xhtml(&fo, "div");
+        set_attr(&div, "xmlns", "http://www.w3.org/1999/xhtml");
+        let wrap = seq.ink_text_dimensions(text, 16.0).0 + 100.0;
+        set_attr(
+            &div,
+            "style",
+            format!(
+                "display: table-cell; white-space: nowrap; line-height: 1.5; max-width: {}px; text-align: start;",
+                js_num(wrap)
+            ),
+        );
+        let span = crate::svg::append_xhtml(&div, "span");
+        set_attr(&span, "class", "nodeLabel");
+        if !text.is_empty() {
+            write_label_paragraph(&span, text);
+        }
+    };
+
+    // Name label (centered).
+    er_label(
+        &label,
+        name_w,
+        name_bbox.1,
+        "name",
+        -name_w / 2.0,
+        y + text_padding / 2.0,
+    );
+
+    // Attribute labels with column offsets.
+    for row in &rows {
+        let col_offsets = [
+            0.0,
+            max_type_w,
+            max_type_w + max_name_w,
+            max_type_w + max_name_w + max_keys_w,
+        ];
+        let classes = [
+            "attribute-type",
+            "attribute-name",
+            "attribute-keys",
+            "attribute-comment",
+        ];
+        for (ci, (text, cw, ch)) in row.cells.iter().enumerate() {
+            er_label(
+                text,
+                *cw,
+                *ch,
+                classes[ci],
+                x + padding / 2.0 + col_offsets[ci],
+                row.y_offset + y + name_h + text_padding / 2.0,
+            );
+        }
+    }
+
+    // Dividers (thickness 0.0001 polygons).
+    let thickness = 0.0001;
+    let hline = |y_c: f64| -> Vec<Point> {
+        vec![
+            Point {
+                x,
+                y: y_c - thickness / 2.0,
+            },
+            Point {
+                x,
+                y: y_c + thickness / 2.0,
+            },
+            Point {
+                x: w + x,
+                y: y_c + thickness / 2.0,
+            },
+            Point {
+                x: w + x,
+                y: y_c - thickness / 2.0,
+            },
+        ]
+    };
+    let vline = |x_c: f64| -> Vec<Point> {
+        vec![
+            Point {
+                x: x_c - thickness / 2.0,
+                y: name_h + y,
+            },
+            Point {
+                x: x_c + thickness / 2.0,
+                y: name_h + y,
+            },
+            Point {
+                x: x_c + thickness / 2.0,
+                y: h + y,
+            },
+            Point {
+                x: x_c - thickness / 2.0,
+                y: h + y,
+            },
+        ]
+    };
+    let mut dividers: Vec<Vec<Point>> = vec![hline(name_h + y), vline(max_type_w + x)];
+    if keys_present {
+        dividers.push(vline(max_type_w + max_name_w + x));
+    }
+    if comment_present {
+        dividers.push(vline(max_type_w + max_name_w + max_keys_w + x));
+    }
+    // yOffsets only ever holds 0: the top divider is drawn twice upstream.
+    dividers.push(hline(name_h + y));
+    for pts in dividers {
+        let g = rough_polygon_solid(&shape_svg, &pts, &main_bkg, &node_border);
+        set_attr(&g, "class", "divider");
+    }
+
+    let mut n = node.borrow_mut();
+    n.width = f32q(w);
+    n.height = f32q(h);
+    n.intersect = Some(IntersectShape::Rect);
+    shape_svg
 }
 
 /// Sets `style` on every descendant `path` (d3 `selectAll('path')`).
@@ -1325,6 +1644,26 @@ fn rough_rectangle(
     stroke: &str,
 ) -> Element {
     let g = insert_first(parent, "g");
+    rough_rectangle_into(&g, x, y, w, h, fill, stroke);
+    g
+}
+
+/// [`rough_rectangle`] appended in document order (ER row rects).
+fn rough_rectangle_appended(
+    parent: &Element,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    fill: &str,
+    stroke: &str,
+) -> Element {
+    let g = append(parent, "g");
+    rough_rectangle_into(&g, x, y, w, h, fill, stroke);
+    g
+}
+
+fn rough_rectangle_into(g: &Element, x: f64, y: f64, w: f64, h: f64, fill: &str, stroke: &str) {
     let corners = [
         Point { x, y },
         Point { x: x + w, y },
@@ -1336,7 +1675,7 @@ fn rough_rectangle(
     for p in &corners[1..] {
         let _ = std::fmt::Write::write_fmt(&mut fill_d, format_args!(" L{}", rough_pair(*p)));
     }
-    let fill_path = append(&g, "path");
+    let fill_path = append(g, "path");
     set_attr(&fill_path, "d", fill_d);
     set_attr(&fill_path, "stroke", "none");
     set_attr(&fill_path, "stroke-width", "0");
@@ -1344,6 +1683,43 @@ fn rough_rectangle(
 
     let mut closed: Vec<Point> = corners.to_vec();
     closed.push(corners[0]);
+    let mut stroke_d = String::new();
+    for seg in closed.windows(2) {
+        for diverge in [0.3, 0.3] {
+            if !stroke_d.is_empty() {
+                stroke_d.push(' ');
+            }
+            let _ =
+                std::fmt::Write::write_fmt(&mut stroke_d, format_args!("M{}", rough_pair(seg[0])));
+            stroke_d.push(' ');
+            stroke_d.push_str(&rough_line_curve(seg[0], seg[1], diverge));
+        }
+    }
+    let stroke_path = append(g, "path");
+    set_attr(&stroke_path, "d", stroke_d);
+    set_attr(&stroke_path, "stroke", stroke);
+    set_attr(&stroke_path, "stroke-width", "1.3");
+    set_attr(&stroke_path, "fill", "none");
+    set_attr(&stroke_path, "stroke-dasharray", "0 0");
+}
+
+/// rough.js `rc.polygon` with solid fill: straight-line fill path with
+/// `fill-rule="evenodd"` plus the double-curve stroke outline.
+fn rough_polygon_solid(parent: &Element, points: &[Point], fill: &str, stroke: &str) -> Element {
+    let g = append(parent, "g");
+    let mut fill_d = format!("M{}", rough_pair(points[0]));
+    for p in &points[1..] {
+        let _ = std::fmt::Write::write_fmt(&mut fill_d, format_args!(" L{}", rough_pair(*p)));
+    }
+    let fill_path = append(&g, "path");
+    set_attr(&fill_path, "d", fill_d);
+    set_attr(&fill_path, "stroke", "none");
+    set_attr(&fill_path, "stroke-width", "0");
+    set_attr(&fill_path, "fill", fill);
+    set_attr(&fill_path, "fill-rule", "evenodd");
+
+    let mut closed: Vec<Point> = points.to_vec();
+    closed.push(points[0]);
     let mut stroke_d = String::new();
     for seg in closed.windows(2) {
         for diverge in [0.3, 0.3] {

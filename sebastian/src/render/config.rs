@@ -26,6 +26,8 @@ pub struct RenderConfig {
     pub computed_theme: Map<String, Value>,
     /// Graph direction (`data4Layout.direction`), consumed by forkJoin.
     pub direction: String,
+    /// Edge-label font size override (ER labels inherit 14px from CSS).
+    pub edge_label_font_size: Option<f64>,
 }
 
 impl Default for RenderConfig {
@@ -43,6 +45,7 @@ impl Default for RenderConfig {
             curve: None,
             computed_theme: Map::new(),
             direction: "TB".to_owned(),
+            edge_label_font_size: None,
         }
     }
 }

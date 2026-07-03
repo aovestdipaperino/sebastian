@@ -50,6 +50,10 @@ pub struct RenderNode {
     /// classBox compartments: (display text, classifier style) pairs.
     pub class_annotations: Vec<String>,
     pub class_members: Vec<(String, String)>,
+    /// ER entity attributes: (type, name, keys-joined, comment).
+    pub er_attributes: Vec<(String, String, String, String)>,
+    /// ER entity alias (rendered instead of the label when set).
+    pub er_alias: String,
     pub class_methods: Vec<(String, String)>,
 }
 

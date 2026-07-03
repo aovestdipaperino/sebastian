@@ -462,6 +462,114 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The erDiagram stylesheet (port of `diagrams/er/styles.ts`).
+#[must_use]
+pub fn themed_er_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    rule(
+        &mut o,
+        &i,
+        &[" .entityBox"],
+        &format!("fill:{};stroke:{};", v("mainBkg"), v("nodeBorder")),
+    );
+    let tertiary = v("tertiaryColor");
+    rule(
+        &mut o,
+        &i,
+        &[" .relationshipLabelBox"],
+        &format!("fill:{tertiary};opacity:0.7;background-color:{tertiary};"),
+    );
+    rule(&mut o, &i, &[" .relationshipLabelBox rect"], "opacity:0.5;");
+    rule(
+        &mut o,
+        &i,
+        &[" .labelBkg"],
+        &format!("background-color:{};", fade(&tertiary, 0.5)),
+    );
+    let edge_label_bg = v("edgeLabelBackground");
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel"],
+        &format!("background-color:{edge_label_bg};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel .label rect"],
+        &format!("fill:{edge_label_bg};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel .label text"],
+        &format!("fill:{};", v("textColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel .label"],
+        &format!("fill:{};font-size:14px;", v("nodeBorder")),
+    );
+    let node_text = {
+        let t = v("nodeTextColor");
+        if t.is_empty() { v("textColor") } else { t }
+    };
+    rule(
+        &mut o,
+        &i,
+        &[" .label"],
+        &format!("font-family:{};color:{node_text};", v("fontFamily")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edge-pattern-dashed"],
+        "stroke-dasharray:8,8;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .node rect",
+            " .node circle",
+            " .node ellipse",
+            " .node polygon",
+        ],
+        &format!(
+            "fill:{};stroke:{};stroke-width:1px;",
+            v("mainBkg"),
+            v("nodeBorder")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .relationshipLine"],
+        &format!("stroke:{};stroke-width:1px;fill:none;", v("lineColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .marker"],
+        &format!(
+            "fill:none!important;stroke:{}!important;stroke-width:1;",
+            v("lineColor")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" [data-look=neo].labelBkg"],
+        &format!("background-color:{};", fade(&tertiary, 0.5)),
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The pie chart stylesheet (port of `diagrams/pie/pieStyles.ts`).
 #[must_use]
 pub fn themed_pie_css(id: &str, vars: &Map<String, Value>) -> String {

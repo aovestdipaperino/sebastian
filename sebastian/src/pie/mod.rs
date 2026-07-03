@@ -2,7 +2,7 @@
 //! `pieRenderer.ts` (d3 arcs with the d3-path `digits(3)` serializer).
 
 use crate::render::themes;
-use crate::svg::{Element, append, js_num, serialize, set_attr, set_text};
+use crate::svg::{append, js_num, serialize, set_attr, set_text};
 use crate::text::TextMeasurer;
 
 /// A parse error for pie source.

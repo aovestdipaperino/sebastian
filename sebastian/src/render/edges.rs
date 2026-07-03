@@ -88,7 +88,9 @@ pub fn insert_edge_label(
 
     let compiled = super::styles::styles2string(&e.css_compiled_styles, &[], &e.label_style);
     let label_style = compiled.label_styles.replacen("fill:", "color:", 1);
-    let font_size = super::shapes::font_size_from_styles_or(&label_style, config.font_size());
+    let font_size = config.edge_label_font_size.unwrap_or_else(|| {
+        super::shapes::font_size_from_styles_or(&label_style, config.font_size())
+    });
 
     if !config.effective_html_labels() {
         // SVG text labels: createText appends the label group to the edge
@@ -1034,6 +1036,10 @@ fn add_edge_markers(
             "composition" => ("composition", false),
             "dependency" => ("dependency", false),
             "lollipop" => ("lollipop", false),
+            "only_one" => ("onlyOne", false),
+            "zero_or_one" => ("zeroOrOne", false),
+            "one_or_more" => ("oneOrMore", false),
+            "zero_or_more" => ("zeroOrMore", false),
             _ => continue,
         };
         let suffix = if position == "start" { "Start" } else { "End" };

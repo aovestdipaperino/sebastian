@@ -8,6 +8,7 @@
 pub mod classdiag;
 pub mod dagre;
 pub mod diagram;
+pub mod er;
 pub mod flowchart;
 pub mod graphlib;
 pub mod jsmap;

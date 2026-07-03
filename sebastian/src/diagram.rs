@@ -32,6 +32,9 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         if t == "pie" || t.starts_with("pie ") || t.starts_with("pie\t") {
             return "pie";
         }
+        if t.starts_with("erDiagram") {
+            return "er";
+        }
         return "flowchart";
     }
     "flowchart"
@@ -45,6 +48,7 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
     match detect_diagram_type(source) {
         "state" => render_state(source, id).map_err(Into::into),
         "pie" => crate::pie::render_pie(source, id).map_err(Into::into),
+        "er" => render_er(source, id).map_err(Into::into),
         "sequence" => crate::sequence::render_sequence(source, id).map_err(Into::into),
         "timeline" => crate::timeline::render_timeline(source, id).map_err(Into::into),
         "class" => render_class(source, id).map_err(Into::into),
@@ -71,6 +75,28 @@ pub fn render_state(source: &str, id: &str) -> Result<String, crate::state::Stat
             render::css::themed_statediagram_css(id, &theme_vars),
             render::css::class_defs_css(id, config.effective_html_labels(), &class_list),
         ),
+    };
+    Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
+}
+
+/// Renders mermaid erDiagram source to a complete SVG document string.
+///
+/// # Errors
+/// Returns a [`crate::er::ErParseError`] when the source is not a valid
+/// er diagram.
+pub fn render_er(source: &str, id: &str) -> Result<String, crate::er::ErParseError> {
+    let mut config = render::config::detect_init(source);
+    let theme_vars = render::themes::theme_variables(&config.theme, &config.theme_variables);
+    config.computed_theme.clone_from(&theme_vars);
+    config.node_spacing = 140.0;
+    config.rank_spacing = 80.0;
+    config.edge_label_font_size = Some(14.0);
+    let data = crate::er::get_layout_data(source, id)?;
+    let chrome = DiagramChrome {
+        svg_class: "erDiagram",
+        aria: "er",
+        diagram_type: "er",
+        css: render::css::themed_er_css(id, &theme_vars),
     };
     Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
 }
