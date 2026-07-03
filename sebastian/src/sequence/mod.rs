@@ -110,6 +110,10 @@ pub struct SequenceDb {
     pub actors: indexmap::IndexMap<String, Actor>,
     pub messages: Vec<SeqMessage>,
     pub boxes: Vec<SeqBox>,
+    /// `createdActors`: actor id -> index of the creating message.
+    pub created_actors: std::collections::HashMap<String, usize>,
+    /// `destroyedActors`: actor id -> index of the destroying message.
+    pub destroyed_actors: std::collections::HashMap<String, usize>,
     current_box: Option<usize>,
 }
 
@@ -391,6 +395,14 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
 
         let lower = line.to_lowercase();
 
+        if let Some(rest) = strip_keyword(line, "destroy") {
+            let actor = rest.trim().to_owned();
+            let idx = db.messages.len();
+            db.destroyed_actors.insert(actor, idx);
+            continue;
+        }
+        let (line, created) =
+            strip_keyword(line, "create").map_or((line, false), |rest| (rest.trim(), true));
         let participant = strip_keyword(line, "participant").map(|r| (r, false));
         let participant = participant.or_else(|| strip_keyword(line, "actor").map(|r| (r, true)));
         if let Some((rest, is_actor_man)) = participant {
@@ -405,6 +417,10 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
             };
             if is_actor_man && let Some(a) = db.actors.get_mut(&id) {
                 a.is_actor_man = true;
+            }
+            if created {
+                let idx = db.messages.len();
+                db.created_actors.insert(id, idx);
             }
             continue;
         }

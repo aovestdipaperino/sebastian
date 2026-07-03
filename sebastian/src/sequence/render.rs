@@ -586,6 +586,11 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
                 prev_margin += box_rd[i].margin;
             }
 
+            // Created actors widen the preceding margin (truthy index check
+            // upstream: a create at message index 0 is skipped).
+            if db.created_actors.get(k).is_some_and(|&i| i != 0) {
+                prev_margin += db.actors[k].width / 2.0;
+            }
             let a = &mut db.actors[k];
             a.width = a.width.max(WIDTH);
             a.height = a.height.max(conf_height);
@@ -746,7 +751,7 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
     let mut show_numbers = false;
     bounds.activations.clear();
     let messages = db.messages.clone();
-    for msg in &messages {
+    for (msg_index, msg) in messages.iter().enumerate() {
         match msg.ty {
             NOTE => {
                 let mut nm = note_models.get(&msg.id).cloned().unwrap_or_default();
@@ -858,6 +863,14 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
                 let mut model = msg_models.get(&msg.id).cloned().unwrap_or_default();
                 model.starty = bounds.vertical_pos;
                 let line_start_y = bound_message(&mut model, &measurer, &mut bounds);
+                adjust_created_destroyed_data(
+                    msg,
+                    &mut model,
+                    line_start_y,
+                    msg_index,
+                    &mut db,
+                    &mut bounds,
+                );
                 to_draw.push(QueuedMessage {
                     model: model.clone(),
                     line_start_y,
@@ -1187,6 +1200,102 @@ fn draw_note(svg: &Element, nm: &mut NoteModel, id: &str, bounds: &mut Bounds, h
 }
 
 /// `boundMessage`.
+/// `adjustCreatedDestroyedData`: pulls the message end back to the created/
+/// destroyed actor's box edge and drops the actor's box onto the line.
+fn adjust_created_destroyed_data(
+    msg: &crate::sequence::SeqMessage,
+    model: &mut MsgModel,
+    line_start_y: f64,
+    index: usize,
+    db: &mut crate::sequence::SequenceDb,
+    bounds: &mut Bounds,
+) {
+    let receiver_adjustment =
+        |model: &mut MsgModel, bounds: &mut Bounds, actor_x: f64, from_x: f64, h: f64, adj: f64| {
+            if actor_x < from_x {
+                bounds.insert(
+                    model.stopx - adj,
+                    model.starty,
+                    model.startx,
+                    model.stopy + h / 2.0 + NOTE_MARGIN,
+                );
+                model.stopx += adj;
+            } else {
+                bounds.insert(
+                    model.startx,
+                    model.starty,
+                    model.stopx + adj,
+                    model.stopy + h / 2.0 + NOTE_MARGIN,
+                );
+                model.stopx -= adj;
+            }
+        };
+    let sender_adjustment =
+        |model: &mut MsgModel, bounds: &mut Bounds, actor_x: f64, to_x: f64, h: f64, adj: f64| {
+            if actor_x < to_x {
+                bounds.insert(
+                    model.startx - adj,
+                    model.starty,
+                    model.stopx,
+                    model.stopy + h / 2.0 + NOTE_MARGIN,
+                );
+                model.startx += adj;
+            } else {
+                bounds.insert(
+                    model.stopx,
+                    model.starty,
+                    model.startx + adj,
+                    model.stopy + h / 2.0 + NOTE_MARGIN,
+                );
+                model.startx -= adj;
+            }
+        };
+
+    if db.created_actors.get(&msg.to) == Some(&index) {
+        let (actor_x, w, h, man) = {
+            let a = &db.actors[&msg.to];
+            (a.x, a.width, a.height, a.is_actor_man)
+        };
+        let adj = if man {
+            ACTOR_TYPE_WIDTH / 2.0 + 3.0
+        } else {
+            w / 2.0 + 3.0
+        };
+        let from_x = db.actors[&msg.from].x;
+        receiver_adjustment(model, bounds, actor_x, from_x, h, adj);
+        let a = &mut db.actors[&msg.to];
+        a.starty = line_start_y - h / 2.0;
+        bounds.bump_vertical_pos(h / 2.0);
+    } else if db.destroyed_actors.get(&msg.from) == Some(&index) {
+        let (actor_x, w, h, man) = {
+            let a = &db.actors[&msg.from];
+            (a.x, a.width, a.height, a.is_actor_man)
+        };
+        // mirrorActors is true by default.
+        let adj = if man { ACTOR_TYPE_WIDTH / 2.0 } else { w / 2.0 };
+        let to_x = db.actors[&msg.to].x;
+        sender_adjustment(model, bounds, actor_x, to_x, h, adj);
+        let a = &mut db.actors[&msg.from];
+        a.stopy = Some(line_start_y - h / 2.0);
+        bounds.bump_vertical_pos(h / 2.0);
+    } else if db.destroyed_actors.get(&msg.to) == Some(&index) {
+        let (actor_x, w, h, man) = {
+            let a = &db.actors[&msg.to];
+            (a.x, a.width, a.height, a.is_actor_man)
+        };
+        let adj = if man {
+            ACTOR_TYPE_WIDTH / 2.0 + 3.0
+        } else {
+            w / 2.0 + 3.0
+        };
+        let from_x = db.actors[&msg.from].x;
+        receiver_adjustment(model, bounds, actor_x, from_x, h, adj);
+        let a = &mut db.actors[&msg.to];
+        a.stopy = Some(line_start_y - h / 2.0);
+        bounds.bump_vertical_pos(h / 2.0);
+    }
+}
+
 fn bound_message(model: &mut MsgModel, measurer: &SeqMeasurer, bounds: &mut Bounds) -> f64 {
     bounds.bump_vertical_pos(10.0);
     let (startx, stopx) = (model.startx, model.stopx);
