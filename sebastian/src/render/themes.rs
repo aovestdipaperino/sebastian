@@ -312,6 +312,81 @@ fn update_default(vars: &mut Vars) {
     set_if(vars, "rowEven", |v| {
         super::khroma::lighten(&get(v, "primaryColor"), 1.0)
     });
+    // Quadrant chart colors.
+    set(vars, "quadrant1Fill", get(vars, "primaryColor"));
+    set(
+        vars,
+        "quadrant2Fill",
+        adjust(
+            &get(vars, "primaryColor"),
+            &[('r', 5.0), ('g', 5.0), ('b', 5.0)],
+        ),
+    );
+    set(
+        vars,
+        "quadrant3Fill",
+        adjust(
+            &get(vars, "primaryColor"),
+            &[('r', 10.0), ('g', 10.0), ('b', 10.0)],
+        ),
+    );
+    set(
+        vars,
+        "quadrant4Fill",
+        adjust(
+            &get(vars, "primaryColor"),
+            &[('r', 15.0), ('g', 15.0), ('b', 15.0)],
+        ),
+    );
+    set(vars, "quadrant1TextFill", get(vars, "primaryTextColor"));
+    set(
+        vars,
+        "quadrant2TextFill",
+        adjust(
+            &get(vars, "primaryTextColor"),
+            &[('r', -5.0), ('g', -5.0), ('b', -5.0)],
+        ),
+    );
+    set(
+        vars,
+        "quadrant3TextFill",
+        adjust(
+            &get(vars, "primaryTextColor"),
+            &[('r', -10.0), ('g', -10.0), ('b', -10.0)],
+        ),
+    );
+    set(
+        vars,
+        "quadrant4TextFill",
+        adjust(
+            &get(vars, "primaryTextColor"),
+            &[('r', -15.0), ('g', -15.0), ('b', -15.0)],
+        ),
+    );
+    // Upstream operator-precedence bug: (undefined || isDark(q1)) ? lighten
+    // : darken, with darken called without an amount (NaN lightness).
+    set(vars, "quadrantPointFill", {
+        let q1 = get(vars, "quadrant1Fill");
+        if super::khroma::is_dark(&q1) {
+            super::khroma::lighten(&q1, f64::NAN)
+        } else {
+            super::khroma::darken(&q1, f64::NAN)
+        }
+    });
+    set(vars, "quadrantPointTextFill", get(vars, "primaryTextColor"));
+    set(vars, "quadrantXAxisTextFill", get(vars, "primaryTextColor"));
+    set(vars, "quadrantYAxisTextFill", get(vars, "primaryTextColor"));
+    set(
+        vars,
+        "quadrantInternalBorderStrokeFill",
+        get(vars, "primaryBorderColor"),
+    );
+    set(
+        vars,
+        "quadrantExternalBorderStrokeFill",
+        get(vars, "primaryBorderColor"),
+    );
+    set(vars, "quadrantTitleFill", get(vars, "primaryTextColor"));
     // Journey fill types.
     set(vars, "fillType0", get(vars, "primaryColor"));
     set(vars, "fillType1", get(vars, "secondaryColor"));

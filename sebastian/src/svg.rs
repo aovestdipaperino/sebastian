@@ -7,6 +7,9 @@ use std::rc::{Rc, Weak};
 /// Formats an f64 like JavaScript `String(number)`.
 #[must_use]
 pub fn js_num(n: f64) -> String {
+    if n.is_nan() {
+        return "NaN".to_owned();
+    }
     if n == 0.0 {
         // JS prints -0 as "0".
         return "0".to_owned();

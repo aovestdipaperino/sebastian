@@ -12,7 +12,17 @@ project adheres to [Semantic Versioning](https://semver.org/).
   CLI crate.
 
 ### Added
-- **Four new diagram types, byte-exact vs mermaid-cli 11.15.0:**
+- **gitGraph** (`LR` orientation) — commit/branch/merge/cherry-pick parsing,
+  branch lanes, commit bullets and labels, and the themed git palette.
+  Byte-exact modulo the `Math.random()`-seeded auto-generated commit ids and
+  a single-f32-ulp viewBox difference in Blink's rotated-rect bbox mapping.
+- **journey** (user-journey) — task/section parsing, actor legend, the
+  section color scale, and the smiley score faces. All fixtures byte-exact.
+- **quadrantChart** (experimental) — parser and renderer wired into
+  `render_diagram`, not yet covered by a byte-exact corpus and therefore
+  unverified against `mmdc`. Contributions welcome; see the README status
+  table.
+- **Four diagram types, byte-exact vs mermaid-cli 11.15.0:**
   - **pie** — d3 arc sectors (digits-3 path serializer), theme pie1-12
     palette, CSSOM legend styles.
   - **erDiagram** — entity attribute grids (erBox), crow's-foot markers,

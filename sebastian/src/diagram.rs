@@ -47,6 +47,9 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         if t == "journey" || t.starts_with("journey ") {
             return "journey";
         }
+        if t.starts_with("quadrantChart") {
+            return "quadrant";
+        }
         return "flowchart";
     }
     "flowchart"
@@ -65,6 +68,7 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
         "gantt" => crate::gantt::render_gantt(source, id).map_err(Into::into),
         "gitgraph" => crate::gitgraph::render_gitgraph(source, id).map_err(Into::into),
         "journey" => crate::journey::render_journey(source, id).map_err(Into::into),
+        "quadrant" => crate::quadrant::render_quadrant(source, id).map_err(Into::into),
         "sequence" => crate::sequence::render_sequence(source, id).map_err(Into::into),
         "timeline" => crate::timeline::render_timeline(source, id).map_err(Into::into),
         "class" => render_class(source, id).map_err(Into::into),

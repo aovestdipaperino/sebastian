@@ -3,9 +3,9 @@
 A pixel-perfect Rust port of the [mermaid.js](https://mermaid.js.org)
 diagram renderers (mermaid 11.15.0). Named after the crab from the
 mermaid. For supported diagram types — **flowchart, stateDiagram-v2,
-sequenceDiagram, classDiagram, timeline,
-pie, erDiagram, xychart-beta, gantt** — the output SVG is
-**byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
+sequenceDiagram, classDiagram, timeline, pie, erDiagram, xychart-beta,
+gantt, gitGraph, journey** — the output SVG is **byte-for-byte identical**
+to the official `mmdc` (mermaid-cli) output.
 
 The workspace contains two crates:
 
@@ -18,6 +18,60 @@ cargo run -p seb -- -i diagram.mmd -o diagram.svg
 
 The non-obvious Chrome/V8/mermaid behaviors this required are cataloged
 in [docs/NUANCES.md](docs/NUANCES.md).
+
+## Status
+
+Every "done" row is verified by a corpus test that byte-diffs sebastian's
+output against captured `mmdc` (mermaid 11.15.0) SVGs; the count is the
+number of fixtures under `sebastian/tests/`. "Byte-exact modulo …" means
+the only differences come from randomness or render-time state that
+mermaid itself embeds, so no port can match those bytes.
+
+| Diagram type | Status | Fixtures | Notes |
+|---|---|---:|---|
+| flowchart / graph | ✅ done | 553 + 14 | 544/553 corpus byte-identical; remainder is rough.js randomness and sub-0.01px arc noise |
+| sequenceDiagram | ✅ done | 37 | blocks, activations, autonumber, boxes, actor figures |
+| stateDiagram-v2 | ✅ done | 29 | 23 byte-exact, 6 modulo rough.js + random divider id |
+| classDiagram | ✅ done | 9 | byte-exact modulo rough.js rectangle/divider randomness |
+| gantt | ✅ done | 5 | byte-exact modulo the render-time today marker |
+| timeline | ✅ done | 4 | byte-exact |
+| pie | ✅ done | 2 | byte-exact |
+| erDiagram | ✅ done | 2 | byte-exact modulo rough.js randomness |
+| xychart-beta | ✅ done | 2 | byte-exact |
+| gitGraph (`LR`) | ✅ done | 2 | byte-exact modulo random commit ids + 1-ulp viewBox |
+| journey | ✅ done | 2 | byte-exact |
+| quadrantChart | 🚧 experimental | 0 | renders, but no byte-exact corpus yet — **needs verification** |
+| gitGraph (`TB` / `BT`) | ❌ not started | — | only the `LR` orientation is ported |
+| flowchart ELK layout | ❌ not started | — | `defaultRenderer: elk`; a large engine port, scoped below |
+| mindmap / architecture | ❌ not planned | — | force layouts (cose-bilkent / cytoscape), non-deterministic |
+| C4, sankey, block, packet, kanban, requirement, radar, treemap | ❌ not planned | — | no corpus demand yet; revisit when fixtures show up |
+
+## How to help
+
+The porting loop is mechanical once you have the reference output, and it
+is the same loop that got every ✅ row to byte-exact (details in
+[PORTING_NOTES.md](PORTING_NOTES.md)):
+
+1. Harvest real diagrams of the target type into a `tests/<type>_cases/`
+   directory as `.mmd` files.
+2. Render each with `mmdc` (mermaid 11.15.0, headless Chrome on macOS) to
+   capture the reference SVGs.
+3. Byte-diff sebastian's output against the reference and chase the first
+   differing byte until the diff is empty.
+4. Add a corpus test with an identical-count guard so regressions surface.
+
+The highest-leverage contributions right now:
+
+- **Verify `quadrantChart`.** It already renders; it needs a fixture
+  corpus and the byte-diff pass to promote it from experimental to done.
+- **gitGraph `TB`/`BT` orientations.** The `LR` renderer is a starting
+  point; the vertical layouts reuse most of it.
+- **Flowchart ELK layout** (`defaultRenderer: elk`) — the big one, scoped
+  in the section below.
+
+If a diagram type you need is missing, opening a PR with `.mmd` fixtures
+and their `mmdc` references is the most useful first step even before any
+Rust is written.
 
 ## What is ported
 
@@ -153,6 +207,11 @@ Two reference suites assert output against captured `mmdc` SVGs:
 - `sebastian/tests/class_corpus.rs` — 9 class diagrams (generics, notes,
   namespaces, lollipop interfaces), byte-identical modulo the rough
   rectangle/divider randomness mermaid itself embeds.
+- `sebastian/tests/gitgraph_corpus.rs` — 2 gitGraphs (`LR`), byte-identical
+  modulo the `Math.random()`-seeded auto-generated commit ids and a
+  single-f32-ulp viewBox difference in Blink's rotated-rect bbox mapping.
+- `sebastian/tests/journey_corpus.rs` — 2 user-journey diagrams, all
+  byte-identical.
 
 Reproducing the corpus required matching Chrome's text pipeline in detail:
 HTML-entity decoding via innerHTML semantics, DOMPurify tag/attribute
@@ -174,6 +233,17 @@ bytes).
 
 - The Trebuchet MS font (preinstalled on macOS and Windows) — text metrics
   and therefore the entire layout depend on it.
+
+## Flowchart ELK layout (not started)
+
+`%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%` routes layout
+through elkjs, a 1.5 MB GWT transpilation of the Java ELK *layered* engine
+(network-simplex layering, Forster-constrained crossing minimization, ELK's
+modified Brandes-Köpf placement, orthogonal edge routing, port constraints).
+The mermaid glue (`@mermaid-js/layout-elk`, ~1.3k lines) is small; the
+engine is the real work — a port larger than the original dagre port, best
+done from the readable Java sources (`eclipse/elk`) with differential
+fixtures in its own multi-session effort.
 
 ## Development
 

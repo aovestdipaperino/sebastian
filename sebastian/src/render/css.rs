@@ -462,6 +462,16 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The quadrantChart stylesheet: no diagram-specific rules.
+#[must_use]
+pub fn themed_quadrant_css(id: &str, vars: &Map<String, Value>) -> String {
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The user-journey stylesheet (port of `diagrams/user-journey/styles.js`).
 #[must_use]
 pub fn themed_journey_css(id: &str, vars: &Map<String, Value>) -> String {
