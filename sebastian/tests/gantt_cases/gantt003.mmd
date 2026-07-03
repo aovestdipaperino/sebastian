@@ -1,0 +1,8 @@
+gantt
+    dateFormat HH:mm
+    axisFormat %H:%M
+    tickInterval 1hour
+    section Ops
+        Backup   :b1, 01:00, 2h
+        Compact  :after b1, 90m
+        Restore  :03:00, 1h

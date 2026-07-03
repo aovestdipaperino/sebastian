@@ -57,37 +57,64 @@ fn civil_from_days(z: i64) -> (i64, i64, i64) {
     (if m <= 2 { y + 1 } else { y }, m, d)
 }
 
-/// Naive-local timestamp helpers (no DST — matches mmdc for diagrams that
-/// do not straddle a transition).
+/// Local-time timestamp (real epoch milliseconds; calendar arithmetic in
+/// the system timezone, matching dayjs in the rendering browser).
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Ts(pub f64);
 
+/// Epoch ms -> local civil (y, m, d, hh, mm, ss, ms).
+#[allow(clippy::cast_possible_truncation)]
+fn ts_to_civil(t: Ts) -> (i64, i64, i64, i64, i64, i64, i64) {
+    let secs = (t.0 / 1000.0).floor() as libc::time_t;
+    let ms = (t.0 - (secs as f64) * 1000.0) as i64;
+    let mut tm: libc::tm = unsafe { std::mem::zeroed() };
+    unsafe {
+        libc::localtime_r(&raw const secs, &raw mut tm);
+    }
+    (
+        i64::from(tm.tm_year) + 1900,
+        i64::from(tm.tm_mon) + 1,
+        i64::from(tm.tm_mday),
+        i64::from(tm.tm_hour),
+        i64::from(tm.tm_min),
+        i64::from(tm.tm_sec),
+        ms,
+    )
+}
+
+/// Local civil -> epoch ms (mktime, DST resolved automatically).
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+fn civil_to_ts(y: i64, m: i64, d: i64, hh: i64, mi: i64, ss: i64, ms: i64) -> Ts {
+    let mut tm: libc::tm = unsafe { std::mem::zeroed() };
+    tm.tm_year = (y - 1900) as libc::c_int;
+    tm.tm_mon = (m - 1) as libc::c_int;
+    tm.tm_mday = d as libc::c_int;
+    tm.tm_hour = hh as libc::c_int;
+    tm.tm_min = mi as libc::c_int;
+    tm.tm_sec = ss as libc::c_int;
+    tm.tm_isdst = -1;
+    let secs = unsafe { libc::mktime(&raw mut tm) };
+    Ts((secs as f64) * 1000.0 + ms as f64)
+}
+
 impl Ts {
     fn from_ymd(y: i64, m: i64, d: i64) -> Self {
-        #[allow(clippy::cast_precision_loss)]
-        Ts(days_from_civil(y, m, d) as f64 * MS_PER_DAY)
-    }
-    fn day_number(self) -> i64 {
-        #[allow(clippy::cast_possible_truncation)]
-        let d = (self.0 / MS_PER_DAY).floor() as i64;
-        d
+        civil_to_ts(y, m, d, 0, 0, 0, 0)
     }
     fn add_months(self, months: i64) -> Self {
-        let day = self.day_number();
-        let ms_in_day = self.0 - {
-            #[allow(clippy::cast_precision_loss)]
-            let v = day as f64 * MS_PER_DAY;
-            v
-        };
-        let (y, m, d) = civil_from_days(day);
+        let (y, m, d, hh, mi, ss, ms) = ts_to_civil(self);
         let total = y * 12 + (m - 1) + months;
         let ny = total.div_euclid(12);
         let nm = total.rem_euclid(12) + 1;
-        // Clamp the day-of-month like dayjs does.
         let dim = days_in_month(ny, nm);
-        let nd = d.min(dim);
-        #[allow(clippy::cast_precision_loss)]
-        Ts(days_from_civil(ny, nm, nd) as f64 * MS_PER_DAY + ms_in_day)
+        civil_to_ts(ny, nm, d.min(dim), hh, mi, ss, ms)
+    }
+    fn add_days(self, days: i64) -> Self {
+        // Calendar-day addition: same wall clock time `days` later.
+        let (y, m, d, hh, mi, ss, ms) = ts_to_civil(self);
+        let day = days_from_civil(y, m, d) + days;
+        let (ny, nm, nd) = civil_from_days(day);
+        civil_to_ts(ny, nm, nd, hh, mi, ss, ms)
     }
 }
 
@@ -99,47 +126,188 @@ fn days_in_month(y: i64, m: i64) -> i64 {
     ) - days_from_civil(y, m, 1)
 }
 
-/// Strict `dayjs(str, format)` for the common gantt formats.
+/// Local "today at midnight" (dayjs defaults missing date parts to the
+/// current local date).
+fn today_midnight() -> Ts {
+    #[allow(clippy::cast_precision_loss)]
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0.0, |d| d.as_millis() as f64);
+    let (y, m, d, ..) = ts_to_civil(Ts(now));
+    civil_to_ts(y, m, d, 0, 0, 0, 0)
+}
+
+/// Strict `dayjs(str, format)` over the common gantt token formats
+/// (YYYY, MM, DD, HH, mm, ss + literal separators; `x`/`X` timestamps).
 fn parse_date(s: &str, format: &str) -> Option<Ts> {
     let s = s.trim();
-    match format.trim() {
-        "YYYY-MM-DD" => {
-            let parts: Vec<&str> = s.split('-').collect();
-            if parts.len() != 3 || parts[0].len() != 4 || parts[1].len() != 2 || parts[2].len() != 2
-            {
+    let format = format.trim();
+    if format == "x" || format == "X" {
+        let v: f64 = s.parse().ok()?;
+        return Some(Ts(if format == "x" { v } else { v * 1000.0 }));
+    }
+    let mut y: Option<i64> = None;
+    let mut mo: Option<i64> = None;
+    let mut d: Option<i64> = None;
+    let mut hh: i64 = 0;
+    let mut mi: i64 = 0;
+    let mut ss: i64 = 0;
+    let fb = format.as_bytes();
+    let sb = s.as_bytes();
+    let mut fi = 0;
+    let mut si = 0;
+    let take_digits = |sb: &[u8], si: usize, n: usize| -> Option<(i64, usize)> {
+        if si + n > sb.len() || !sb[si..si + n].iter().all(u8::is_ascii_digit) {
+            return None;
+        }
+        std::str::from_utf8(&sb[si..si + n])
+            .ok()?
+            .parse()
+            .ok()
+            .map(|v| (v, si + n))
+    };
+    while fi < fb.len() {
+        let rest = &format[fi..];
+        if rest.starts_with("YYYY") {
+            let (v, ni) = take_digits(sb, si, 4)?;
+            y = Some(v);
+            si = ni;
+            fi += 4;
+        } else if rest.starts_with("MM") {
+            let (v, ni) = take_digits(sb, si, 2)?;
+            mo = Some(v);
+            si = ni;
+            fi += 2;
+        } else if rest.starts_with("DD") {
+            let (v, ni) = take_digits(sb, si, 2)?;
+            d = Some(v);
+            si = ni;
+            fi += 2;
+        } else if rest.starts_with("HH") {
+            let (v, ni) = take_digits(sb, si, 2)?;
+            hh = v;
+            si = ni;
+            fi += 2;
+        } else if rest.starts_with("mm") {
+            let (v, ni) = take_digits(sb, si, 2)?;
+            mi = v;
+            si = ni;
+            fi += 2;
+        } else if rest.starts_with("ss") {
+            let (v, ni) = take_digits(sb, si, 2)?;
+            ss = v;
+            si = ni;
+            fi += 2;
+        } else {
+            if si >= sb.len() || sb[si] != fb[fi] {
                 return None;
             }
-            let y: i64 = parts[0].parse().ok()?;
-            let m: i64 = parts[1].parse().ok()?;
-            let d: i64 = parts[2].parse().ok()?;
+            si += 1;
+            fi += 1;
+        }
+    }
+    if si != sb.len() {
+        return None;
+    }
+    let base = match (y, mo, d) {
+        (Some(y), Some(m), Some(d)) => {
             if !(1..=12).contains(&m) || d < 1 || d > days_in_month(y, m) {
                 return None;
             }
-            Some(Ts::from_ymd(y, m, d))
+            Ts::from_ymd(y, m, d)
         }
-        _ => None,
+        (None, None, None) => today_midnight(),
+        _ => return None,
+    };
+    if !(0..24).contains(&hh) || !(0..60).contains(&mi) || !(0..60).contains(&ss) {
+        return None;
     }
+    #[allow(clippy::cast_precision_loss)]
+    Some(Ts(((hh * 60 + mi) * 60 + ss) as f64 * 1000.0 + base.0))
 }
 
-/// `dayjs.add(value, unit)` in naive time.
+/// `date.format` for the supported token formats.
+fn format_date(t: Ts, format: &str) -> String {
+    let (y, m, d, hh, mi, ss, _) = ts_to_civil(t);
+    let mut out = String::new();
+    let mut fi = 0;
+    let fmt = format.trim();
+    while fi < fmt.len() {
+        let rest = &fmt[fi..];
+        if rest.starts_with("YYYY") {
+            out.push_str(&format!("{y:04}"));
+            fi += 4;
+        } else if rest.starts_with("MM") {
+            out.push_str(&format!("{m:02}"));
+            fi += 2;
+        } else if rest.starts_with("DD") {
+            out.push_str(&format!("{d:02}"));
+            fi += 2;
+        } else if rest.starts_with("HH") {
+            out.push_str(&format!("{hh:02}"));
+            fi += 2;
+        } else if rest.starts_with("mm") {
+            out.push_str(&format!("{mi:02}"));
+            fi += 2;
+        } else if rest.starts_with("ss") {
+            out.push_str(&format!("{ss:02}"));
+            fi += 2;
+        } else {
+            out.push_str(&rest[..1]);
+            fi += 1;
+        }
+    }
+    out
+}
+
+/// isoWeekday: Monday = 1 .. Sunday = 7.
+fn iso_weekday(t: Ts) -> i64 {
+    let (y, m, d, ..) = ts_to_civil(t);
+    // Epoch day 0 (1970-01-01) was a Thursday (isoWeekday 4).
+    (days_from_civil(y, m, d) + 3).rem_euclid(7) + 1
+}
+
+const WEEKDAY_NAMES: [&str; 7] = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+];
+
+/// `isInvalidDate`.
+fn is_invalid_date(date: Ts, date_format: &str, excludes: &[String], includes: &[String]) -> bool {
+    let formatted = format_date(date, date_format);
+    let date_only = format_date(date, "YYYY-MM-DD");
+    if includes.iter().any(|i| *i == formatted || *i == date_only) {
+        return false;
+    }
+    let wd = iso_weekday(date);
+    if excludes.iter().any(|e| e == "weekends") && (wd == 6 || wd == 7) {
+        return true;
+    }
+    let name = WEEKDAY_NAMES[usize::try_from(wd - 1).unwrap_or(0)];
+    if excludes.iter().any(|e| e == name) {
+        return true;
+    }
+    excludes.iter().any(|e| *e == formatted || *e == date_only)
+}
+
+/// `dayjs.add(value, unit)`: day/week/month/year are calendar-based (a day
+/// across a DST transition is 23 or 25 hours); time units are absolute.
+#[allow(clippy::cast_possible_truncation)]
 fn add_duration(t: Ts, value: f64, unit: &str) -> Ts {
     match unit {
         "ms" => Ts(t.0 + value),
         "s" => Ts(value.mul_add(1000.0, t.0)),
         "m" => Ts(value.mul_add(60_000.0, t.0)),
         "h" => Ts(value.mul_add(3_600_000.0, t.0)),
-        "d" => Ts(value.mul_add(MS_PER_DAY, t.0)),
-        "w" => Ts(value.mul_add(7.0 * MS_PER_DAY, t.0)),
-        "M" => {
-            #[allow(clippy::cast_possible_truncation)]
-            let whole = value.trunc() as i64;
-            t.add_months(whole)
-        }
-        "y" => {
-            #[allow(clippy::cast_possible_truncation)]
-            let whole = value.trunc() as i64;
-            t.add_months(whole * 12)
-        }
+        "d" => t.add_days(value.trunc() as i64),
+        "w" => t.add_days(value.trunc() as i64 * 7),
+        "M" => t.add_months(value.trunc() as i64),
+        "y" => t.add_months(value.trunc() as i64 * 12),
         _ => t,
     }
 }
@@ -153,6 +321,7 @@ struct Task {
     section: String,
     start: Ts,
     end: Ts,
+    render_end: Option<Ts>,
     order: usize,
     active: bool,
     done: bool,
@@ -165,6 +334,11 @@ struct Db {
     title: String,
     date_format: String,
     axis_format: String,
+    excludes: Vec<String>,
+    includes: Vec<String>,
+    today_marker: String,
+    tick_interval: String,
+    weekday: String,
     tasks: Vec<Task>,
     task_cnt: usize,
 }
@@ -261,12 +435,39 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
             section = rest.trim().to_owned();
             continue;
         }
+        if let Some(rest) = line.strip_prefix("excludes") {
+            db.excludes = rest
+                .trim()
+                .to_lowercase()
+                .split(|c: char| c.is_whitespace() || c == ',')
+                .filter(|t| !t.is_empty())
+                .map(str::to_owned)
+                .collect();
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("includes") {
+            db.includes = rest
+                .trim()
+                .to_lowercase()
+                .split(|c: char| c.is_whitespace() || c == ',')
+                .filter(|t| !t.is_empty())
+                .map(str::to_owned)
+                .collect();
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("todayMarker") {
+            db.today_marker = rest.trim().to_owned();
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("tickInterval") {
+            db.tick_interval = rest.trim().to_owned();
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("weekday") {
+            db.weekday = rest.trim().to_owned();
+            continue;
+        }
         for kw in [
-            "excludes",
-            "includes",
-            "todayMarker",
-            "tickInterval",
-            "weekday",
             "displayMode",
             "inclusiveEndDates",
             "topAxis",
@@ -344,7 +545,31 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
                 });
             }
         };
-        let end = db.get_end(start, &end_data);
+        let mut end = db.get_end(start, &end_data);
+        // checkTaskDates: push the end date past excluded days.
+        let manual_end = parse_date(&end_data, "YYYY-MM-DD").is_some();
+        let mut render_end: Option<Ts> = None;
+        if !db.excludes.is_empty() && !manual_end {
+            let mut st = Ts(add_duration(start, 1.0, "d").0);
+            let max_end = add_duration(end, 10_000.0, "d");
+            let mut invalid = false;
+            while st.0 <= end.0 {
+                if !invalid {
+                    render_end = Some(end);
+                }
+                invalid = is_invalid_date(st, &db.date_format, &db.excludes, &db.includes);
+                if invalid {
+                    end = add_duration(end, 1.0, "d");
+                    if end.0 > max_end.0 {
+                        return Err(GanttParseError {
+                            message: "Failed to find a valid date not excluded by excludes"
+                                .to_owned(),
+                        });
+                    }
+                }
+                st = add_duration(st, 1.0, "d");
+            }
+        }
         let order = db.tasks.len();
         db.tasks.push(Task {
             id,
@@ -352,6 +577,7 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
             section: section.clone(),
             start,
             end,
+            render_end,
             order,
             active,
             done,
@@ -376,27 +602,24 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
 
 /// Naive-time interval floors.
 fn floor_day(t: f64) -> f64 {
-    (t / MS_PER_DAY).floor() * MS_PER_DAY
+    let (y, m, d, ..) = ts_to_civil(Ts(t));
+    civil_to_ts(y, m, d, 0, 0, 0, 0).0
 }
 fn floor_week(t: f64) -> f64 {
-    // timeSunday: epoch day 0 (1970-01-01) was a Thursday (weekday 4).
-    let day = (t / MS_PER_DAY).floor();
-    let weekday = (day + 4.0).rem_euclid(7.0);
-    (day - weekday) * MS_PER_DAY
+    // timeSunday (local).
+    let (y, m, d, ..) = ts_to_civil(Ts(t));
+    let day = days_from_civil(y, m, d);
+    let weekday = (day + 4).rem_euclid(7);
+    let (ny, nm, nd) = civil_from_days(day - weekday);
+    civil_to_ts(ny, nm, nd, 0, 0, 0, 0).0
 }
 fn floor_month(t: f64) -> f64 {
-    #[allow(clippy::cast_possible_truncation)]
-    let (y, m, _) = civil_from_days((t / MS_PER_DAY).floor() as i64);
-    #[allow(clippy::cast_precision_loss)]
-    let v = days_from_civil(y, m, 1) as f64 * MS_PER_DAY;
-    v
+    let (y, m, ..) = ts_to_civil(Ts(t));
+    civil_to_ts(y, m, 1, 0, 0, 0, 0).0
 }
 fn floor_year(t: f64) -> f64 {
-    #[allow(clippy::cast_possible_truncation)]
-    let (y, _, _) = civil_from_days((t / MS_PER_DAY).floor() as i64);
-    #[allow(clippy::cast_precision_loss)]
-    let v = days_from_civil(y, 1, 1) as f64 * MS_PER_DAY;
-    v
+    let (y, ..) = ts_to_civil(Ts(t));
+    civil_to_ts(y, 1, 1, 0, 0, 0, 0).0
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -432,22 +655,18 @@ fn interval_floor(interval: Interval, t: f64) -> f64 {
             (t / (3_600_000.0 * f64::from(k))).floor() * 3_600_000.0 * f64::from(k)
         }
         Interval::Day(k) => {
-            let d = floor_day(t);
-            if k == 1 {
-                d
-            } else {
+            let mut dd = floor_day(t);
+            if k > 1 {
                 // timeDay.every(k) filters on (date-of-month - 1) % k == 0.
-                let mut dd = d;
                 loop {
-                    #[allow(clippy::cast_possible_truncation)]
-                    let (_, _, dom) = civil_from_days((dd / MS_PER_DAY) as i64);
+                    let (_, _, dom, ..) = ts_to_civil(Ts(dd));
                     if (dom - 1).rem_euclid(i64::from(k)) == 0 {
                         break;
                     }
-                    dd -= MS_PER_DAY;
+                    dd = Ts(dd).add_days(-1).0;
                 }
-                dd
             }
+            dd
         }
         Interval::Week => floor_week(t),
         Interval::Month(k) => {
@@ -455,26 +674,27 @@ fn interval_floor(interval: Interval, t: f64) -> f64 {
             if k == 1 {
                 m
             } else {
-                let (y, mo, _) = civil_from_days((m / MS_PER_DAY) as i64);
+                let (y, mo, ..) = ts_to_civil(Ts(m));
                 let months = y * 12 + (mo - 1);
-                let rem = months.rem_euclid(i64::from(k));
-                let months = months - rem;
-                #[allow(clippy::cast_precision_loss)]
-                let v = days_from_civil(months.div_euclid(12), months.rem_euclid(12) + 1, 1) as f64
-                    * MS_PER_DAY;
-                v
+                let months = months - months.rem_euclid(i64::from(k));
+                civil_to_ts(
+                    months.div_euclid(12),
+                    months.rem_euclid(12) + 1,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                )
+                .0
             }
         }
         Interval::Year(k) => {
-            let y0 = floor_year(t);
-            #[allow(clippy::cast_possible_truncation)]
-            let (y, _, _) = civil_from_days((y0 / MS_PER_DAY) as i64);
+            let (y, ..) = ts_to_civil(Ts(floor_year(t)));
             #[allow(clippy::cast_possible_truncation)]
             let k = k as i64;
             let y = if k > 1 { y - y.rem_euclid(k) } else { y };
-            #[allow(clippy::cast_precision_loss)]
-            let v = days_from_civil(y, 1, 1) as f64 * MS_PER_DAY;
-            v
+            civil_to_ts(y, 1, 1, 0, 0, 0, 0).0
         }
     }
 }
@@ -487,22 +707,21 @@ fn interval_step(interval: Interval, t: f64) -> f64 {
         Interval::Hour(k) => t + 3_600_000.0 * f64::from(k),
         Interval::Day(k) => {
             if k == 1 {
-                t + MS_PER_DAY
+                Ts(t).add_days(1).0
             } else {
                 // Advance day by day to the next (dom-1) % k == 0.
-                let mut dd = t + MS_PER_DAY;
+                let mut dd = Ts(t).add_days(1);
                 loop {
-                    #[allow(clippy::cast_possible_truncation)]
-                    let (_, _, dom) = civil_from_days((dd / MS_PER_DAY) as i64);
+                    let (_, _, dom, ..) = ts_to_civil(dd);
                     if (dom - 1).rem_euclid(i64::from(k)) == 0 {
                         break;
                     }
-                    dd += MS_PER_DAY;
+                    dd = dd.add_days(1);
                 }
-                dd
+                dd.0
             }
         }
-        Interval::Week => t + 7.0 * MS_PER_DAY,
+        Interval::Week => Ts(t).add_days(7).0,
         Interval::Month(k) => Ts(t).add_months(i64::from(k)).0,
         Interval::Year(k) => {
             #[allow(clippy::cast_possible_truncation)]
@@ -515,6 +734,35 @@ fn interval_step(interval: Interval, t: f64) -> f64 {
 fn interval_ceil(interval: Interval, t: f64) -> f64 {
     let f = interval_floor(interval, t);
     if f < t { interval_step(interval, f) } else { f }
+}
+
+/// `^([1-9]\d*)(millisecond|second|minute|hour|day|week|month)$`.
+fn parse_tick_interval(s: &str) -> Option<(u32, &str)> {
+    let s = s.trim();
+    if s.is_empty() {
+        return None;
+    }
+    let split = s.find(|c: char| !c.is_ascii_digit())?;
+    let every: u32 = s[..split].parse().ok()?;
+    if every == 0 || s[..split].starts_with('0') {
+        return None;
+    }
+    let unit = &s[split..];
+    if [
+        "millisecond",
+        "second",
+        "minute",
+        "hour",
+        "day",
+        "week",
+        "month",
+    ]
+    .contains(&unit)
+    {
+        Some((every, unit))
+    } else {
+        None
+    }
 }
 
 /// d3-scale time `tickInterval(count)` for the default count 10.
@@ -589,18 +837,7 @@ fn d3_tick_step(start: f64, stop: f64, count: f64) -> f64 {
 
 /// d3 `timeFormat` subset.
 fn time_format(fmt: &str, t: f64) -> String {
-    #[allow(clippy::cast_possible_truncation)]
-    let day = (t / MS_PER_DAY).floor() as i64;
-    let (y, m, d) = civil_from_days(day);
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    let ms_in_day = (t - {
-        #[allow(clippy::cast_precision_loss)]
-        let v = day as f64 * MS_PER_DAY;
-        v
-    }) as i64;
-    let hh = ms_in_day / 3_600_000;
-    let mm = (ms_in_day / 60_000) % 60;
-    let ss = (ms_in_day / 1000) % 60;
+    let (y, m, d, hh, mm, ss, _) = ts_to_civil(Ts(t));
     let mut out = String::new();
     let mut chars = fmt.chars().peekable();
     while let Some(c) = chars.next() {
@@ -722,6 +959,74 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
     );
     let _empty = append(&svg, "g");
 
+    let gap = BAR_HEIGHT + BAR_GAP;
+
+    // --- drawExcludeDays ---
+    if !db.excludes.is_empty() || !db.includes.is_empty() {
+        let g = append(&svg, "g");
+        struct Range {
+            start: Ts,
+            end: Ts,
+        }
+        let mut ranges: Vec<Range> = Vec::new();
+        let mut range: Option<Range> = None;
+        let mut d = Ts(min_time);
+        while d.0 <= max_time {
+            if is_invalid_date(d, &db.date_format, &db.excludes, &db.includes) {
+                match &mut range {
+                    Some(r) => r.end = d,
+                    None => range = Some(Range { start: d, end: d }),
+                }
+            } else if let Some(r) = range.take() {
+                ranges.push(r);
+            }
+            d = add_duration(d, 1.0, "d");
+        }
+        if let Some(r) = range.take() {
+            ranges.push(r);
+        }
+        for (i, r) in ranges.iter().enumerate() {
+            let rect = append(&g, "rect");
+            set_attr(
+                &rect,
+                "id",
+                format!("{id}-exclude-{}", format_date(r.start, "YYYY-MM-DD")),
+            );
+            let start_of_day = Ts(floor_day(r.start.0));
+            let end_of_day = {
+                let (y, m, d, ..) = ts_to_civil(r.end);
+                civil_to_ts(y, m, d, 23, 59, 59, 999)
+            };
+            set_attr(&rect, "x", js_num(scale(start_of_day.0) + LEFT_PADDING));
+            set_attr(&rect, "y", js_num(GRID_LINE_START_PADDING));
+            set_attr(
+                &rect,
+                "width",
+                js_num(scale(end_of_day.0) - scale(start_of_day.0)),
+            );
+            set_attr(
+                &rect,
+                "height",
+                js_num(h - TOP_PADDING - GRID_LINE_START_PADDING),
+            );
+            #[allow(clippy::cast_precision_loss)]
+            let origin_y = (i as f64).mul_add(gap, 0.5 * h);
+            set_attr(
+                &rect,
+                "transform-origin",
+                format!(
+                    "{}px {}px",
+                    js_num(
+                        0.5f64.mul_add(scale(r.end.0) - scale(r.start.0), scale(r.start.0))
+                            + LEFT_PADDING
+                    ),
+                    js_num(origin_y)
+                ),
+            );
+            set_attr(&rect, "class", "exclude-range");
+        }
+    }
+
     // --- makeGrid (d3 axisBottom) ---
     {
         let grid = append(&svg, "g");
@@ -760,7 +1065,18 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             ),
         );
 
-        let interval = time_tick_interval(min_time, max_time, 10.0);
+        let mut interval = time_tick_interval(min_time, max_time, 10.0);
+        if let Some((every, unit)) = parse_tick_interval(&db.tick_interval) {
+            interval = match unit {
+                "millisecond" => Interval::Millisecond,
+                "second" => Interval::Second(every),
+                "minute" => Interval::Minute(every),
+                "hour" => Interval::Hour(every),
+                "day" => Interval::Day(every),
+                "week" => Interval::Week,
+                _ => Interval::Month(every),
+            };
+        }
         let ticks = interval_range(interval, min_time, max_time + 1.0);
         for tick in ticks {
             let g = append(&grid, "g");
@@ -786,7 +1102,6 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
     }
 
     // --- drawRects: section background rows ---
-    let gap = BAR_HEIGHT + BAR_GAP;
     {
         let g = append(&svg, "g");
         // uniqueTasks by order over the sorted array.
@@ -821,6 +1136,7 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             set_attr(&rect, "ry", "3");
             let sx = scale(t.start.0);
             let ex = scale(t.end.0);
+            let rex = scale(t.render_end.unwrap_or(t.end).0);
             let x = if t.milestone {
                 0.5f64.mul_add(ex - sx, sx) + LEFT_PADDING - 0.5 * BAR_HEIGHT
             } else {
@@ -833,7 +1149,7 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             set_attr(
                 &rect,
                 "width",
-                js_num(if t.milestone { BAR_HEIGHT } else { ex - sx }),
+                js_num(if t.milestone { BAR_HEIGHT } else { rex - sx }),
             );
             set_attr(&rect, "height", js_num(BAR_HEIGHT));
             set_attr(
@@ -877,11 +1193,12 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             set_attr(&text, "font-size", js_num(FONT_SIZE));
             let sx = scale(t.start.0);
             let ex = scale(t.end.0);
+            let rex = scale(t.render_end.unwrap_or(t.end).0);
             let (start_x, end_x) = if t.milestone {
                 let s = sx + 0.5f64.mul_add(ex - sx, -(0.5 * BAR_HEIGHT));
                 (s, s + BAR_HEIGHT)
             } else {
-                (sx, ex)
+                (sx, rex)
             };
             let text_width = measurer.measure_width(&collapse_ws(&t.name), FONT_SIZE);
             let x = if text_width > end_x - start_x {
@@ -921,8 +1238,9 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             if t.milestone {
                 task_type += " milestoneText";
             }
-            let class = if text_width > end_x - start_x {
-                if 1.5f64.mul_add(LEFT_PADDING, end_x + text_width) > w {
+            let class_end_x = if t.milestone { sx + BAR_HEIGHT } else { ex };
+            let class = if text_width > class_end_x - sx {
+                if 1.5f64.mul_add(LEFT_PADDING, class_end_x + text_width) > w {
                     format!(" taskTextOutsideLeft taskTextOutside{sn} {task_type}")
                 } else {
                     format!(
@@ -976,28 +1294,30 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             let tspan = append(&text, "tspan");
             set_attr(&tspan, "alignment-baseline", "central");
             set_attr(&tspan, "x", "10");
-            set_text(&tspan, name);
+            if !name.is_empty() {
+                set_text(&tspan, name);
+            }
         }
     }
 
     // --- today marker ---
-    {
+    if db.today_marker != "off" {
         let g = append(&svg, "g");
         set_attr(&g, "class", "today");
         let line = append(&g, "line");
-        let now_ms = {
-            #[allow(clippy::cast_precision_loss)]
-            let ms = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_or(0.0, |d| d.as_millis() as f64);
-            ms + local_utc_offset_ms()
-        };
+        #[allow(clippy::cast_precision_loss)]
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0.0, |d| d.as_millis() as f64);
         let x = scale(now_ms) + LEFT_PADDING;
         set_attr(&line, "x1", js_num(x));
         set_attr(&line, "x2", js_num(x));
         set_attr(&line, "y1", js_num(TITLE_TOP_MARGIN));
         set_attr(&line, "y2", js_num(h - TITLE_TOP_MARGIN));
         set_attr(&line, "class", "today");
+        if !db.today_marker.is_empty() {
+            set_attr(&line, "style", db.today_marker.replace(',', ";"));
+        }
     }
 
     // --- title ---
@@ -1012,30 +1332,4 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
     let mut out = String::new();
     serialize(&svg, &mut out);
     Ok(out)
-}
-
-/// Local timezone offset in milliseconds (from the `TZ`-aware `date`
-/// output); today-marker positions are masked in tests, so precision is
-/// not critical.
-fn local_utc_offset_ms() -> f64 {
-    use std::sync::OnceLock;
-    static OFFSET: OnceLock<f64> = OnceLock::new();
-    *OFFSET.get_or_init(|| {
-        std::process::Command::new("date")
-            .arg("+%z")
-            .output()
-            .ok()
-            .and_then(|o| String::from_utf8(o.stdout).ok())
-            .and_then(|s| {
-                let s = s.trim();
-                if s.len() < 5 {
-                    return None;
-                }
-                let sign = if s.starts_with('-') { -1.0 } else { 1.0 };
-                let hh: f64 = s[1..3].parse().ok()?;
-                let mm: f64 = s[3..5].parse().ok()?;
-                Some(sign * hh.mul_add(60.0, mm) * 60_000.0)
-            })
-            .unwrap_or(0.0)
-    })
 }

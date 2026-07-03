@@ -586,6 +586,7 @@ version = "0.1.0"
 dependencies = [
  "core-math",
  "indexmap",
+ "libc",
  "resvg",
  "serde_json",
  "ttf-parser 0.25.1",

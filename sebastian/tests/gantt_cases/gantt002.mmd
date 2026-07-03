@@ -1,0 +1,11 @@
+gantt
+    title Weekend excludes
+    dateFormat YYYY-MM-DD
+    excludes weekends
+    section Build
+        Spec       :done, s1, 2024-03-01, 4d
+        Implement  :active, crit, i1, after s1, 6d
+        Milestone  :milestone, m1, 2024-03-12, 0d
+    section Ship
+        Test       :t1, after i1, 3d
+        Release    :crit, after t1, 2d

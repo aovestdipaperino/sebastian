@@ -1,6 +1,10 @@
 //! Corpus test: gantt charts with official mermaid-cli (mermaid 11.15.0)
 //! output as the reference. The today-marker line x position depends on the
-//! render time, so it is masked before comparison.
+//! render time, so it is masked before comparison. Output also depends on
+//! the system timezone (dayjs local-time semantics, including DST); these
+//! references were generated in `America/Los_Angeles`. Output also depends
+//! on the system timezone (dayjs local-time semantics, incl. DST); these
+//! references were generated in `America/Los_Angeles`.
 
 use sebastian::render_diagram;
 

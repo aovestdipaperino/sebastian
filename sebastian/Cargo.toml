@@ -9,6 +9,7 @@ license.workspace = true
 
 [dependencies]
 core-math = "1.1.1"
+libc = "0.2"
 indexmap = "2"
 serde_json = "1.0.150"
 ttf-parser = "0.25.1"
