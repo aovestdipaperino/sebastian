@@ -626,7 +626,7 @@ dependencies = [
 
 [[package]]
 name = "seb"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "logo-art",
  "sebastian",
@@ -634,7 +634,7 @@ dependencies = [
 
 [[package]]
 name = "sebastian"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "core-math",
  "indexmap",

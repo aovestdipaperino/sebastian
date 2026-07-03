@@ -6,6 +6,9 @@ edition.workspace = true
 authors.workspace = true
 repository.workspace = true
 license.workspace = true
+# Keep the published tarball lean: byte-exact test corpora and the logo
+# are not needed by downstream consumers (fonts/ and default_theme.css are).
+exclude = ["tests/**", "resources/**"]
 
 [dependencies]
 core-math = "1.1.1"

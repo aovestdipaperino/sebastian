@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-07-03
+
+### Changed
+- Trimmed the published `sebastian` tarball ~90% (16.4 MiB → 1.2 MiB) by
+  excluding the test corpora and logo (`exclude = ["tests/**",
+  "resources/**"]`); fonts and the theme CSS are still bundled.
+
+## [0.1.0] — 2026-07-03
+
+First crates.io release: `sebastian` (library) and `seb` (CLI).
+
 ## [Unreleased]
 
 ### Changed
