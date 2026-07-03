@@ -313,7 +313,7 @@ const CSS_NAMED_COLORS: &[&str] = &[
     "revert-layer",
 ];
 
-/// `parseBoxData`: leading color token (or rgb()/hsl() function) + title.
+/// `parseBoxData`: leading color token (or `rgb()/hsl()` function) + title.
 fn parse_box_data(s: &str) -> (String, Option<String>) {
     let lower = s.to_lowercase();
     let (color, rest) = if ["rgb", "rgba", "hsl", "hsla"].iter().any(|f| {
@@ -403,10 +403,8 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
                 db.add_actor(rest, None);
                 rest.to_owned()
             };
-            if is_actor_man {
-                if let Some(a) = db.actors.get_mut(&id) {
-                    a.is_actor_man = true;
-                }
+            if is_actor_man && let Some(a) = db.actors.get_mut(&id) {
+                a.is_actor_man = true;
             }
             continue;
         }

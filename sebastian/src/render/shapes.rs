@@ -1250,7 +1250,7 @@ fn er_box(
         let mut n = node.borrow_mut();
         if !n.er_alias.is_empty() {
             let alias = n.er_alias.clone();
-            n.label = alias.clone();
+            n.label.clone_from(&alias);
             n.label_raw = alias;
         }
     }
@@ -1315,6 +1315,7 @@ fn er_box(
     let name_w = name_bbox.0;
     let _ = &mut name_h;
 
+    #[allow(clippy::struct_field_names)]
     struct Row {
         y_offset: f64,
         row_height: f64,

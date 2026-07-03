@@ -3,7 +3,16 @@
 //! `ganttRenderer.js` (d3 scaleTime rangeRound, d3-time ticks, d3-axis
 //! bottom markup).
 
-use crate::svg::{Element, append, js_num, serialize, set_attr, set_text};
+#![allow(
+    clippy::assigning_clones,
+    clippy::format_push_string,
+    clippy::match_same_arms,
+    clippy::while_let_loop,
+    clippy::struct_excessive_bools,
+    clippy::struct_field_names
+)]
+
+use crate::svg::{append, js_num, serialize, set_attr, set_text};
 
 /// A parse error for gantt source.
 #[derive(Debug)]
@@ -980,8 +989,7 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             #[allow(clippy::cast_precision_loss)]
             let ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_millis() as f64)
-                .unwrap_or(0.0);
+                .map_or(0.0, |d| d.as_millis() as f64);
             ms + local_utc_offset_ms()
         };
         let x = scale(now_ms) + LEFT_PADDING;

@@ -1,5 +1,5 @@
 //! Unit tests for `dagre::add_border_segments`, which adds left/right border
-//! dummy nodes for each rank a cluster (a node with min_rank/max_rank) spans.
+//! dummy nodes for each rank a cluster (a node with `min_rank/max_rank`) spans.
 
 use std::cell::RefCell;
 use std::rc::Rc;

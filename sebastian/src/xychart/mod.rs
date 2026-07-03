@@ -2,6 +2,12 @@
 //! direct port of the chartBuilder (orchestrator, band/linear axes, bar and
 //! line plots) plus `xychartRenderer.ts`.
 
+#![allow(
+    clippy::assigning_clones,
+    clippy::struct_excessive_bools,
+    clippy::neg_cmp_op_on_partial_ord
+)]
+
 use crate::svg::{Element, append, js_num, serialize, set_attr, set_text};
 
 /// A parse error for xychart source.
@@ -203,10 +209,10 @@ fn unquote(s: &str) -> String {
 /// `"title" rest` → (title, rest); or single unquoted token.
 fn take_text(s: &str) -> (String, &str) {
     let s = s.trim();
-    if let Some(r) = s.strip_prefix('"') {
-        if let Some(end) = r.find('"') {
-            return (r[..end].to_owned(), r[end + 1..].trim());
-        }
+    if let Some(r) = s.strip_prefix('"')
+        && let Some(end) = r.find('"')
+    {
+        return (r[..end].to_owned(), r[end + 1..].trim());
     }
     // Unquoted: up to a '[' or a number range.
     (String::new(), s)
@@ -373,7 +379,7 @@ fn d3_ticks(start: f64, stop: f64, count: f64) -> Vec<f64> {
             i2 = i2_;
             inc = inc_;
         }
-        if i2 < i1 && 0.5 <= count && count < 2.0 {
+        if i2 < i1 && (0.5..2.0).contains(&count) {
             return tick_spec(start, stop, count * 2.0);
         }
         (i1, i2, inc)

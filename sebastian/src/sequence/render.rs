@@ -571,19 +571,19 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
             let bi = db.actors[k].box_index;
 
             // end of box
-            if let Some(pb) = prev_box {
-                if prev_box != bi {
-                    box_order.push(pb);
-                    prev_margin += BOX_MARGIN + box_rd[pb].margin;
-                }
+            if let Some(pb) = prev_box
+                && prev_box != bi
+            {
+                box_order.push(pb);
+                prev_margin += BOX_MARGIN + box_rd[pb].margin;
             }
             // new box
-            if let Some(i) = bi {
-                if bi != prev_box {
-                    box_rd[i].x = prev_width + prev_margin;
-                    box_rd[i].y = 0.0;
-                    prev_margin += box_rd[i].margin;
-                }
+            if let Some(i) = bi
+                && bi != prev_box
+            {
+                box_rd[i].x = prev_width + prev_margin;
+                box_rd[i].y = 0.0;
+                prev_margin += box_rd[i].margin;
             }
 
             let a = &mut db.actors[k];
@@ -1392,7 +1392,7 @@ fn draw_message(
     }
 }
 
-/// `drawActivation`: rect into the DOM anchor created at ACTIVE_START.
+/// `drawActivation`: rect into the DOM anchor created at `ACTIVE_START`.
 fn draw_activation(
     anchor: &Element,
     data: &Activation,

@@ -1,4 +1,4 @@
-//! Unit tests for the flowchart front-end: `parse` (source -> FlowDb) and the
+//! Unit tests for the flowchart front-end: `parse` (source -> `FlowDb`) and the
 //! pure text-normalization helpers it relies on. The parser is otherwise only
 //! exercised end-to-end by the rendering corpus.
 

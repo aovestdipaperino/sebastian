@@ -85,6 +85,7 @@ fn split_class_name_and_type(id: &str) -> (String, String) {
 
 /// `parseGenericTypes`: rewrites `~...~` pairs to `<...>`, outermost first
 /// (`Array~Array~string~~` -> `Array<Array<string>>`).
+#[allow(clippy::while_let_loop)]
 fn parse_generic_types(input: &str) -> String {
     let mut out = input.to_owned();
     loop {

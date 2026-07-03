@@ -1,6 +1,8 @@
 //! pie chart support: parser (`pieParser.ts` subset), and a direct port of
 //! `pieRenderer.ts` (d3 arcs with the d3-path `digits(3)` serializer).
 
+#![allow(clippy::assigning_clones)]
+
 use crate::render::themes;
 use crate::svg::{append, js_num, serialize, set_attr, set_text};
 use crate::text::TextMeasurer;
@@ -177,7 +179,7 @@ fn arc_path(r1: f64, start_angle: f64, end_angle: f64) -> String {
 
 /// `arc.centroid` for the label arc (inner == outer == r): full precision.
 fn centroid(r: f64, start_angle: f64, end_angle: f64) -> (f64, f64) {
-    let a = (start_angle + end_angle) / 2.0 - HALF_PI;
+    let a = f64::midpoint(start_angle, end_angle) - HALF_PI;
     (cos(a) * r, sin(a) * r)
 }
 

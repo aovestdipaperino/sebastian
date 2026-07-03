@@ -2,6 +2,8 @@
 //! `erDb.ts` semantics, and layout-data construction. Rendering goes through
 //! the unified dagre pipeline with the `erBox` shape and crow's-foot markers.
 
+#![allow(clippy::assigning_clones, clippy::match_same_arms)]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -80,12 +82,10 @@ fn cardinality(token: &str, left: bool) -> Option<&'static str> {
         ("|o", true) | ("o|", false) => Some("zero_or_one"),
         ("}o", true) | ("o{", false) => Some("zero_or_more"),
         ("}|", true) | ("|{", false) => Some("one_or_more"),
-        ("one or zero", _) | ("zero or one", _) => Some("zero_or_one"),
-        ("one or more", _) | ("one or many", _) | ("many(1)", _) | ("1+", _) => Some("one_or_more"),
-        ("zero or more", _) | ("zero or many", _) | ("many(0)", _) | ("0+", _) => {
-            Some("zero_or_more")
-        }
-        ("only one", _) | ("1", _) => Some("only_one"),
+        ("one or zero" | "zero or one", _) => Some("zero_or_one"),
+        ("one or more" | "one or many" | "many(1)" | "1+", _) => Some("one_or_more"),
+        ("zero or more" | "zero or many" | "many(0)" | "0+", _) => Some("zero_or_more"),
+        ("only one" | "1", _) => Some("only_one"),
         _ => None,
     }
 }
