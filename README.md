@@ -3,7 +3,8 @@
 A pixel-perfect Rust port of the [mermaid.js](https://mermaid.js.org)
 diagram renderers (mermaid 11.15.0). Named after the crab from the
 mermaid. For supported diagram types — **flowchart, stateDiagram-v2,
-sequenceDiagram, classDiagram, timeline** — the output SVG is
+sequenceDiagram, classDiagram, timeline,
+pie, erDiagram, xychart-beta, gantt** — the output SVG is
 **byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
 
 The workspace contains two crates:
@@ -145,6 +146,10 @@ Two reference suites assert output against captured `mmdc` SVGs:
 - `sebastian/tests/sequence_corpus.rs` — 34 sequence diagrams (blocks,
   activations, autonumber, boxes, actor figures), all byte-identical.
 - `sebastian/tests/timeline_corpus.rs` — 4 timeline diagrams, all byte-identical.
+- `sebastian/tests/pie_corpus.rs`, `sebastian/tests/er_corpus.rs`,
+  `sebastian/tests/xychart_corpus.rs`, `sebastian/tests/gantt_corpus.rs` —
+  pie, ER, xychart-beta, and gantt fixtures (byte-identical; ER modulo
+  mermaid's rough randomness, gantt modulo the render-time today marker).
 - `sebastian/tests/class_corpus.rs` — 9 class diagrams (generics, notes,
   namespaces, lollipop interfaces), byte-identical modulo the rough
   rectangle/divider randomness mermaid itself embeds.

@@ -11,6 +11,10 @@ Already done:
 - **sequenceDiagram** (34 corpus cases, all byte-exact - incl. blocks, activations, autonumber, boxes, actor figures)
 - **classDiagram** (9 hand-made cases, byte-exact modulo rough randomness - incl. generics, notes, namespaces, lollipop)
 - **timeline** (4 cases, byte-exact)
+- **pie** (2 cases, byte-exact)
+- **erDiagram** (2 cases, byte-exact / rough-masked)
+- **xychart-beta** (2 cases, byte-exact)
+- **gantt** (2 cases, byte-exact modulo the render-time today marker)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 

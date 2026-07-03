@@ -462,6 +462,288 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The gantt stylesheet (port of `diagrams/gantt/styles.js`).
+#[must_use]
+#[allow(clippy::too_many_lines)]
+pub fn themed_gantt_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    let font = v("fontFamily");
+    let text_color = v("textColor");
+    let section_bkg = v("sectionBkgColor");
+    let alt_section_bkg = v("altSectionBkgColor");
+    let section_bkg2 = v("sectionBkgColor2");
+    let exclude_bkg = v("excludeBkgColor");
+    let task_border = v("taskBorderColor");
+    let task_bkg = v("taskBkgColor");
+    let task_text = v("taskTextColor");
+    let task_text_dark = v("taskTextDarkColor");
+    let task_text_outside = v("taskTextOutsideColor");
+    let task_text_clickable = v("taskTextClickableColor");
+    let active_border = v("activeTaskBorderColor");
+    let active_bkg = v("activeTaskBkgColor");
+    let grid_color = v("gridColor");
+    let done_bkg = v("doneTaskBkgColor");
+    let done_border = v("doneTaskBorderColor");
+    let crit_border = v("critBorderColor");
+    let crit_bkg = v("critBkgColor");
+    let today_line = v("todayLineColor");
+    let vert_line = v("vertLineColor");
+    let title_color = v("titleColor");
+
+    rule(
+        &mut o,
+        &i,
+        &[" .mermaid-main-font"],
+        &format!("font-family:{font};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .exclude-range"],
+        &format!("fill:{exclude_bkg};"),
+    );
+    rule(&mut o, &i, &[" .section"], "stroke:none;opacity:0.2;");
+    rule(&mut o, &i, &[" .section0"], &format!("fill:{section_bkg};"));
+    rule(
+        &mut o,
+        &i,
+        &[" .section2"],
+        &format!("fill:{section_bkg2};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .section1", " .section3"],
+        &format!("fill:{alt_section_bkg};opacity:0.2;"),
+    );
+    for n in 0..4 {
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .sectionTitle{n}")],
+            &format!("fill:{title_color};"),
+        );
+    }
+    rule(
+        &mut o,
+        &i,
+        &[" .sectionTitle"],
+        &format!("text-anchor:start;font-family:{font};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .grid .tick"],
+        &format!("stroke:{grid_color};opacity:0.8;shape-rendering:crispEdges;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .grid .tick text"],
+        &format!("font-family:{font};fill:{text_color};"),
+    );
+    rule(&mut o, &i, &[" .grid path"], "stroke-width:0;");
+    rule(
+        &mut o,
+        &i,
+        &[" .today"],
+        &format!("fill:none;stroke:{today_line};stroke-width:2px;"),
+    );
+    rule(&mut o, &i, &[" .task"], "stroke-width:2;");
+    rule(
+        &mut o,
+        &i,
+        &[" .taskText"],
+        &format!("text-anchor:middle;font-family:{font};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .taskTextOutsideRight"],
+        &format!("fill:{task_text_dark};text-anchor:start;font-family:{font};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .taskTextOutsideLeft"],
+        &format!("fill:{task_text_dark};text-anchor:end;"),
+    );
+    rule(&mut o, &i, &[" .task.clickable"], "cursor:pointer;");
+    rule(
+        &mut o,
+        &i,
+        &[" .taskText.clickable"],
+        &format!("cursor:pointer;fill:{task_text_clickable}!important;font-weight:bold;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .taskTextOutsideLeft.clickable"],
+        &format!("cursor:pointer;fill:{task_text_clickable}!important;font-weight:bold;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .taskTextOutsideRight.clickable"],
+        &format!("cursor:pointer;fill:{task_text_clickable}!important;font-weight:bold;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .taskText0", " .taskText1", " .taskText2", " .taskText3"],
+        &format!("fill:{task_text};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .task0", " .task1", " .task2", " .task3"],
+        &format!("fill:{task_bkg};stroke:{task_border};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .taskTextOutside0", " .taskTextOutside2"],
+        &format!("fill:{task_text_outside};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .taskTextOutside1", " .taskTextOutside3"],
+        &format!("fill:{task_text_outside};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .active0", " .active1", " .active2", " .active3"],
+        &format!("fill:{active_bkg};stroke:{active_border};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .activeText0",
+            " .activeText1",
+            " .activeText2",
+            " .activeText3",
+        ],
+        &format!("fill:{task_text_dark}!important;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .done0", " .done1", " .done2", " .done3"],
+        &format!("stroke:{done_border};fill:{done_bkg};stroke-width:2;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .doneText0", " .doneText1", " .doneText2", " .doneText3"],
+        &format!("fill:{task_text_dark}!important;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .doneText0.taskTextOutsideLeft",
+            " .doneText0.taskTextOutsideRight",
+            " .doneText1.taskTextOutsideLeft",
+            " .doneText1.taskTextOutsideRight",
+            " .doneText2.taskTextOutsideLeft",
+            " .doneText2.taskTextOutsideRight",
+            " .doneText3.taskTextOutsideLeft",
+            " .doneText3.taskTextOutsideRight",
+        ],
+        &format!("fill:{task_text_dark}!important;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .crit0", " .crit1", " .crit2", " .crit3"],
+        &format!("stroke:{crit_border};fill:{crit_bkg};stroke-width:2;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .activeCrit0",
+            " .activeCrit1",
+            " .activeCrit2",
+            " .activeCrit3",
+        ],
+        &format!("stroke:{crit_border};fill:{active_bkg};stroke-width:2;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .doneCrit0", " .doneCrit1", " .doneCrit2", " .doneCrit3"],
+        &format!(
+            "stroke:{crit_border};fill:{done_bkg};stroke-width:2;cursor:pointer;shape-rendering:crispEdges;"
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .milestone"],
+        "transform:rotate(45deg) scale(0.8,0.8);",
+    );
+    rule(&mut o, &i, &[" .milestoneText"], "font-style:italic;");
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .doneCritText0",
+            " .doneCritText1",
+            " .doneCritText2",
+            " .doneCritText3",
+        ],
+        &format!("fill:{task_text_dark}!important;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .doneCritText0.taskTextOutsideLeft",
+            " .doneCritText0.taskTextOutsideRight",
+            " .doneCritText1.taskTextOutsideLeft",
+            " .doneCritText1.taskTextOutsideRight",
+            " .doneCritText2.taskTextOutsideLeft",
+            " .doneCritText2.taskTextOutsideRight",
+            " .doneCritText3.taskTextOutsideLeft",
+            " .doneCritText3.taskTextOutsideRight",
+        ],
+        &format!("fill:{task_text_dark}!important;"),
+    );
+    rule(&mut o, &i, &[" .vert"], &format!("stroke:{vert_line};"));
+    rule(
+        &mut o,
+        &i,
+        &[" .vertText"],
+        &format!("font-size:15px;text-anchor:middle;fill:{vert_line}!important;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .activeCritText0",
+            " .activeCritText1",
+            " .activeCritText2",
+            " .activeCritText3",
+        ],
+        &format!("fill:{task_text_dark}!important;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .titleText"],
+        &format!("text-anchor:middle;font-size:18px;fill:{title_color};font-family:{font};"),
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The xychart stylesheet: no diagram-specific rules, just the shared
 /// prefix and suffix.
 #[must_use]

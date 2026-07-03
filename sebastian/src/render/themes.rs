@@ -279,6 +279,27 @@ fn update_default(vars: &mut Vars) {
         let darkened = darken(&get(vars, &key), 25.0);
         set(vars, &key, darkened);
     }
+    // Gantt colors.
+    set(vars, "sectionBkgColor", "rgba(102, 102, 255, 0.49)");
+    set(vars, "altSectionBkgColor", "white");
+    set(vars, "sectionBkgColor2", "#fff400");
+    set_if(vars, "excludeBkgColor", |_| "#eeeeee".to_owned());
+    set(vars, "taskBorderColor", "#534fbc");
+    set(vars, "taskBkgColor", "#8a90dd");
+    set(vars, "taskTextLightColor", "white");
+    set(vars, "taskTextColor", get(vars, "taskTextLightColor"));
+    set(vars, "taskTextOutsideColor", "black");
+    set(vars, "taskTextClickableColor", "#003163");
+    set(vars, "activeTaskBorderColor", "#534fbc");
+    set(vars, "activeTaskBkgColor", "#bfc7ff");
+    set(vars, "gridColor", "lightgrey");
+    set(vars, "doneTaskBkgColor", "lightgrey");
+    set(vars, "doneTaskBorderColor", "grey");
+    set(vars, "critBorderColor", "#ff8888");
+    set(vars, "critBkgColor", "red");
+    set(vars, "todayLineColor", "red");
+    set(vars, "vertLineColor", "navy");
+    set_if(vars, "titleColor", |v| get(v, "textColor"));
     // ER row colors.
     set_if(vars, "rowOdd", |v| {
         let l = super::khroma::lighten(&get(v, "primaryColor"), 75.0);

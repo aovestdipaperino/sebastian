@@ -12,6 +12,17 @@ project adheres to [Semantic Versioning](https://semver.org/).
   CLI crate.
 
 ### Added
+- **Four new diagram types, byte-exact vs mermaid-cli 11.15.0:**
+  - **pie** — d3 arc sectors (digits-3 path serializer), theme pie1-12
+    palette, CSSOM legend styles.
+  - **erDiagram** — entity attribute grids (erBox), crow's-foot markers,
+    Blink-exact Times ink text measurement.
+  - **xychart-beta** — chartBuilder orchestrator, band/linear axes with the
+    d3 ticks algorithm and bimap semantics, bar and line plots.
+  - **gantt** — dayjs-style date parsing (naive-local), d3 scaleTime
+    rangeRound, d3-time tick intervals (incl. the day.every day-of-month
+    anchoring), d3-axis markup; the today marker follows render time as
+    upstream does.
 - **Sequence diagram gap features**, byte-exact: `alt`/`opt`/`par`/`critical`/
   `break`/`rect` blocks (with `else`/`and`/`option` sections), activations
   (`+`/`-` shorthand and `activate`/`deactivate`, stacked), `autonumber`

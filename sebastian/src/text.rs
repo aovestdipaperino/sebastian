@@ -190,6 +190,30 @@ impl TextMeasurer {
         (w * 64.0).round() / 64.0
     }
 
+    /// SVG text `getBBox` width with glyph ink (Trebuchet): the same
+    /// model as [`SeqMeasurer::line_ink_width`] — advance run rounded
+    /// half-up to 1/64, unioned with raw bbox-table glyph ink, no kerning.
+    #[must_use]
+    pub fn ink_width(&self, text: &str, font_size: f64) -> f64 {
+        let face = self.face();
+        let upem = self.inner.units_per_em;
+        let mut pen = 0.0f64;
+        let mut ink_left = 0.0f64;
+        let mut ink_right = 0.0f64;
+        for ch in text.chars() {
+            let gid = face.glyph_index(ch).unwrap_or(ttf_parser::GlyphId(0));
+            if let Some(b) = face.glyph_bounding_box(gid) {
+                ink_left = ink_left.min(pen + f64::from(b.x_min) * font_size / upem);
+                ink_right = ink_right.max(pen + f64::from(b.x_max) * font_size / upem);
+            }
+            pen += f64::from(face.glyph_hor_advance(gid).unwrap_or(0)) * font_size / upem;
+        }
+        let pen_rounded = (pen * 64.0 + 0.5).floor() / 64.0;
+        let width = pen_rounded.max(ink_right) - ink_left.min(0.0);
+        #[allow(clippy::cast_possible_truncation)]
+        f64::from(width as f32)
+    }
+
     /// Raw advance-sum width in CSS pixels (no `LayoutUnit` snapping).
     #[must_use]
     pub fn measure_advance(&self, text: &str, font_size: f64) -> f64 {
