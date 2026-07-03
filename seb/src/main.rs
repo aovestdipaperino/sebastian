@@ -3,7 +3,7 @@
 use std::process::ExitCode;
 
 /// The sebastian logo, printed as terminal ANSI art via `logo-art`.
-const LOGO_PNG: &[u8] = include_bytes!("../../sebastian/resources/LOGO.png");
+const LOGO_PNG: &[u8] = include_bytes!("../resources/LOGO.png");
 
 /// Renders the embedded logo as true-color ANSI half-block art.
 fn print_logo() {
