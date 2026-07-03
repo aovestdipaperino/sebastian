@@ -45,9 +45,9 @@ mermaid itself embeds, so no port can match those bytes.
 | gantt | ✅ done | 5 | byte-exact modulo the render-time today marker |
 | timeline | ✅ done | 4 | byte-exact |
 | pie | ✅ done | 4 | byte-exact |
-| erDiagram | ✅ done | 2 | byte-exact modulo rough.js randomness |
+| erDiagram | ✅ done | 3 | byte-exact modulo rough.js randomness |
 | xychart-beta | ✅ done | 3 | byte-exact |
-| gitGraph (`LR`) | ✅ done | 2 | byte-exact modulo random commit ids + 1-ulp viewBox |
+| gitGraph (`LR`) | ✅ done | 3 | byte-exact modulo random commit ids + 1-ulp viewBox |
 | journey | ✅ done | 3 | byte-exact |
 | quadrantChart | ✅ done | 3 | byte-exact |
 | packet / packet-beta | ✅ done | 3 | byte-exact |
