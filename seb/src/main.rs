@@ -2,6 +2,15 @@
 
 use std::process::ExitCode;
 
+/// The sebastian logo, printed as terminal ANSI art via `logo-art`.
+const LOGO_PNG: &[u8] = include_bytes!("../../sebastian/resources/LOGO.png");
+
+/// Renders the embedded logo as true-color ANSI half-block art.
+fn print_logo() {
+    // Match the crate CLI's default column width.
+    logo_art::print_image(LOGO_PNG, 80);
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     let mut input: Option<String> = None;
@@ -24,6 +33,10 @@ fn main() -> ExitCode {
                     id.clone_from(v);
                 }
             }
+            "--logo" => {
+                print_logo();
+                return ExitCode::SUCCESS;
+            }
             other => {
                 eprintln!("unknown argument: {other}");
                 return ExitCode::FAILURE;
@@ -33,7 +46,10 @@ fn main() -> ExitCode {
     }
 
     let Some(input) = input else {
+        // No diagram to render: show the logo banner and usage.
+        print_logo();
         eprintln!("usage: seb -i input.mmd [-o output.svg] [--id svg-id]");
+        eprintln!("       seb --logo");
         return ExitCode::FAILURE;
     };
 
