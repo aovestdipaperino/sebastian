@@ -18,6 +18,14 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 ## [Unreleased]
 
 ### Added
+- **sankey / sankey-beta** — sankey flow diagrams, byte-exact vs mermaid-cli
+  11.15.0. Ports the CSV parser, the full `d3-sankey` iterative layout
+  (`computeNodeLinks`/`Values`/`Depths`/`Heights`/`Breadths`, six relaxation
+  iterations with `Math.pow(0.99, i)` via `core-math`, `resolveCollisions`,
+  `targetTop`/`sourceTop`, stable link/column re-sorting), `sankeyLinkHorizontal`
+  bezier links, Tableau-10 node colors, and gradient link strokes. The viewBox
+  is sized via `getBBox` (which ignores `<text>` here), so fixtures keep labels
+  within the node bounds. Three corpus cases.
 - **radar / radar-beta** — radar (spider) charts, byte-exact vs mermaid-cli
   11.15.0. Ports the langium radar grammar (axes, curves with plain or
   axis-referenced entries, and `showLegend`/`ticks`/`max`/`min`/`graticule`

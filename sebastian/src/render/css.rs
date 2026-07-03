@@ -472,6 +472,58 @@ pub fn themed_quadrant_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The sankey stylesheet (port of `diagrams/sankey/styles.js`).
+#[must_use]
+pub fn themed_sankey_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    let font_family = v("fontFamily");
+    let main_bkg = {
+        let m = v("mainBkg");
+        if m.is_empty() {
+            let b = v("background");
+            if b.is_empty() { "#fff".to_owned() } else { b }
+        } else {
+            m
+        }
+    };
+    rule(
+        &mut o,
+        &i,
+        &[" .label"],
+        &format!("font-family:{font_family};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .node-labels"],
+        &format!("font-family:{font_family};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .sankey-label-bg"],
+        &format!("stroke:{main_bkg};stroke-width:4px;stroke-linejoin:round;paint-order:stroke;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .sankey-label-fg"],
+        &format!("fill:{};", v("textColor")),
+    );
+    rule(&mut o, &i, &[" .node rect"], "shape-rendering:crispEdges;");
+    rule(
+        &mut o,
+        &i,
+        &[" .link"],
+        "fill:none;stroke-opacity:0.5;mix-blend-mode:multiply;",
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The radar stylesheet (port of `diagrams/radar/styles.ts`). Radar sub-option
 /// numeric defaults are theme constants; `axisColor` follows `lineColor`.
 #[must_use]

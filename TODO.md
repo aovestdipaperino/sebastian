@@ -20,6 +20,7 @@ Already done:
 - **quadrantChart** (2 cases, byte-exact)
 - **packet / packet-beta** (3 cases, byte-exact - incl. multi-row wrap, +bits, no-title)
 - **radar / radar-beta** (3 cases, byte-exact - incl. circle/polygon graticule, axis-ref entries, options)
+- **sankey / sankey-beta** (3 cases, byte-exact - full d3-sankey iterative layout; labels-within-bounds cases)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 
@@ -89,9 +90,9 @@ effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 - **mindmap / architecture** — depend on cose-bilkent / cytoscape force
   layouts; non-deterministic and a large port for niche demand.
-- **C4, sankey, block, kanban,
+- **C4, block, kanban,
   requirement, treemap** — no corpus demand; revisit if fixtures
-  show up. (`sankey` needs the external d3-sankey iterative layout ported.)
+  show up.
 
 ## Process for each new type
 

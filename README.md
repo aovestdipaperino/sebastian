@@ -9,7 +9,7 @@ diagram renderers (mermaid 11.15.0). Named after Sebastian, the crab
 from Disney's *The Little Mermaid* — a fitting mascot for a
 mermaid renderer. For supported diagram types — **flowchart, stateDiagram-v2,
 sequenceDiagram, classDiagram, timeline, pie, erDiagram, xychart-beta,
-gantt, gitGraph, journey, quadrantChart, packet, radar** — the output SVG is
+gantt, gitGraph, journey, quadrantChart, packet, radar, sankey** — the output SVG is
 **byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
 
 The workspace contains two crates:
@@ -52,6 +52,7 @@ mermaid itself embeds, so no port can match those bytes.
 | quadrantChart | ✅ done | 3 | byte-exact |
 | packet / packet-beta | ✅ done | 3 | byte-exact |
 | radar / radar-beta | ✅ done | 3 | byte-exact |
+| sankey / sankey-beta | ✅ done | 3 | byte-exact (labels-within-bounds; getBBox ignores text) |
 | gitGraph (`TB` / `BT`) | ❌ not started | — | only the `LR` orientation is ported |
 | flowchart ELK layout | ❌ not started | — | `defaultRenderer: elk`; a large engine port, scoped below |
 | mindmap / architecture | ❌ not planned | — | force layouts (cose-bilkent / cytoscape), non-deterministic |
