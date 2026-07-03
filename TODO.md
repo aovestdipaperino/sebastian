@@ -8,7 +8,7 @@ SVG serializer) each type reuses.
 Already done:
 - **flowchart / graph** (781 corpus blocks, byte-exact vs mmdc)
 - **stateDiagram-v2** (29 corpus cases: 23 byte-exact, 6 rough/randid-masked)
-- **sequenceDiagram** (34 corpus cases, all byte-exact - incl. blocks, activations, autonumber, boxes, actor figures)
+- **sequenceDiagram** (37 corpus cases, all byte-exact - incl. blocks, activations, autonumber, boxes, actor figures)
 - **classDiagram** (9 hand-made cases, byte-exact modulo rough randomness - incl. generics, notes, namespaces, lollipop)
 - **timeline** (4 cases, byte-exact)
 - **pie** (2 cases, byte-exact)
@@ -67,6 +67,18 @@ and theme section colors. Modest effort, low demand.
 d3 time scales, axis tick generation, and date parsing (dayjs semantics)
 make byte-exactness fiddlier than the value here suggests. Defer until
 the above are done.
+
+## Flowchart ELK layout — scoped, not started
+
+`%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%` routes layout through
+elkjs — a 1.5 MB GWT transpilation of the Java ELK *layered* engine
+(network-simplex layering, Forster-constrained crossing minimization,
+ELK's modified Brandes-Köpf placement, orthogonal edge routing, port
+constraints). The mermaid side (`@mermaid-js/layout-elk`: render.ts,
+geometry.ts, ~1.3k lines) is small; the engine is the project — a port
+larger than the original dagre port, best done from the readable Java
+sources (eclipse/elk) with differential fixtures, in its own multi-session
+effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 ## Not planned (for now)
 
