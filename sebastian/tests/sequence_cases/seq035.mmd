@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant DB@{ "type" : "database" }
+    participant Q@{ "type" : "queue" }
+    participant C@{ "type" : "control" }
+    participant E@{ "type" : "entity" }
+    participant B@{ "type" : "boundary" }
+    participant CO@{ "type" : "collections" }
+    DB->>Q: put
+    Q->>C: take
+    C->>E: read
+    E->>B: emit
+    B->>CO: fan out

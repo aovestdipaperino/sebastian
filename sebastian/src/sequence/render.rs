@@ -918,7 +918,9 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         if a.stopy.is_none() {
             a.stopy = Some(bounds.vertical_pos);
         }
-        if a.is_actor_man {
+        if !a.meta_type.is_empty() && a.meta_type != "participant" {
+            draw_actor_typed(&svg, a, &mut actor_cnt, true);
+        } else if a.is_actor_man {
             draw_actor_man(&svg, a, &mut actor_cnt, true);
         } else {
             draw_actor_footer(&svg, a, hand_drawn);
@@ -974,16 +976,83 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         bounds.bump_vertical_pos(BOX_MARGIN);
     }
 
+    // --- drawActorsPopup (top-row actors with links) ---
+    let mut required_popup_h = 0.0f64;
+    let mut required_popup_w = 0.0f64;
+    for k in &keys {
+        let a = &db.actors[k];
+        if a.links.is_empty() {
+            continue;
+        }
+        // getRequiredPopupWidth (actorFont, 14px).
+        let mut min_menu_width = 0.0f64;
+        for (label, _) in &a.links {
+            let (w, _) = measurer.text_dimensions(label, 14.0);
+            let lw = w + 2.0 * WRAP_PADDING + 2.0 * BOX_MARGIN;
+            min_menu_width = min_menu_width.max(lw);
+        }
+        let menu_width = if a.width > min_menu_width {
+            a.width
+        } else {
+            min_menu_width
+        };
+        let cnt = a.actor_cnt.unwrap_or(0);
+        let g = append(&svg, "g");
+        set_attr(&g, "id", format!("actor{cnt}_popup"));
+        set_attr(&g, "class", "actorPopupMenu");
+        set_attr(&g, "display", "none");
+        let rect = append(&g, "rect");
+        set_attr(&rect, "class", "actorPopupMenuPanel actor actor-bottom");
+        set_attr(&rect, "x", js_num(a.x));
+        set_attr(&rect, "y", js_num(a.height));
+        set_attr(&rect, "fill", "#eaeaea");
+        set_attr(&rect, "stroke", "#666");
+        set_attr(&rect, "width", js_num(menu_width));
+        let mut link_y = 20.0f64;
+        for (label, url) in &a.links {
+            let link_el = append(&g, "a");
+            set_attr(&link_el, "xlink:href", url.clone());
+            let text = append(&link_el, "text");
+            set_attr(&text, "x", js_num(a.x + 10.0));
+            set_attr(&text, "y", js_num(a.height + link_y + 10.0));
+            let span = append(&text, "tspan");
+            set_attr(&span, "x", js_num(a.x + 10.0));
+            set_attr(&span, "dy", "0");
+            set_text(&span, label);
+            set_attr(&text, "dominant-baseline", "central");
+            set_attr(&text, "alignment-baseline", "central");
+            set_attr(&text, "class", "actor");
+            set_attr(
+                &text,
+                "style",
+                "text-anchor: start; font-size: 16px; font-weight: 400;",
+            );
+            link_y += 30.0;
+        }
+        set_attr(&rect, "height", js_num(link_y));
+        set_attr(&rect, "rx", "3");
+        set_attr(&rect, "ry", "3");
+        required_popup_h = required_popup_h.max(a.height + link_y);
+        required_popup_w = required_popup_w.max(menu_width + a.x);
+    }
+
     // --- viewport ---
     let startx = bounds.startx.unwrap_or(0.0);
     let stopx = bounds.stopx.unwrap_or(0.0);
     let starty = bounds.starty.unwrap_or(0.0);
     let stopy = bounds.stopy.unwrap_or(0.0);
-    let box_height = stopy - starty;
+    let mut box_height = stopy - starty;
+    if box_height < required_popup_h {
+        box_height = required_popup_h;
+    }
     let mut height = box_height + 2.0 * DIAGRAM_MARGIN_Y;
     // mirrorActors:
     height = height - BOX_MARGIN + BOTTOM_MARGIN_ADJ;
-    let width = stopx - startx + 2.0 * DIAGRAM_MARGIN_X;
+    let mut box_width = stopx - startx;
+    if box_width < required_popup_w {
+        box_width = required_popup_w;
+    }
+    let width = box_width + 2.0 * DIAGRAM_MARGIN_X;
 
     set_attr(
         &svg,
@@ -1652,6 +1721,10 @@ fn draw_loop(svg: &Element, model: &LoopModel, label_text: &str, msg_id: &str, h
 
 /// Top actor: lifeline + box group, prepended to the svg.
 fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, hand_drawn: bool) {
+    if !actor.meta_type.is_empty() && actor.meta_type != "participant" {
+        draw_actor_typed(svg, actor, actor_cnt, false);
+        return;
+    }
     if actor.is_actor_man {
         draw_actor_man(svg, actor, actor_cnt, false);
         return;
@@ -1706,6 +1779,430 @@ fn draw_actor_top(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, hand_
 /// `drawActorTypeActor`: stick figure. The lifeline group is prepended
 /// (empty for the footer); the figure group is appended.
 const ACTOR_TYPE_WIDTH: f64 = 18.0 * 2.0;
+
+/// `drawActorType{Database,Queue,Control,Entity,Boundary,Collections}`.
+#[allow(clippy::too_many_lines)]
+fn draw_actor_typed(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, is_footer: bool) {
+    let actor_y = if is_footer {
+        actor.stopy.unwrap_or(0.0)
+    } else {
+        actor.starty
+    };
+    let center = actor.x + actor.width / 2.0;
+    let ty = actor.meta_type.clone();
+
+    // byTspan label helper.
+    let label = |g: &Element, desc: &str, x: f64, y: f64, w: f64, h: f64, class: &str| {
+        for (i, line) in split_breaks(desc).iter().enumerate() {
+            #[allow(clippy::cast_precision_loss)]
+            let dy = i as f64 * FONT_SIZE;
+            let text = append(g, "text");
+            set_attr(&text, "x", js_num(x + w / 2.0));
+            set_attr(&text, "y", js_num(y + h / 2.0));
+            let span = append(&text, "tspan");
+            set_attr(&span, "x", js_num(x + w / 2.0));
+            set_attr(&span, "dy", js_num(dy));
+            set_text(&span, line);
+            set_attr(&text, "dominant-baseline", "central");
+            set_attr(&text, "alignment-baseline", "central");
+            set_attr(&text, "class", class);
+            set_attr(
+                &text,
+                "style",
+                "text-anchor: middle; font-size: 16px; font-weight: 400;",
+            );
+        }
+    };
+    let lifeline = |g: &Element, cnt: usize, y1: f64| {
+        let line = append(g, "line");
+        set_attr(&line, "id", format!("actor{cnt}"));
+        set_attr(&line, "x1", js_num(center));
+        set_attr(&line, "y1", js_num(y1));
+        set_attr(&line, "x2", js_num(center));
+        set_attr(&line, "y2", "2000");
+        set_attr(&line, "class", "actor-line 200");
+        set_attr(&line, "stroke-width", "0.5px");
+        set_attr(&line, "stroke", "#999");
+        set_attr(&line, "name", actor.name.clone());
+        set_attr(&line, "data-et", "life-line");
+        set_attr(&line, "data-id", actor.name.clone());
+    };
+    let top_bottom = |base: &str| {
+        if is_footer {
+            format!("{base} actor-bottom")
+        } else {
+            format!("{base} actor-top")
+        }
+    };
+    let actor_border = "rgb(147, 112, 219)";
+
+    match ty.as_str() {
+        "database" => {
+            let outer = insert_first(svg, "g");
+            let g = if is_footer {
+                outer.clone()
+            } else {
+                let cnt = *actor_cnt;
+                *actor_cnt += 1;
+                actor.actor_cnt = Some(cnt);
+                lifeline(&outer, cnt, actor_y + actor.height + 2.0 * BOX_TEXT_MARGIN);
+                let inner = append(&outer, "g");
+                set_attr(&inner, "id", format!("root-{cnt}"));
+                inner
+            };
+            let (x, y) = (actor.x, actor_y);
+            let w = actor.width / 3.0;
+            let h = actor.width / 3.0;
+            let rx = w / 2.0;
+            let ry = rx / (2.5 + w / 50.0);
+            let cyl = append(&g, "g");
+            set_attr(&cyl, "class", top_bottom("actor"));
+            let d = format!(
+                "M {},{}\n  a {},{} 0 0 0 {},0\n  a {},{} 0 0 0 -{},0\n  l 0,{}\n  a {},{} 0 0 0 {},0\n  l 0,-{}",
+                js_num(x),
+                js_num(y + ry),
+                js_num(rx),
+                js_num(ry),
+                js_num(w),
+                js_num(rx),
+                js_num(ry),
+                js_num(w),
+                js_num(h - 2.0 * ry),
+                js_num(rx),
+                js_num(ry),
+                js_num(w),
+                js_num(h - 2.0 * ry)
+            );
+            let path = append(&cyl, "path");
+            set_attr(&path, "d", d);
+            set_attr(
+                &cyl,
+                "transform",
+                format!("translate({}, {})", js_num(w), js_num(ry)),
+            );
+            set_attr(&cyl, "style", format!("stroke: {actor_border};"));
+            label(
+                &g,
+                &actor.description,
+                x,
+                y + 35.0,
+                actor.width,
+                actor.height,
+                "actor actor-box",
+            );
+            // lastPath bbox height (h) + labelBoxHeight.
+            actor.height = h + LABEL_BOX_HEIGHT;
+            if !is_footer {
+                set_attr(&g, "data-et", "participant");
+                set_attr(&g, "data-type", "database");
+                set_attr(&g, "data-id", actor.name.clone());
+            }
+        }
+        "queue" => {
+            let outer = insert_first(svg, "g");
+            let g = if is_footer {
+                outer.clone()
+            } else {
+                let cnt = *actor_cnt;
+                *actor_cnt += 1;
+                actor.actor_cnt = Some(cnt);
+                lifeline(&outer, cnt, actor_y + actor.height);
+                let inner = append(&outer, "g");
+                set_attr(&inner, "id", format!("root-{cnt}"));
+                inner
+            };
+            set_attr(&g, "class", top_bottom("actor"));
+            let (x, y, w, h) = (actor.x, actor_y, actor.width, actor.height);
+            let ry = h / 2.0;
+            let rx = ry / (2.5 + h / 50.0);
+            let body = append(&g, "g");
+            let arc = append(&g, "g");
+            let bp = append(&body, "path");
+            set_attr(
+                &bp,
+                "d",
+                format!(
+                    "M {},{}\n    a {},{} 0 0 0 0,{}\n    h {}\n    a {},{} 0 0 0 0,-{}\n    Z",
+                    js_num(x),
+                    js_num(y + ry),
+                    js_num(rx),
+                    js_num(ry),
+                    js_num(h),
+                    js_num(w - 2.0 * rx),
+                    js_num(rx),
+                    js_num(ry),
+                    js_num(h)
+                ),
+            );
+            let ap = append(&arc, "path");
+            set_attr(
+                &ap,
+                "d",
+                format!(
+                    "M {},{}\n      a {},{} 0 0 0 0,{}",
+                    js_num(x),
+                    js_num(y + ry),
+                    js_num(rx),
+                    js_num(ry),
+                    js_num(h)
+                ),
+            );
+            set_attr(
+                &body,
+                "transform",
+                format!("translate({}, {})", js_num(rx), js_num(-(h / 2.0))),
+            );
+            set_attr(
+                &arc,
+                "transform",
+                format!("translate({}, {})", js_num(w - rx), js_num(-h / 2.0)),
+            );
+            label(&g, &actor.description, x, y, w, h, "actor actor-box");
+            actor.height = h;
+            if !is_footer {
+                set_attr(&g, "data-et", "participant");
+                set_attr(&g, "data-type", "queue");
+                set_attr(&g, "data-id", actor.name.clone());
+            }
+        }
+        "collections" => {
+            let outer = insert_first(svg, "g");
+            let g = if is_footer {
+                outer.clone()
+            } else {
+                let cnt = *actor_cnt;
+                *actor_cnt += 1;
+                actor.actor_cnt = Some(cnt);
+                lifeline(&outer, cnt, actor_y + actor.height);
+                let inner = append(&outer, "g");
+                set_attr(&inner, "id", format!("root-{cnt}"));
+                inner
+            };
+            let offset = 6.0;
+            draw_rect(
+                &g,
+                &RectData {
+                    x: actor.x,
+                    y: actor_y,
+                    fill: "#eaeaea",
+                    stroke: "#666",
+                    width: actor.width,
+                    height: actor.height,
+                    name: Some(&actor.name),
+                    rx: 0.0,
+                    class: &top_bottom("actor"),
+                },
+                false,
+            );
+            draw_rect(
+                &g,
+                &RectData {
+                    x: actor.x - offset,
+                    y: actor_y + offset,
+                    fill: "#eaeaea",
+                    stroke: "#666",
+                    width: actor.width,
+                    height: actor.height,
+                    name: Some(&actor.name),
+                    rx: 0.0,
+                    class: "actor",
+                },
+                false,
+            );
+            label(
+                &g,
+                &actor.description,
+                actor.x - offset,
+                actor_y + offset,
+                actor.width,
+                actor.height,
+                "actor actor-box",
+            );
+            if !is_footer {
+                set_attr(&g, "data-et", "participant");
+                set_attr(&g, "data-type", "collections");
+                set_attr(&g, "data-id", actor.name.clone());
+            }
+        }
+        "control" => {
+            let outer = insert_first(svg, "g");
+            let cnt;
+            if is_footer {
+                cnt = actor_cnt.saturating_sub(1);
+            } else {
+                cnt = *actor_cnt;
+                *actor_cnt += 1;
+                actor.actor_cnt = Some(cnt);
+                lifeline(&outer, cnt, actor_y + 75.0);
+            }
+            let _ = cnt;
+            let g = append(svg, "g");
+            set_attr(&g, "class", top_bottom("actor-man"));
+            set_attr(&g, "name", actor.name.clone());
+            let cx = actor.x + actor.width / 2.0;
+            let cy = actor_y + 32.0;
+            let r = 22.0;
+            let defs = append(&g, "defs");
+            let marker = append(&defs, "marker");
+            // The diagram id prefix comes from the caller-provided id via
+            // the svg root's id attribute.
+            let diagram_id = crate::svg::get_attr(svg, "id").unwrap_or_default();
+            set_attr(&marker, "id", format!("{diagram_id}-filled-head-control"));
+            set_attr(&marker, "refX", "11");
+            set_attr(&marker, "refY", "5.8");
+            set_attr(&marker, "markerWidth", "20");
+            set_attr(&marker, "markerHeight", "28");
+            set_attr(&marker, "orient", "172.5");
+            set_attr(&marker, "stroke-width", "1.2");
+            let mp = append(&marker, "path");
+            set_attr(&mp, "d", "M 14.4 5.6 L 7.2 10.4 L 8.8 5.6 L 7.2 0.8 Z");
+            let circle = append(&g, "circle");
+            set_attr(&circle, "cx", js_num(cx));
+            set_attr(&circle, "cy", js_num(cy));
+            set_attr(&circle, "r", js_num(r));
+            set_attr(&circle, "filter", "");
+            let arrow = append(&g, "line");
+            set_attr(
+                &arrow,
+                "marker-end",
+                format!("url(#{diagram_id}-filled-head-control)"),
+            );
+            set_attr(
+                &arrow,
+                "transform",
+                format!("translate({}, {})", js_num(cx), js_num(cy - r)),
+            );
+            // getBBox: circle (cy±r) unioned with the zero-length line point.
+            let old_height = actor.height;
+            actor.height = 2.0f64.mul_add(r, 2.0 * LABEL_BOX_HEIGHT);
+            label(
+                &g,
+                &actor.description,
+                actor.x,
+                actor_y + r + if is_footer { 5.0 } else { 12.0 },
+                actor.width,
+                old_height,
+                "actor actor-man",
+            );
+            if !is_footer {
+                set_attr(&g, "data-et", "participant");
+                set_attr(&g, "data-type", "control");
+                set_attr(&g, "data-id", actor.name.clone());
+            }
+            set_attr(
+                &g,
+                "style",
+                format!("stroke: {actor_border}; fill: rgb(236, 236, 255);"),
+            );
+        }
+        "entity" => {
+            let outer = insert_first(svg, "g");
+            let g = append(svg, "g");
+            set_attr(&g, "class", top_bottom("actor"));
+            set_attr(&g, "name", actor.name.clone());
+            let cx = actor.x + actor.width / 2.0;
+            let cy = actor_y + if is_footer { 10.0 } else { 25.0 };
+            let r = 22.0;
+            let circle = append(&g, "circle");
+            set_attr(&circle, "cx", js_num(cx));
+            set_attr(&circle, "cy", js_num(cy));
+            set_attr(&circle, "r", js_num(r));
+            set_attr(&circle, "width", js_num(actor.width));
+            set_attr(&circle, "height", js_num(actor.height));
+            let line = append(&g, "line");
+            set_attr(&line, "x1", js_num(cx - r));
+            set_attr(&line, "x2", js_num(cx + r));
+            set_attr(&line, "y1", js_num(cy + r));
+            set_attr(&line, "y2", js_num(cy + r));
+            set_attr(&line, "stroke-width", "2");
+            let old_height = actor.height;
+            actor.height = 2.0f64.mul_add(r, LABEL_BOX_HEIGHT);
+            if !is_footer {
+                let cnt = *actor_cnt;
+                *actor_cnt += 1;
+                actor.actor_cnt = Some(cnt);
+                lifeline(&outer, cnt, actor_y + 75.0);
+            }
+            label(
+                &g,
+                &actor.description,
+                actor.x,
+                actor_y + if is_footer { 15.0 } else { 30.0 },
+                actor.width,
+                old_height,
+                "actor actor-man",
+            );
+            if is_footer {
+                set_attr(&g, "transform", format!("translate(0, {})", js_num(r)));
+            } else {
+                set_attr(
+                    &g,
+                    "transform",
+                    format!("translate(0, {})", js_num(r / 2.0 - 5.0)),
+                );
+                set_attr(&g, "data-et", "participant");
+                set_attr(&g, "data-type", "entity");
+                set_attr(&g, "data-id", actor.name.clone());
+            }
+        }
+        // boundary
+        _ => {
+            let outer = insert_first(svg, "g");
+            let radius = 22.0;
+            let cnt;
+            if is_footer {
+                cnt = actor_cnt.saturating_sub(1);
+            } else {
+                cnt = *actor_cnt;
+                *actor_cnt += 1;
+                actor.actor_cnt = Some(cnt);
+                lifeline(&outer, cnt, actor_y + 80.0);
+            }
+            let g = append(svg, "g");
+            set_attr(&g, "class", top_bottom("actor-man"));
+            set_attr(&g, "name", actor.name.clone());
+            let cx = actor.x + actor.width / 2.0;
+            let l1 = append(&g, "line");
+            set_attr(&l1, "id", format!("actor-man-torso{cnt}"));
+            set_attr(&l1, "x1", js_num(cx - radius * 2.5));
+            set_attr(&l1, "y1", js_num(actor_y + 12.0));
+            set_attr(&l1, "x2", js_num(cx - 15.0));
+            set_attr(&l1, "y2", js_num(actor_y + 12.0));
+            let l2 = append(&g, "line");
+            set_attr(&l2, "id", format!("actor-man-arms{cnt}"));
+            set_attr(&l2, "x1", js_num(cx - radius * 2.5));
+            set_attr(&l2, "y1", js_num(actor_y + 2.0));
+            set_attr(&l2, "x2", js_num(cx - radius * 2.5));
+            set_attr(&l2, "y2", js_num(actor_y + 22.0));
+            let circle = append(&g, "circle");
+            set_attr(&circle, "cx", js_num(cx));
+            set_attr(&circle, "cy", js_num(actor_y + 12.0));
+            set_attr(&circle, "r", js_num(radius));
+            let old_height = actor.height;
+            actor.height = 2.0f64.mul_add(radius, LABEL_BOX_HEIGHT);
+            label(
+                &g,
+                &actor.description,
+                actor.x,
+                actor_y + 15.0,
+                actor.width,
+                old_height,
+                "actor actor-man",
+            );
+            set_attr(
+                &g,
+                "transform",
+                format!("translate(0,{})", js_num(radius / 2.0 + 10.0)),
+            );
+            if !is_footer {
+                set_attr(&g, "data-et", "participant");
+                set_attr(&g, "data-type", "boundary");
+                set_attr(&g, "data-id", actor.name.clone());
+            }
+            set_attr(&g, "style", format!("stroke: {actor_border};"));
+        }
+    }
+}
 
 fn draw_actor_man(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, is_footer: bool) {
     let actor_y = if is_footer {

@@ -78,6 +78,11 @@ pub struct Actor {
     pub box_index: Option<usize>,
     /// `"participant"` or `"actor"` (stick figure).
     pub is_actor_man: bool,
+    /// Participant metadata type: database/queue/control/entity/boundary/
+    /// collections (empty for plain participants).
+    pub meta_type: String,
+    /// `link` statements: (label, url) in insertion order.
+    pub links: Vec<(String, String)>,
 }
 
 /// A message/event row from the db.
@@ -406,8 +411,22 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
         let participant = strip_keyword(line, "participant").map(|r| (r, false));
         let participant = participant.or_else(|| strip_keyword(line, "actor").map(|r| (r, true)));
         if let Some((rest, is_actor_man)) = participant {
-            // participant X [as Alias]
-            let rest = rest.trim();
+            // participant X [as Alias] [@{ "type": "..." }]
+            let mut rest = rest.trim();
+            let mut meta_type = String::new();
+            if let Some(at) = rest.find("@{") {
+                let meta = rest[at + 2..].trim_end_matches('}');
+                // Minimal JSON: "type" : "database"
+                if let Some(tpos) = meta.find("\"type\"") {
+                    let after = &meta[tpos + 6..];
+                    if let Some(c) = after.find(':') {
+                        let val = after[c + 1..].trim();
+                        let val = val.trim_matches(|ch| ch == '"' || ch == ',' || ch == ' ');
+                        meta_type = val.to_owned();
+                    }
+                }
+                rest = rest[..at].trim();
+            }
             let id = if let Some((id, alias)) = split_as(rest) {
                 db.add_actor(id.trim(), Some(alias.trim().to_owned()));
                 id.trim().to_owned()
@@ -415,8 +434,13 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
                 db.add_actor(rest, None);
                 rest.to_owned()
             };
-            if is_actor_man && let Some(a) = db.actors.get_mut(&id) {
-                a.is_actor_man = true;
+            if let Some(a) = db.actors.get_mut(&id) {
+                if is_actor_man {
+                    a.is_actor_man = true;
+                }
+                if !meta_type.is_empty() {
+                    a.meta_type = meta_type;
+                }
             }
             if created {
                 let idx = db.messages.len();
@@ -425,6 +449,21 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
             continue;
         }
 
+        if let Some(rest) = strip_keyword(line, "link") {
+            // link Actor: Label @ URL
+            if let Some(colon) = rest.find(':') {
+                let actor = rest[..colon].trim().to_owned();
+                let after = &rest[colon + 1..];
+                if let Some(at) = after.find('@') {
+                    let label = after[..at].trim().to_owned();
+                    let url = after[at + 1..].trim().to_owned();
+                    if let Some(a) = db.actors.get_mut(&actor) {
+                        a.links.push((label, url));
+                    }
+                }
+            }
+            continue;
+        }
         if lower.starts_with("note ") {
             let rest = line[5..].trim();
             let (placement, after) = if let Some(r) = strip_keyword(rest, "over") {
