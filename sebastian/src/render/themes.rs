@@ -279,6 +279,51 @@ fn update_default(vars: &mut Vars) {
         let darkened = darken(&get(vars, &key), 25.0);
         set(vars, &key, darkened);
     }
+    // Pie colors (theme-default "pie" block); taskTextDarkColor is 'black'.
+    set(vars, "taskTextDarkColor", "black");
+    set_if(vars, "pie1", |v| get(v, "primaryColor"));
+    set_if(vars, "pie2", |v| get(v, "secondaryColor"));
+    set_if(vars, "pie3", |v| {
+        adjust(&get(v, "tertiaryColor"), &[('l', -40.0)])
+    });
+    set_if(vars, "pie4", |v| {
+        adjust(&get(v, "primaryColor"), &[('l', -10.0)])
+    });
+    set_if(vars, "pie5", |v| {
+        adjust(&get(v, "secondaryColor"), &[('l', -30.0)])
+    });
+    set_if(vars, "pie6", |v| {
+        adjust(&get(v, "tertiaryColor"), &[('l', -20.0)])
+    });
+    set_if(vars, "pie7", |v| {
+        adjust(&get(v, "primaryColor"), &[('h', 60.0), ('l', -20.0)])
+    });
+    set_if(vars, "pie8", |v| {
+        adjust(&get(v, "primaryColor"), &[('h', -60.0), ('l', -40.0)])
+    });
+    set_if(vars, "pie9", |v| {
+        adjust(&get(v, "primaryColor"), &[('h', 120.0), ('l', -40.0)])
+    });
+    set_if(vars, "pie10", |v| {
+        adjust(&get(v, "primaryColor"), &[('h', 60.0), ('l', -40.0)])
+    });
+    set_if(vars, "pie11", |v| {
+        adjust(&get(v, "primaryColor"), &[('h', -90.0), ('l', -40.0)])
+    });
+    set_if(vars, "pie12", |v| {
+        adjust(&get(v, "primaryColor"), &[('h', 120.0), ('l', -30.0)])
+    });
+    set_if(vars, "pieTitleTextSize", |_| "25px".to_owned());
+    set_if(vars, "pieTitleTextColor", |v| get(v, "taskTextDarkColor"));
+    set_if(vars, "pieSectionTextSize", |_| "17px".to_owned());
+    set_if(vars, "pieSectionTextColor", |v| get(v, "textColor"));
+    set_if(vars, "pieLegendTextSize", |_| "17px".to_owned());
+    set_if(vars, "pieLegendTextColor", |v| get(v, "taskTextDarkColor"));
+    set_if(vars, "pieStrokeColor", |_| "black".to_owned());
+    set_if(vars, "pieStrokeWidth", |_| "2px".to_owned());
+    set_if(vars, "pieOuterStrokeWidth", |_| "2px".to_owned());
+    set_if(vars, "pieOuterStrokeColor", |_| "black".to_owned());
+    set_if(vars, "pieOpacity", |_| "0.7".to_owned());
     set_if(vars, "gitBranchLabel0", |v| {
         invert(&get(v, "labelTextColor"))
     });

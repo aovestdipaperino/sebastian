@@ -41,12 +41,47 @@ pub fn cssom_color_value(prop: &str, value: &str) -> String {
 }
 
 fn cssom_value(prop: &str, value: &str) -> String {
-    if COLOR_PROPS.contains(&prop)
-        && let Some(rgb) = hex_to_rgb(value)
-    {
-        return rgb;
+    if COLOR_PROPS.contains(&prop) {
+        if let Some(rgb) = hex_to_rgb(value) {
+            return rgb;
+        }
+        if let Some(rgb) = hsl_to_rgb(value) {
+            return rgb;
+        }
     }
     value.to_owned()
+}
+
+/// CSSOM serialization of `hsl(h, s%, l%)` strings as `rgb(r, g, b)`.
+fn hsl_to_rgb(value: &str) -> Option<String> {
+    let inner = value
+        .trim()
+        .strip_prefix("hsl(")
+        .and_then(|v| v.strip_suffix(')'))?;
+    let parts: Vec<&str> = inner.split(',').map(str::trim).collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    let h: f64 = parts[0].parse().ok()?;
+    let sp: f64 = parts[1].strip_suffix('%')?.parse().ok()?;
+    let lp: f64 = parts[2].strip_suffix('%')?.parse().ok()?;
+    let s = sp / 100.0;
+    let l = lp / 100.0;
+    let h = h.rem_euclid(360.0);
+    let c = (1.0 - (2.0f64.mul_add(l, -1.0)).abs()) * s;
+    let hp = h / 60.0;
+    let x = c * (1.0 - (hp % 2.0 - 1.0).abs());
+    let (r1, g1, b1) = match hp as u32 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+    let m = l - c / 2.0;
+    let to8 = |v: f64| ((v + m) * 255.0).round().clamp(0.0, 255.0);
+    Some(format!("rgb({}, {}, {})", to8(r1), to8(g1), to8(b1)))
 }
 
 /// Font-family override applied to every label in `look: handDrawn` mode, for
@@ -423,6 +458,71 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
     );
     rule(&mut o, &i, &[" .edge"], "fill:none;");
     rule(&mut o, &i, &[" .eventWrapper"], "filter:brightness(120%);");
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
+/// The pie chart stylesheet (port of `diagrams/pie/pieStyles.ts`).
+#[must_use]
+pub fn themed_pie_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    rule(
+        &mut o,
+        &i,
+        &[" .pieCircle"],
+        &format!(
+            "stroke:{};stroke-width:{};opacity:{};",
+            v("pieStrokeColor"),
+            v("pieStrokeWidth"),
+            v("pieOpacity")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .pieOuterCircle"],
+        &format!(
+            "stroke:{};stroke-width:{};fill:none;",
+            v("pieOuterStrokeColor"),
+            v("pieOuterStrokeWidth")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .pieTitleText"],
+        &format!(
+            "text-anchor:middle;font-size:{};fill:{};font-family:{};",
+            v("pieTitleTextSize"),
+            v("pieTitleTextColor"),
+            v("fontFamily")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .slice"],
+        &format!(
+            "font-family:{};fill:{};font-size:{};",
+            v("fontFamily"),
+            v("pieSectionTextColor"),
+            v("pieSectionTextSize")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .legend text"],
+        &format!(
+            "fill:{};font-family:{};font-size:{};",
+            v("pieLegendTextColor"),
+            v("fontFamily"),
+            v("pieLegendTextSize")
+        ),
+    );
     css_suffix(&mut o, &i, id, vars);
     o
 }

@@ -11,6 +11,7 @@ pub mod diagram;
 pub mod flowchart;
 pub mod graphlib;
 pub mod jsmap;
+pub mod pie;
 pub mod render;
 pub mod sequence;
 pub mod state;
