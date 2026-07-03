@@ -15,6 +15,7 @@ pub mod gitgraph;
 pub mod graphlib;
 pub mod journey;
 pub mod jsmap;
+pub mod packet;
 pub mod pie;
 pub mod quadrant;
 pub mod render;

@@ -18,6 +18,7 @@ Already done:
 - **gitGraph** (`LR`; 2 cases, byte-exact modulo random commit ids)
 - **journey** (2 cases, byte-exact)
 - **quadrantChart** (2 cases, byte-exact)
+- **packet / packet-beta** (3 cases, byte-exact - incl. multi-row wrap, +bits, no-title)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 

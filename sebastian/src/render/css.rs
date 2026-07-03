@@ -472,6 +472,27 @@ pub fn themed_quadrant_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The packet stylesheet (port of `diagrams/packet/styles.ts`, fixed defaults).
+#[must_use]
+pub fn themed_packet_css(id: &str, vars: &Map<String, Value>) -> String {
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    rule(&mut o, &i, &[" .packetByte"], "font-size:10px;");
+    rule(&mut o, &i, &[" .packetByte.start"], "fill:black;");
+    rule(&mut o, &i, &[" .packetByte.end"], "fill:black;");
+    rule(&mut o, &i, &[" .packetLabel"], "fill:black;font-size:12px;");
+    rule(&mut o, &i, &[" .packetTitle"], "fill:black;font-size:14px;");
+    rule(
+        &mut o,
+        &i,
+        &[" .packetBlock"],
+        "stroke:black;stroke-width:1;fill:#efefef;",
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The user-journey stylesheet (port of `diagrams/user-journey/styles.js`).
 #[must_use]
 pub fn themed_journey_css(id: &str, vars: &Map<String, Value>) -> String {

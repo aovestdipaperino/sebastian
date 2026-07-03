@@ -17,6 +17,19 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+### Added
+- **packet / packet-beta** — bit-field packet diagrams, byte-exact vs
+  mermaid-cli 11.15.0. Ports the langium packet grammar (`start(-end)?` and
+  `+bits` block forms), `db.ts` (`populate` / `getNextFittingBlock` row
+  wrapping at `bitsPerRow`), and `renderer.ts`. Layout is pure arithmetic
+  (no text measurement). Three corpus cases: TCP header (256-bit, 8-row
+  wrap), `+bits` syntax, and a no-title diagram.
+- More corpus fixtures for existing types (pie, journey, quadrantChart,
+  xychart) — all byte-exact.
+- `tests/known_divergences/` — repros for two not-yet-byte-exact cases
+  (erDiagram relationship edge curves; gitGraph branch+merge viewBox
+  height) with a README documenting each root cause.
+
 ### Changed
 - Renamed the project to **sebastian** (the crab from the mermaid) and
   split it into a workspace: the `sebastian` library crate and the `seb`
