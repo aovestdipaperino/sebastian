@@ -675,7 +675,7 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                 );
                 // bbox: all coordinates in the path.
                 for tok in line_def
-                    .split(|ch: char| ch == ' ' || ch == ',')
+                    .split([' ', ','])
                     .filter(|t| !t.is_empty() && t.parse::<f64>().is_ok())
                     .collect::<Vec<_>>()
                     .chunks(1)

@@ -13,6 +13,7 @@ pub mod flowchart;
 pub mod gantt;
 pub mod gitgraph;
 pub mod graphlib;
+pub mod journey;
 pub mod jsmap;
 pub mod pie;
 pub mod render;

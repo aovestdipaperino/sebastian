@@ -462,6 +462,142 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The user-journey stylesheet (port of `diagrams/user-journey/styles.js`).
+#[must_use]
+pub fn themed_journey_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    let font = v("fontFamily");
+    let text_color = v("textColor");
+    rule(
+        &mut o,
+        &i,
+        &[" .label"],
+        &format!("font-family:{font};color:{};", {
+            let t = v("nodeTextColor");
+            if t.is_empty() { text_color.clone() } else { t }
+        }),
+    );
+    rule(&mut o, &i, &[" .mouth"], "stroke:#666;");
+    rule(&mut o, &i, &[" line"], &format!("stroke:{text_color};"));
+    rule(
+        &mut o,
+        &i,
+        &[" .legend"],
+        &format!("fill:{text_color};font-family:{font};"),
+    );
+    rule(&mut o, &i, &[" .label text"], &format!("fill:{};", "#333"));
+    rule(
+        &mut o,
+        &i,
+        &[" .label"],
+        &format!("color:{};", {
+            let t = v("nodeTextColor");
+            if t.is_empty() { text_color.clone() } else { t }
+        }),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .face"],
+        &format!("fill:{};stroke:#999;", {
+            let f = v("faceColor");
+            if f.is_empty() {
+                "#FFF8DC".to_owned()
+            } else {
+                f
+            }
+        }),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .node rect",
+            " .node circle",
+            " .node ellipse",
+            " .node polygon",
+            " .node path",
+        ],
+        &format!(
+            "fill:{};stroke:{};stroke-width:1px;",
+            v("mainBkg"),
+            v("nodeBorder")
+        ),
+    );
+    rule(&mut o, &i, &[" .node .label"], "text-align:center;");
+    rule(&mut o, &i, &[" .node.clickable"], "cursor:pointer;");
+    rule(
+        &mut o,
+        &i,
+        &[" .arrowheadPath"],
+        &format!("fill:{};", v("arrowheadColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgePath .path"],
+        &format!("stroke:{};stroke-width:1.5px;", v("lineColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .flowchart-link"],
+        &format!("stroke:{};fill:none;", v("lineColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel"],
+        &format!(
+            "background-color:{};text-align:center;",
+            v("edgeLabelBackground")
+        ),
+    );
+    rule(&mut o, &i, &[" .edgeLabel rect"], "opacity:0.5;");
+    rule(
+        &mut o,
+        &i,
+        &[" .cluster text"],
+        &format!("fill:{};", v("titleColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" div.mermaidTooltip"],
+        &format!(
+            "position:absolute;text-align:center;max-width:200px;padding:2px;font-family:{font};font-size:12px;background:{};border:1px solid {};border-radius:2px;pointer-events:none;z-index:100;",
+            v("tertiaryColor"),
+            v("border2")
+        ),
+    );
+    for n in 0..8 {
+        let fill = v(&format!("fillType{n}"));
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .task-type-{n}"), &format!(" .section-type-{n}")],
+            &format!("fill:{fill};"),
+        );
+    }
+    rule(
+        &mut o,
+        &i,
+        &[" .label-icon"],
+        "display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .node .label-icon path"],
+        "fill:currentColor;stroke:revert;stroke-width:revert;",
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The gitGraph stylesheet (port of `diagrams/git/styles.js`).
 #[must_use]
 pub fn themed_gitgraph_css(id: &str, vars: &Map<String, Value>) -> String {

@@ -312,6 +312,39 @@ fn update_default(vars: &mut Vars) {
     set_if(vars, "rowEven", |v| {
         super::khroma::lighten(&get(v, "primaryColor"), 1.0)
     });
+    // Journey fill types.
+    set(vars, "fillType0", get(vars, "primaryColor"));
+    set(vars, "fillType1", get(vars, "secondaryColor"));
+    set(
+        vars,
+        "fillType2",
+        adjust(&get(vars, "primaryColor"), &[('h', 64.0)]),
+    );
+    set(
+        vars,
+        "fillType3",
+        adjust(&get(vars, "secondaryColor"), &[('h', 64.0)]),
+    );
+    set(
+        vars,
+        "fillType4",
+        adjust(&get(vars, "primaryColor"), &[('h', -64.0)]),
+    );
+    set(
+        vars,
+        "fillType5",
+        adjust(&get(vars, "secondaryColor"), &[('h', -64.0)]),
+    );
+    set(
+        vars,
+        "fillType6",
+        adjust(&get(vars, "primaryColor"), &[('h', 128.0)]),
+    );
+    set(
+        vars,
+        "fillType7",
+        adjust(&get(vars, "secondaryColor"), &[('h', 128.0)]),
+    );
     // gitGraph extras: gitInv computed only on the first updateColors pass
     // (from the single-darkened git colors).
     set_if(vars, "gitInv0", |v| {
