@@ -60,8 +60,8 @@ mermaid itself embeds, so no port can match those bytes.
 | flowchart ELK layout | 🟡 approximate | smoke | `layout: elk` renders via the dagre engine (like mermaid's own no-layout-elk fallback); a 2026-07 spike found `elkrs` byte-identical to elkjs 0.9.x on acyclic graphs — a true ELK backend is scoped below |
 | mindmap | 🟡 approximate | smoke | renders with a deterministic tidy-tree layout; **not byte-exact** (mermaid uses the cose-bilkent force engine) |
 | architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
-| requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **not byte-exact** (box `max-width` needs Blink `getBBox` ink metrics) |
-| C4 (Context/Container/Component/Dynamic/Deployment) | 🟡 approximate | smoke | deterministic row-based layout; **not byte-exact** (shape widths need Blink `getBBox` ink metrics) |
+| requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **byte-exact closed as intractable** (box `max-width` doesn't match ground-truth Chrome `getBBox`) |
+| C4 (Context/Container/Component/Dynamic/Deployment) | 🟡 approximate | smoke | deterministic row-based layout; **byte-exact closed as intractable** (same `getBBox` finding) |
 
 > **Note on mindmap and architecture (approximate renderers).** Mermaid lays
 > both out with force-directed engines that have no byte-exact path here:
@@ -80,11 +80,14 @@ mermaid itself embeds, so no port can match those bytes.
 > `calculateTextDimensions`, which measures Blink `getBBox()` **ink extents**
 > over `sans-serif`/`Arial` (or Trebuchet), `Math.round`ed per line — and those
 > integers land verbatim in the output (a requirement label's `max-width`, a C4
-> shape's width). sebastian models Trebuchet *advances* and Times ink only; a
-> 2026-07 calibration confirmed raw `ttf_parser` glyph bounding boxes don't
-> reproduce Blink's `getBBox` at any font size. Byte-exact would need a
-> Blink-matching Helvetica/Arial ink-metrics subsystem (a research loop of its
-> own). Until then sebastian ships **approximate** renderers — requirement
+> shape's width). A 2026-07 investigation probed the **same** headless Chrome
+> that generated the references and found the emitted values don't match its
+> `getBBox` at the real `fontSize: 16` by any family-selection rule (e.g.
+> `&lt;&lt;Requirement&gt;&gt;` → Chrome 211/195, reference 193 — *below even the
+> sans-serif ink*; implied font size scatters 13–15px across strings). So the
+> target isn't a stable, reproducible quantity and byte-exact is closed as
+> intractable, not merely unimplemented. sebastian ships **approximate**
+> renderers — requirement
 > reuses the unified dagre pipeline (multi-line boxes + shared markers); C4 uses
 > its own deterministic row-based layout with native-SVG boxes, person heads,
 > and relationship arrows. Clean and stable, but **not byte-identical to mmdc**;
@@ -106,12 +109,15 @@ is the same loop that got every ✅ row to byte-exact (details in
 
 The highest-leverage contributions right now:
 
-- **A Blink-matching Helvetica/Arial `getBBox` ink-metrics subsystem.** This is
-  the single unlock that would upgrade **both** requirement and C4 from
-  approximate to byte-exact (their box widths are `Math.round`ed `getBBox` ink
-  extents). A differential research loop against `mmdc`; scoped in `TODO.md`.
-- **Flowchart ELK layout** (`defaultRenderer: elk`) — the big one, scoped
-  in the section below.
+- **An `elkrs`-backed ELK layout for flowcharts** (`layout: elk`). A 2026-07
+  spike proved `elkrs` (ELK 0.11) is byte-identical to mermaid's elkjs 0.9.x on
+  acyclic layered graphs, so this is de-risked; the remaining work is wiring the
+  ELK-JSON build + coordinate/edge readback + the `layout-elk` geometry glue.
+  Scoped in the section below.
+
+(Note: byte-exact **requirement** and **C4** were investigated and closed as
+intractable — their box widths don't match ground-truth Chrome `getBBox` at the
+real font size, so no ink-metrics subsystem would reproduce them. See `TODO.md`.)
 
 If a diagram type you need is missing, opening a PR with `.mmd` fixtures
 and their `mmdc` references is the most useful first step even before any

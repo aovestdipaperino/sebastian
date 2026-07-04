@@ -130,19 +130,28 @@ the ELK-JSON layer as the spike did. Reference fixture harness:
   mindmap's cose-bilkent and architecture's cytoscape-`fcose` are force-layout
   engines (the latter `Math.random`-seeded, non-deterministic even run-to-run),
   and no reusable Rust crate exists for either (spike found only ELK ports).
-- **requirement / C4** — now shipped as **approximate** (non-byte-exact)
-  renderers; see "Already done" above. Byte-exact remains blocked on text
-  metrics, not effort: both size their boxes with `calculateTextDimensions`,
-  which measures `getBBox()` **ink extents** (not advance widths), `Math.round`ed
-  per line, taking the max over `sans-serif` and the diagram font — so on the
-  reference machine every width is Helvetica/Arial (or Trebuchet) glyph-ink, and
-  those integers land verbatim in the output (requirement box label `max-width`;
-  C4 shape widths). Our engine models Trebuchet *advances* and Times ink only; a
-  2026-07 calibration confirmed raw `ttf_parser` glyph bboxes don't reproduce
-  Blink's `getBBox` at any font size. Byte-exact needs a Blink-matching
-  Helvetica/Arial ink-extent glyph-metrics subsystem — a differential research
-  loop of its own. (requirement additionally draws its box with randomized
-  roughjs strokes, needing the same er/state/class rough-masking.)
+- **requirement / C4** — shipped as **approximate** (non-byte-exact); see
+  "Already done". Byte-exact is **not tractable** — and a 2026-07 investigation
+  proved the target values aren't even reproducible from ground-truth Chrome.
+  Both size their boxes with `calculateTextDimensions` → `getBBox()` ink extents,
+  `Math.round`ed per line, family selected between `sans-serif` and the diagram
+  font. The reference box widths land verbatim in the output (requirement label
+  `max-width`; C4 shape widths). I probed the **same** headless Chrome that
+  generated the references (via puppeteer, replicating `drawSimpleText`'s
+  tspan + the exact family-index selection) at the real default `fontSize: 16`:
+  - `&lt;&lt;Requirement&gt;&gt;` → Chrome `getBBox` = **211** (Trebuchet) /
+    **195** (sans-serif), but reference `max-width − 50` = **193** — *below even
+    the sans-serif ink*.
+  - Per-string, the implied font size scatters 13.2–15.5px; no single
+    `(font, size)` model fits (`ID: 1` matches Trebuchet@16, `Verification: Test`
+    matches ~14.4).
+
+  So the emitted integers do not correspond to Chrome `getBBox` of the label
+  strings by any rule — the measurement path carries a factor (memoized config
+  defaults / a non-obvious size resolution) that is not a stable, reproducible
+  target. A Blink-matching ink measurer would **still not** hit these values, so
+  this is closed as intractable rather than "needs a subsystem". (requirement
+  additionally draws its box with randomized roughjs strokes.)
 
 ## Process for each new type
 
