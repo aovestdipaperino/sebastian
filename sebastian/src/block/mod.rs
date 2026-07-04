@@ -8,9 +8,12 @@
 //! through the shared `createText`/text-measurement code, matching the
 //! deprecated `createLabel` path (`width: Infinity`, so labels never wrap).
 //!
-//! Stage 1 covers plain block grids: nodes, shapes, `columns`, `space`,
-//! `space:N`, `:N` column spans, and nested `block:name … end` composites.
-//! Edges are not yet rendered.
+//! Covers plain block grids (nodes, shapes, `columns`, `space` / `space:N`,
+//! `:N` column spans, nested `block:name … end` composites,
+//! `classDef`/`class`/`style`) and edges (`renderHelpers.insertEdges` + the
+//! legacy `dagre-wrapper` `insertEdge`/`insertEdgeLabel`). Chained edges
+//! (`a --> b --> c`) are unsupported — upstream emits a spurious `undefined`
+//! node for them.
 
 // These lints fire on faithful ports of mermaid's imperative layout code; the
 // straightforward Rust rewrites either lose the 1:1 mapping to the source or do

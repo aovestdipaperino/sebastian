@@ -91,8 +91,17 @@ effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 - **mindmap / architecture** — depend on cose-bilkent / cytoscape force
   layouts; non-deterministic and a large port for niche demand.
-- **C4, kanban, requirement, treemap** — no corpus demand; revisit if
+- **kanban, requirement, treemap** — no corpus demand; revisit if
   fixtures show up. (block-beta is now supported; see above.)
+- **C4** — blocked on text metrics, not effort. C4's `calculateTextDimensions`
+  measures with `getBBox()` **ink extents** (not advance widths), `Math.round`ed,
+  taking the max over `sans-serif` and the (uninstalled) `"Open Sans"` family —
+  so on the reference machine every measured width is Helvetica/Arial glyph-ink.
+  The engine only models Trebuchet *advances*, so byte-exact C4 needs a whole new
+  Helvetica ink-extent glyph-metrics subsystem, and the result would be fragile
+  (the fallback face is environment-dependent). Parser/db/svgDraw (~2.2k loc) are
+  straightforward; the measurement is the wall. Revisit only alongside a general
+  multi-font ink-measurement effort.
 
 ## Process for each new type
 
