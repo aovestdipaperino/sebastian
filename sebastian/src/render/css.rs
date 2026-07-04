@@ -472,6 +472,148 @@ pub fn themed_quadrant_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The kanban stylesheet (port of `diagrams/kanban/styles.ts` genSections).
+#[must_use]
+#[allow(clippy::too_many_lines)]
+pub fn themed_kanban_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let text_color = v("textColor");
+    let node_border = v("nodeBorder");
+    let background = {
+        let b = v("background");
+        if b.is_empty() { "white".to_owned() } else { b }
+    };
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    rule(&mut o, &i, &[" .edge"], "stroke-width:3;");
+    for n in 0..12i64 {
+        let sec = n - 1;
+        let cscale = v(&format!("cScale{n}"));
+        let fill = super::khroma::lighten(&cscale, 10.0);
+        let label = v(&format!("cScaleLabel{n}"));
+        let inv = v(&format!("cScaleInv{n}"));
+        let sw = 17 - 3 * n;
+        rule(
+            &mut o,
+            &i,
+            &[
+                &format!(" .section-{sec} rect"),
+                &format!(" .section-{sec} path"),
+                &format!(" .section-{sec} circle"),
+                &format!(" .section-{sec} polygon"),
+                &format!(" .section-{sec} path"),
+            ],
+            &format!("fill:{fill};stroke:{fill};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .section-{sec} text")],
+            &format!("fill:{label};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .node-icon-{sec}")],
+            &format!("font-size:40px;color:{label};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .section-edge-{sec}")],
+            &format!("stroke:{cscale};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .edge-depth-{sec}")],
+            &format!("stroke-width:{sw};"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[&format!(" .section-{sec} line")],
+            &format!("stroke:{inv};stroke-width:3;"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[" .disabled", " .disabled circle", " .disabled text"],
+            "fill:lightgray;",
+        );
+        rule(&mut o, &i, &[" .disabled text"], "fill:#efefef;");
+        rule(
+            &mut o,
+            &i,
+            &[
+                " .node rect",
+                " .node circle",
+                " .node ellipse",
+                " .node polygon",
+                " .node path",
+            ],
+            &format!("fill:{background};stroke:{node_border};stroke-width:1px;"),
+        );
+        rule(
+            &mut o,
+            &i,
+            &[" .kanban-ticket-link"],
+            &format!("fill:{background};stroke:{node_border};text-decoration:underline;"),
+        );
+    }
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .section-root rect",
+            " .section-root path",
+            " .section-root circle",
+            " .section-root polygon",
+        ],
+        &format!("fill:{};", v("git0")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .section-root text"],
+        &format!("fill:{};", v("gitBranchLabel0")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .icon-container"],
+        "height:100%;display:flex;justify-content:center;align-items:center;",
+    );
+    rule(&mut o, &i, &[" .edge"], "fill:none;");
+    rule(
+        &mut o,
+        &i,
+        &[" .cluster-label", " .label"],
+        &format!("color:{text_color};fill:{text_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .kanban-label"],
+        "dy:1em;alignment-baseline:middle;text-anchor:middle;dominant-baseline:middle;text-align:center;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .label-icon"],
+        "display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .node .label-icon path"],
+        "fill:currentColor;stroke:revert;stroke-width:revert;",
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The treemap stylesheet (port of `diagrams/treemap/styles.ts`).
 #[must_use]
 pub fn themed_treemap_css(id: &str, vars: &Map<String, Value>) -> String {

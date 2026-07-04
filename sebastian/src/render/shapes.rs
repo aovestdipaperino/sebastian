@@ -223,7 +223,7 @@ pub fn measure_label_sized(
 /// `addHtmlSpan` with an explicit span class (markdown labels add
 /// `markdown-node-label`).
 #[allow(clippy::too_many_lines)]
-fn build_html_label_classed(
+pub(crate) fn build_html_label_classed(
     parent: &Element,
     label: &str,
     bbox: BBox,

@@ -73,6 +73,9 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         {
             return "treemap";
         }
+        if t == "kanban" || t.starts_with("kanban ") || t.starts_with("kanban:") {
+            return "kanban";
+        }
         return "flowchart";
     }
     "flowchart"
@@ -97,6 +100,7 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
         "sankey" => crate::sankey::render_sankey(source, id).map_err(Into::into),
         "block" => crate::block::render_block(source, id).map_err(Into::into),
         "treemap" => crate::treemap::render_treemap(source, id).map_err(Into::into),
+        "kanban" => crate::kanban::render_kanban(source, id).map_err(Into::into),
         "sequence" => crate::sequence::render_sequence(source, id).map_err(Into::into),
         "timeline" => crate::timeline::render_timeline(source, id).map_err(Into::into),
         "class" => render_class(source, id).map_err(Into::into),

@@ -9,7 +9,8 @@ diagram renderers (mermaid 11.15.0). Named after Sebastian, the crab
 from Disney's *The Little Mermaid* — a fitting mascot for a
 mermaid renderer. For supported diagram types — **flowchart, stateDiagram-v2,
 sequenceDiagram, classDiagram, timeline, pie, erDiagram, xychart-beta,
-gantt, gitGraph, journey, quadrantChart, packet, radar, sankey, block, treemap** — the output SVG is
+gantt, gitGraph, journey, quadrantChart, packet, radar, sankey, block, treemap,
+kanban** — the output SVG is
 **byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
 
 The workspace contains two crates:
@@ -55,11 +56,21 @@ mermaid itself embeds, so no port can match those bytes.
 | sankey / sankey-beta | ✅ done | 3 | byte-exact (labels-within-bounds; getBBox ignores text) |
 | block / block-beta | ✅ done | 12 | byte-exact (columns, space, spans, composites, classDef/style, edges incl. labels) |
 | treemap / treemap-beta | ✅ done | 4 | byte-exact (d3 squarify layout, sections/leaves, font-shrink labels) |
-| kanban | ⬜ not started | — | tractable and byte-exact-able (plain rects + labels + arithmetic column layout, no rough.js); scoped in `TODO.md` |
+| kanban | ✅ done | 3 | byte-exact (mindmap-indent parser, section clusters + item cards, arithmetic column layout) |
 | requirement | ⚠️ rough-masked | — | drives the reusable unified pipeline, but its box is a roughjs shape with randomized control points → only byte-exact modulo rough.js |
 | flowchart ELK layout | ⛔ blocked (scale) | — | `defaultRenderer: elk`; a 1.5 MB GWT-transpiled Java layout engine, scoped below |
 | C4 | ⛔ blocked (metrics) | — | needs a Helvetica ink-extent (`getBBox`) text-metrics subsystem the engine lacks |
-| mindmap / architecture | ⛔ infeasible | — | `Math.random`-seeded cose-bilkent / cytoscape force layouts; upstream differs run-to-run, so no port can be byte-exact |
+| mindmap / architecture | 🚫 not byte-exact by nature | — | `Math.random`-seeded cose-bilkent / cytoscape force layouts; upstream output differs run-to-run, so *no* port can match its bytes (see note below) |
+
+> **Note on mindmap and architecture.** These are the one category that the
+> byte-exact goal cannot apply to. Mermaid lays them out with force-directed
+> engines (cose-bilkent / cytoscape) seeded from `Math.random()`, so two runs
+> of `mmdc` on the *same* source already produce different SVGs — there is no
+> canonical byte stream to match. They could still be **supported with an
+> approximate (non-byte-exact) layout** — the same way this project treats the
+> hand-drawn look as an opt-in stylization rather than a byte-exact match — but
+> such output would be validated by rasterized/structural comparison, not the
+> byte-diff corpus every other type uses. Left unimplemented for now.
 
 ## How to help
 

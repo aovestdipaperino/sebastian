@@ -17,6 +17,13 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+- **kanban** — kanban boards, byte-exact vs mermaid-cli 11.15.0. Ports the
+  mindmap-style indentation parser, `kanbanDb` (sections + items), the bespoke
+  arithmetic column layout, the section cluster (`insertCluster` rect +
+  markdown foreignObject label), and the `kanbanItem` shape (rounded rect + a
+  markdown title label + empty ticket/assigned label slots). Labels reuse the
+  shared `build_html_label_classed` foreignObject builder; the section-colour
+  CSS is a port of the mindmap `genSections` generator. Three corpus cases.
 - **treemap / treemap-beta** — treemap diagrams, byte-exact vs mermaid-cli
   11.15.0. Ports the langium indentation grammar, `buildHierarchy`, the
   d3-hierarchy `sum`/`sort` + `treemap().round(true)` squarify layout (per-node

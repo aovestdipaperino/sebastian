@@ -23,6 +23,7 @@ Already done:
 - **sankey / sankey-beta** (3 cases, byte-exact - full d3-sankey iterative layout; labels-within-bounds cases)
 - **block / block-beta** (12 cases, byte-exact - columns, space, `:N` spans, nested composites, classDef/class/style, and edges incl. labels)
 - **treemap / treemap-beta** (4 cases, byte-exact - d3 squarify layout, sections/leaves, font-shrink labels)
+- **kanban** (3 cases, byte-exact - mindmap-indent parser, section clusters + item cards, column layout)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 
@@ -90,13 +91,13 @@ effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 ## Not planned (for now)
 
-- **mindmap / architecture** — depend on cose-bilkent / cytoscape force
-  layouts; non-deterministic and a large port for niche demand.
-- **kanban** — tractable (clean, byte-exact-able): compact bespoke renderer
-  (~102 loc), plain `<rect>` boxes (rx=5) + foreignObject Trebuchet labels +
-  arithmetic column layout, `insertCluster` sections. Needs the kanban
-  indentation grammar, `kanbanDb.getData`, section-cluster + item-node shapes,
-  and CSS. No rough.js. Not started (no corpus demand yet).
+- **mindmap / architecture** — cose-bilkent / cytoscape force layouts seeded
+  by `Math.random()`, so upstream output differs run-to-run: **the byte-exact
+  goal cannot apply**. They could be supported with an *approximate*
+  (non-byte-exact) layout — an opt-in stylization like the hand-drawn look,
+  validated by rasterized/structural comparison rather than the byte-diff
+  corpus — but that is a deliberate departure from this project's guarantee and
+  is left unimplemented for now. See the note in README.md.
 - **requirement** — only byte-exact *modulo rough.js*. Drives the unified
   `render()` pipeline (reusable), BUT the `requirementBox` shape draws its box
   with roughjs curved double-strokes whose control points are randomized
