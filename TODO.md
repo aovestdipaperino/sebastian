@@ -75,6 +75,27 @@ d3 time scales, axis tick generation, and date parsing (dayjs semantics)
 make byte-exactness fiddlier than the value here suggests. Defer until
 the above are done.
 
+## gitGraph TB / BT — scoped, not started
+
+The `LR` renderer is done (`src/gitgraph/mod.rs`). `TB`/`BT` is a full
+axis transpose of `gitGraphRenderer.ts`, mechanical but pervasive:
+- **Positioning**: in TB/BT the branch position is the *x* coord and the commit
+  step is the *y* coord (starting at `defaultPos = 30`); `BT` reverses the
+  sorted commit keys and mirrors about `maxPos`. `setBranchPosition` adds
+  `bbox.width/2` to the inter-branch step (so branch spacing needs the label
+  width first).
+- **Branch spines**: vertical lines `x = pos`, `y` from `defaultPos`→`maxPos`
+  (TB) or `maxPos`→`defaultPos` (BT). Labels sit at the top (`y=0`, TB) or
+  bottom (`y=maxPos`, BT), centered on `pos - bbox.width/2`.
+- **Arrows**: `drawArrow` has distinct `TB` and `BT` lineDef families for both
+  the reroute and non-reroute cases (see gitGraphRenderer.ts:692-816);
+  `shouldRerouteArrow` compares `p1.x < p2.x` instead of `p1.y < p2.y`.
+- **Commit labels**: `drawCommitLabel` also branches on TB/BT; the rotation math
+  differs. Cleanest first cut is `showCommitLabel: false` (skips labels+tags),
+  which needs a small config-plumbing addition — the renderer does not read
+  `gitGraph.showCommitLabel` today (it always draws labels).
+- Corpus must use explicit `commit id:` (bare commits get random hex ids).
+
 ## Flowchart ELK layout — scoped, not started
 
 `%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%` routes layout through
