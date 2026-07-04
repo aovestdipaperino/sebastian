@@ -18,6 +18,13 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 ## [Unreleased]
 
 ### Added
+- **gitGraph `TB` / `BT` orientations** — the vertical layouts (branches as
+  columns, commits flowing down/up), byte-exact vs mermaid-cli 11.15.0 with
+  `showCommitLabel: false`. Ports the axis transpose across positioning, the
+  vertical branch spines and top/bottom labels, the `TB`/`BT` `drawArrow`
+  lineDef families (reroute + non-reroute), and `gitGraph.showCommitLabel`
+  config plumbing. `LR` output is byte-for-byte unchanged. (Commit
+  labels/tags in TB/BT are not yet placed.) Four corpus cases.
 - **block / block-beta** — block diagrams, byte-exact vs mermaid-cli 11.15.0
   (plain-block subset). Ports the jison grammar, `blockDB` populate/hierarchy,
   the bespoke `layout.ts` engine (`calculateBlockSizes` measure pass,

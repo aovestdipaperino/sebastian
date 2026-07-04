@@ -55,6 +55,8 @@ struct Db {
     curr_branch: String,
     head: Option<String>,
     seq: usize,
+    /// Diagram orientation: "LR" (default), "TB", or "BT".
+    dir: String,
 }
 
 impl Db {
@@ -125,12 +127,16 @@ fn parse(source: &str) -> Result<Db, GitParseError> {
         if !found_header {
             if line.starts_with("gitGraph") {
                 found_header = true;
-                let rest = line["gitGraph".len()..].trim().trim_end_matches(':');
-                if !rest.is_empty() && rest != "LR" {
-                    return Err(GitParseError {
-                        message: format!("unsupported gitGraph orientation: {rest}"),
-                    });
-                }
+                let rest = line["gitGraph".len()..].trim().trim_end_matches(':').trim();
+                db.dir = match rest {
+                    "" | "LR" => "LR".to_owned(),
+                    "TB" | "BT" => rest.to_owned(),
+                    other => {
+                        return Err(GitParseError {
+                            message: format!("unsupported gitGraph orientation: {other}"),
+                        });
+                    }
+                };
                 continue;
             }
             return Err(GitParseError {
@@ -404,15 +410,23 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
     };
 
     let branches = db.branches_as_obj_array();
+    let dir = db.dir.as_str();
+    let is_vert = dir == "TB" || dir == "BT";
 
-    // Branch positions (LR): temp label measurement pass.
+    // Branch positions. `setBranchPosition`: pos += 50 + (rotate?40) +
+    // (TB/BT ? bbox.width/2 : 0).
     let mut branch_pos: std::collections::HashMap<String, (f64, usize)> =
         std::collections::HashMap::new();
     {
         let mut pos = 0.0;
         for (index, name) in branches.iter().enumerate() {
             branch_pos.insert(name.clone(), (pos, index));
-            pos += 50.0 + if rotate_commit_label { 40.0 } else { 0.0 };
+            let bw_half = if is_vert {
+                text_dims(name, 16.0).0 / 2.0
+            } else {
+                0.0
+            };
+            pos += 50.0 + if rotate_commit_label { 40.0 } else { 0.0 } + bw_half;
         }
     }
 
@@ -433,13 +447,24 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
     let mut commit_pos: std::collections::HashMap<String, (f64, f64)> =
         std::collections::HashMap::new();
     let mut max_pos = 0.0f64;
+    // BT reverses the seq-sorted commit order for positioning.
+    let ordered: Vec<&Commit> = if dir == "BT" {
+        db.commits.iter().rev().collect()
+    } else {
+        db.commits.iter().collect()
+    };
     {
-        let mut pos = 0.0;
-        for c in &db.commits {
+        let mut pos = if is_vert { 30.0 } else { 0.0 }; // defaultPos = 30
+        for c in &ordered {
             let pos_with_offset = pos + LAYOUT_OFFSET;
-            let (branch_y, _) = branch_pos[&c.branch];
-            commit_pos.insert(c.id.clone(), (pos_with_offset, branch_y - 2.0));
-            pos = pos + COMMIT_STEP + LAYOUT_OFFSET;
+            let (branch_p, _) = branch_pos[&c.branch];
+            if is_vert {
+                // x = branch pos, y = posWithOffset
+                commit_pos.insert(c.id.clone(), (branch_p, pos_with_offset));
+            } else {
+                commit_pos.insert(c.id.clone(), (pos_with_offset, branch_p - 2.0));
+            }
+            pos += COMMIT_STEP + LAYOUT_OFFSET;
             if pos > max_pos {
                 max_pos = pos;
             }
@@ -458,14 +483,28 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
         for (index, name) in branches.iter().enumerate() {
             let color_idx = index % THEME_COLOR_LIMIT;
             let (pos, _) = branch_pos[name];
-            let spine_y = pos - 2.0;
+            let spine_y = if is_vert { pos } else { pos - 2.0 };
             let line = append(&g, "line");
-            set_attr(&line, "x1", "0");
-            set_attr(&line, "y1", js_num(spine_y));
-            set_attr(&line, "x2", js_num(max_pos));
-            set_attr(&line, "y2", js_num(spine_y));
+            if dir == "TB" {
+                set_attr(&line, "x1", js_num(pos));
+                set_attr(&line, "y1", "30");
+                set_attr(&line, "x2", js_num(pos));
+                set_attr(&line, "y2", js_num(max_pos));
+                acc_branches.add_line(pos, 30.0, 0.0, max_pos - 30.0);
+            } else if dir == "BT" {
+                set_attr(&line, "x1", js_num(pos));
+                set_attr(&line, "y1", js_num(max_pos));
+                set_attr(&line, "x2", js_num(pos));
+                set_attr(&line, "y2", "30");
+                acc_branches.add_line(pos, 30.0, 0.0, max_pos - 30.0);
+            } else {
+                set_attr(&line, "x1", "0");
+                set_attr(&line, "y1", js_num(spine_y));
+                set_attr(&line, "x2", js_num(max_pos));
+                set_attr(&line, "y2", js_num(spine_y));
+                acc_branches.add_line(0.0, spine_y, max_pos, 0.0);
+            }
             set_attr(&line, "class", format!("branch branch{color_idx}"));
-            acc_branches.add_line(0.0, spine_y, max_pos, 0.0);
             lanes.push(spine_y);
 
             let bkg = append(&g, "rect");
@@ -486,25 +525,44 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
             set_attr(&bkg, "style", "");
             set_attr(&bkg, "rx", "4");
             set_attr(&bkg, "ry", "4");
-            let bx = -bw - 4.0 - if rotate_commit_label { 30.0 } else { 0.0 };
-            set_attr(&bkg, "x", js_num(bx));
-            set_attr(&bkg, "y", js_num(-bh / 2.0 + 10.0));
-            set_attr(&bkg, "width", js_num(bw + 18.0));
-            set_attr(&bkg, "height", js_num(bh + 4.0));
-            let ltx = -bw - 14.0 - if rotate_commit_label { 30.0 } else { 0.0 };
-            let lty = spine_y - bh / 2.0 - 2.0;
-            set_attr(
-                &label,
-                "transform",
-                format!("translate({}, {})", js_num(ltx), js_num(lty)),
-            );
-            let bkg_ty = spine_y - 12.0;
-            set_attr(
-                &bkg,
-                "transform",
-                format!("translate(-19, {})", js_num(bkg_ty)),
-            );
-            acc_branches.add_rect(bx - 19.0, -bh / 2.0 + 10.0 + bkg_ty, bw + 18.0, bh + 4.0);
+            if is_vert {
+                let by = if dir == "BT" { max_pos } else { 0.0 };
+                let bx = pos - bw / 2.0 - 10.0;
+                set_attr(&bkg, "x", js_num(bx));
+                set_attr(&bkg, "y", js_num(by));
+                set_attr(&bkg, "width", js_num(bw + 18.0));
+                set_attr(&bkg, "height", js_num(bh + 4.0));
+                set_attr(
+                    &label,
+                    "transform",
+                    format!(
+                        "translate({}, {})",
+                        js_num(pos - bw / 2.0 - 5.0),
+                        js_num(by)
+                    ),
+                );
+                acc_branches.add_rect(bx, by, bw + 18.0, bh + 4.0);
+            } else {
+                let bx = -bw - 4.0 - if rotate_commit_label { 30.0 } else { 0.0 };
+                set_attr(&bkg, "x", js_num(bx));
+                set_attr(&bkg, "y", js_num(-bh / 2.0 + 10.0));
+                set_attr(&bkg, "width", js_num(bw + 18.0));
+                set_attr(&bkg, "height", js_num(bh + 4.0));
+                let ltx = -bw - 14.0 - if rotate_commit_label { 30.0 } else { 0.0 };
+                let lty = spine_y - bh / 2.0 - 2.0;
+                set_attr(
+                    &label,
+                    "transform",
+                    format!("translate({}, {})", js_num(ltx), js_num(lty)),
+                );
+                let bkg_ty = spine_y - 12.0;
+                set_attr(
+                    &bkg,
+                    "transform",
+                    format!("translate(-19, {})", js_num(bkg_ty)),
+                );
+                acc_branches.add_rect(bx - 19.0, -bh / 2.0 + 10.0 + bkg_ty, bw + 18.0, bh + 4.0);
+            }
         }
     }
 
@@ -533,7 +591,7 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                 let p1 = commit_pos[&pa.id];
                 let p2 = commit_pos[&c.id];
                 // shouldRerouteArrow
-                let commit_b_is_furthest = p1.1 < p2.1;
+                let commit_b_is_furthest = if is_vert { p1.0 < p2.0 } else { p1.1 < p2.1 };
                 let branch_to_get_curve = if commit_b_is_furthest {
                     &c.branch
                 } else {
@@ -547,7 +605,180 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                 if c.ty == MERGE && c.parents.first() != Some(&pa.id) {
                     color_idx = branch_pos[&pa.branch].1;
                 }
-                let line_def = if needs_reroute {
+                let merge_nonfirst = c.ty == MERGE && c.parents.first() != Some(&pa.id);
+                let line_def = if is_vert {
+                    let tok = |v: f64| js_num(v);
+                    let (p1x, p1y, p2x, p2y) = (p1.0, p1.1, p2.0, p2.1);
+                    if needs_reroute {
+                        let (radius, offset) = (10.0, 10.0);
+                        let arc = "A 10 10, 0, 0, 0,".to_owned();
+                        let arc2 = "A 10 10, 0, 0, 1,".to_owned();
+                        let line_x = if p1x < p2x {
+                            find_lane(&mut lanes, p1x, p2x)
+                        } else {
+                            find_lane(&mut lanes, p2x, p1x)
+                        };
+                        let sign = if dir == "TB" { 1.0 } else { -1.0 };
+                        if p1x < p2x {
+                            let (first_arc, second_arc) = if dir == "TB" {
+                                (arc2.clone(), arc.clone())
+                            } else {
+                                (arc.clone(), arc2.clone())
+                            };
+                            [
+                                "M".to_owned(),
+                                tok(p1x),
+                                tok(p1y),
+                                "L".to_owned(),
+                                tok(line_x - radius),
+                                tok(p1y),
+                                first_arc,
+                                tok(line_x),
+                                tok(p1y + sign * offset),
+                                "L".to_owned(),
+                                tok(line_x),
+                                tok(p2y - sign * radius),
+                                second_arc,
+                                tok(line_x + offset),
+                                tok(p2y),
+                                "L".to_owned(),
+                                tok(p2x),
+                                tok(p2y),
+                            ]
+                            .join(" ")
+                        } else {
+                            color_idx = branch_pos[&pa.branch].1;
+                            let (first_arc, second_arc) = if dir == "TB" {
+                                (arc.clone(), arc2.clone())
+                            } else {
+                                (arc2.clone(), arc.clone())
+                            };
+                            [
+                                "M".to_owned(),
+                                tok(p1x),
+                                tok(p1y),
+                                "L".to_owned(),
+                                tok(line_x + radius),
+                                tok(p1y),
+                                first_arc,
+                                tok(line_x),
+                                tok(p1y + sign * offset),
+                                "L".to_owned(),
+                                tok(line_x),
+                                tok(p2y - sign * radius),
+                                second_arc,
+                                tok(line_x - offset),
+                                tok(p2y),
+                                "L".to_owned(),
+                                tok(p2x),
+                                tok(p2y),
+                            ]
+                            .join(" ")
+                        }
+                    } else {
+                        let (radius, offset) = (20.0, 20.0);
+                        let arc = "A 20 20, 0, 0, 0,".to_owned();
+                        let arc2 = "A 20 20, 0, 0, 1,".to_owned();
+                        let sign = if dir == "TB" { 1.0 } else { -1.0 };
+                        if (p1x - p2x).abs() < f64::EPSILON {
+                            [
+                                "M".to_owned(),
+                                tok(p1x),
+                                tok(p1y),
+                                "L".to_owned(),
+                                tok(p2x),
+                                tok(p2y),
+                            ]
+                            .join(" ")
+                        } else if p1x < p2x {
+                            if merge_nonfirst {
+                                let a = if dir == "TB" {
+                                    arc.clone()
+                                } else {
+                                    arc2.clone()
+                                };
+                                [
+                                    "M".to_owned(),
+                                    tok(p1x),
+                                    tok(p1y),
+                                    "L".to_owned(),
+                                    tok(p1x),
+                                    tok(p2y - sign * radius),
+                                    a,
+                                    tok(p1x + offset),
+                                    tok(p2y),
+                                    "L".to_owned(),
+                                    tok(p2x),
+                                    tok(p2y),
+                                ]
+                                .join(" ")
+                            } else {
+                                let a = if dir == "TB" {
+                                    arc2.clone()
+                                } else {
+                                    arc.clone()
+                                };
+                                [
+                                    "M".to_owned(),
+                                    tok(p1x),
+                                    tok(p1y),
+                                    "L".to_owned(),
+                                    tok(p2x - radius),
+                                    tok(p1y),
+                                    a,
+                                    tok(p2x),
+                                    tok(p1y + sign * offset),
+                                    "L".to_owned(),
+                                    tok(p2x),
+                                    tok(p2y),
+                                ]
+                                .join(" ")
+                            }
+                        } else if merge_nonfirst {
+                            let a = if dir == "TB" {
+                                arc2.clone()
+                            } else {
+                                arc.clone()
+                            };
+                            [
+                                "M".to_owned(),
+                                tok(p1x),
+                                tok(p1y),
+                                "L".to_owned(),
+                                tok(p1x),
+                                tok(p2y - sign * radius),
+                                a,
+                                tok(p1x - offset),
+                                tok(p2y),
+                                "L".to_owned(),
+                                tok(p2x),
+                                tok(p2y),
+                            ]
+                            .join(" ")
+                        } else {
+                            let a = if dir == "TB" {
+                                arc.clone()
+                            } else {
+                                arc2.clone()
+                            };
+                            [
+                                "M".to_owned(),
+                                tok(p1x),
+                                tok(p1y),
+                                "L".to_owned(),
+                                tok(p2x + radius),
+                                tok(p1y),
+                                a,
+                                tok(p2x),
+                                tok(p1y + sign * offset),
+                                "L".to_owned(),
+                                tok(p2x),
+                                tok(p2y),
+                            ]
+                            .join(" ")
+                        }
+                    }
+                } else if needs_reroute {
                     let radius = 10.0;
                     let offset = 10.0;
                     let arc = "A 10 10, 0, 0, 0,";
@@ -697,13 +928,13 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
     set_attr(&g_bullets, "class", "commit-bullets");
     let g_labels = append(&svg, "g");
     set_attr(&g_labels, "class", "commit-labels");
+    let show_commit_label = config.git_show_commit_label.unwrap_or(true);
     {
-        let mut pos = 0.0f64;
-        for c in &db.commits {
-            let pos_with_offset = pos + LAYOUT_OFFSET;
-            let (branch_y, branch_index) = branch_pos[&c.branch];
-            let x = pos_with_offset;
-            let y = branch_y - 2.0;
+        for c in &ordered {
+            let (x, y) = commit_pos[&c.id];
+            let pos = x - LAYOUT_OFFSET; // LR label anchor (unused when vert)
+            let pos_with_offset = x;
+            let branch_index = branch_pos[&c.branch].1;
             let symbol = c.custom_type.unwrap_or(c.ty);
             let type_class = match symbol {
                 REVERSE => "commit-reverse",
@@ -810,8 +1041,13 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                 acc_bullets.add_rect(x - 10.0, y - 10.0, 20.0, 20.0);
             }
 
-            // Label.
-            if symbol != CHERRY_PICK && ((c.custom_id && c.ty == MERGE) || c.ty != MERGE) {
+            // Label. (TB/BT commit-label placement is not yet supported, so
+            // TB/BT is only byte-exact with showCommitLabel:false.)
+            if show_commit_label
+                && !is_vert
+                && symbol != CHERRY_PICK
+                && ((c.custom_id && c.ty == MERGE) || c.ty != MERGE)
+            {
                 let wrapper = append(&g_labels, "g");
                 let label_bkg = append(&wrapper, "rect");
                 set_attr(&label_bkg, "class", "commit-label-bkg");
@@ -955,7 +1191,6 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                     );
                 }
             }
-            pos += COMMIT_STEP + LAYOUT_OFFSET;
         }
     }
 

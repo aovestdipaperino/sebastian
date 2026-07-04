@@ -1,0 +1,11 @@
+%%{init: {"gitGraph": {"showCommitLabel": false}}}%%
+gitGraph BT:
+    commit id: "a"
+    commit id: "b" type: HIGHLIGHT
+    branch feat
+    commit id: "c"
+    branch sub
+    commit id: "d"
+    checkout main
+    commit id: "e"
+    merge feat id: "m"

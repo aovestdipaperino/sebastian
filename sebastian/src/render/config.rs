@@ -28,6 +28,8 @@ pub struct RenderConfig {
     pub direction: String,
     /// Edge-label font size override (ER labels inherit 14px from CSS).
     pub edge_label_font_size: Option<f64>,
+    /// `gitGraph.showCommitLabel` (defaults to true when unset).
+    pub git_show_commit_label: Option<bool>,
 }
 
 impl Default for RenderConfig {
@@ -46,6 +48,7 @@ impl Default for RenderConfig {
             computed_theme: Map::new(),
             direction: "TB".to_owned(),
             edge_label_font_size: None,
+            git_show_commit_label: None,
         }
     }
 }
@@ -146,6 +149,11 @@ fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
         if let Some(c) = flow.get("curve").and_then(Value::as_str) {
             config.curve = Some(c.to_owned());
         }
+    }
+    if let Some(Value::Object(git)) = map.get("gitGraph")
+        && let Some(b) = git.get("showCommitLabel").and_then(Value::as_bool)
+    {
+        config.git_show_commit_label = Some(b);
     }
     // top-level htmlLabels also exists in mermaid config
     if let Some(b) = map.get("htmlLabels").and_then(Value::as_bool) {

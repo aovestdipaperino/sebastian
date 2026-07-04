@@ -47,14 +47,13 @@ mermaid itself embeds, so no port can match those bytes.
 | pie | ✅ done | 4 | byte-exact |
 | erDiagram | ✅ done | 3 | byte-exact modulo rough.js randomness |
 | xychart-beta | ✅ done | 3 | byte-exact |
-| gitGraph (`LR`) | ✅ done | 3 | byte-exact modulo random commit ids + 1-ulp viewBox |
+| gitGraph (`LR` / `TB` / `BT`) | ✅ done | 7 | byte-exact modulo random commit ids + 1-ulp viewBox (TB/BT need `showCommitLabel: false`) |
 | journey | ✅ done | 3 | byte-exact |
 | quadrantChart | ✅ done | 3 | byte-exact |
 | packet / packet-beta | ✅ done | 3 | byte-exact |
 | radar / radar-beta | ✅ done | 3 | byte-exact |
 | sankey / sankey-beta | ✅ done | 3 | byte-exact (labels-within-bounds; getBBox ignores text) |
 | block / block-beta | ✅ done | 12 | byte-exact (columns, space, spans, composites, classDef/style, edges incl. labels) |
-| gitGraph (`TB` / `BT`) | ❌ not started | — | only the `LR` orientation is ported |
 | flowchart ELK layout | ❌ not started | — | `defaultRenderer: elk`; a large engine port, scoped below |
 | mindmap / architecture | ❌ not planned | — | force layouts (cose-bilkent / cytoscape), non-deterministic |
 | C4, kanban, requirement, treemap | ❌ not planned | — | no corpus demand yet; revisit when fixtures show up |
@@ -77,8 +76,9 @@ The highest-leverage contributions right now:
 
 - **Verify `quadrantChart`.** It already renders; it needs a fixture
   corpus and the byte-diff pass to promote it from experimental to done.
-- **gitGraph `TB`/`BT` orientations.** The `LR` renderer is a starting
-  point; the vertical layouts reuse most of it.
+- **gitGraph commit labels in `TB`/`BT`.** The vertical orientations are
+  byte-exact with `showCommitLabel: false`; drawing the commit labels/tags in
+  those orientations is the remaining piece.
 - **Flowchart ELK layout** (`defaultRenderer: elk`) — the big one, scoped
   in the section below.
 
