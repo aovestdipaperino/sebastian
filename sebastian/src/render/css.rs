@@ -472,6 +472,52 @@ pub fn themed_quadrant_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The treemap stylesheet (port of `diagrams/treemap/styles.ts`).
+#[must_use]
+pub fn themed_treemap_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let text_color = v("textColor");
+    let title_color = {
+        let t = v("titleColor");
+        if t.is_empty() { text_color.clone() } else { t }
+    };
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    rule(
+        &mut o,
+        &i,
+        &[" .treemapNode.section"],
+        "stroke:black;stroke-width:1;fill:#efefef;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .treemapNode.leaf"],
+        "stroke:black;stroke-width:1;fill:#efefef;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .treemapLabel"],
+        &format!("fill:{text_color};font-size:12px;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .treemapValue"],
+        &format!("fill:{text_color};font-size:10px;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .treemapTitle"],
+        &format!("fill:{title_color};font-size:14px;"),
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The block stylesheet (port of `diagrams/block/styles.ts` through stylis,
 /// wrapped in the shared prefix/suffix).
 #[must_use]

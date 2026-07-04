@@ -22,6 +22,7 @@ Already done:
 - **radar / radar-beta** (3 cases, byte-exact - incl. circle/polygon graticule, axis-ref entries, options)
 - **sankey / sankey-beta** (3 cases, byte-exact - full d3-sankey iterative layout; labels-within-bounds cases)
 - **block / block-beta** (12 cases, byte-exact - columns, space, `:N` spans, nested composites, classDef/class/style, and edges incl. labels)
+- **treemap / treemap-beta** (4 cases, byte-exact - d3 squarify layout, sections/leaves, font-shrink labels)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 
@@ -91,8 +92,8 @@ effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 - **mindmap / architecture** — depend on cose-bilkent / cytoscape force
   layouts; non-deterministic and a large port for niche demand.
-- **kanban, requirement, treemap** — no corpus demand; revisit if
-  fixtures show up. (block-beta is now supported; see above.)
+- **kanban, requirement** — no corpus demand; revisit if fixtures show up.
+  (block-beta and treemap-beta are now supported; see above.)
 - **C4** — blocked on text metrics, not effort. C4's `calculateTextDimensions`
   measures with `getBBox()` **ink extents** (not advance widths), `Math.round`ed,
   taking the max over `sans-serif` and the (uninstalled) `"Open Sans"` family —

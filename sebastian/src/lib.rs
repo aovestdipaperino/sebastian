@@ -27,6 +27,7 @@ pub mod state;
 pub mod svg;
 pub mod text;
 pub mod timeline;
+pub mod treemap;
 pub mod xychart;
 
 #[cfg(feature = "raster")]

@@ -66,6 +66,13 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         {
             return "block";
         }
+        if t == "treemap-beta"
+            || t == "treemap"
+            || t.starts_with("treemap-beta ")
+            || t.starts_with("treemap ")
+        {
+            return "treemap";
+        }
         return "flowchart";
     }
     "flowchart"
@@ -89,6 +96,7 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
         "radar" => crate::radar::render_radar(source, id).map_err(Into::into),
         "sankey" => crate::sankey::render_sankey(source, id).map_err(Into::into),
         "block" => crate::block::render_block(source, id).map_err(Into::into),
+        "treemap" => crate::treemap::render_treemap(source, id).map_err(Into::into),
         "sequence" => crate::sequence::render_sequence(source, id).map_err(Into::into),
         "timeline" => crate::timeline::render_timeline(source, id).map_err(Into::into),
         "class" => render_class(source, id).map_err(Into::into),

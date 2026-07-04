@@ -17,6 +17,13 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+- **treemap / treemap-beta** — treemap diagrams, byte-exact vs mermaid-cli
+  11.15.0. Ports the langium indentation grammar, `buildHierarchy`, the
+  d3-hierarchy `sum`/`sort` + `treemap().round(true)` squarify layout (per-node
+  paddingTop/Inner/Left/Right/Bottom + `dice`/`slice`), lazy `scaleOrdinal`
+  section/leaf/label colors, `setupViewPortForSVG` sizing, and leaf-label
+  font-shrink / value-sizing (Trebuchet `getComputedTextLength` + the CSSOM
+  style reserialization quirk). Four corpus cases.
 - **gitGraph `TB` / `BT` orientations** — the vertical layouts (branches as
   columns, commits flowing down/up), byte-exact vs mermaid-cli 11.15.0. Ports
   the axis transpose across positioning, the vertical branch spines and
