@@ -92,8 +92,18 @@ effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 - **mindmap / architecture** — depend on cose-bilkent / cytoscape force
   layouts; non-deterministic and a large port for niche demand.
-- **kanban, requirement** — no corpus demand; revisit if fixtures show up.
-  (block-beta and treemap-beta are now supported; see above.)
+- **kanban** — tractable (clean, byte-exact-able): compact bespoke renderer
+  (~102 loc), plain `<rect>` boxes (rx=5) + foreignObject Trebuchet labels +
+  arithmetic column layout, `insertCluster` sections. Needs the kanban
+  indentation grammar, `kanbanDb.getData`, section-cluster + item-node shapes,
+  and CSS. No rough.js. Not started (no corpus demand yet).
+- **requirement** — only byte-exact *modulo rough.js*. Drives the unified
+  `render()` pipeline (reusable), BUT the `requirementBox` shape draws its box
+  with roughjs curved double-strokes whose control points are randomized
+  (verified in the reference), so box paths can't be matched byte-for-byte
+  (same masking as er/state/class). Also uses `calculateTextWidth` (Arial ink,
+  the C4 problem) as a `+50`-slack wrap hint (harmless for short text). A large
+  port for a rough-masked result.
 - **C4** — blocked on text metrics, not effort. C4's `calculateTextDimensions`
   measures with `getBBox()` **ink extents** (not advance widths), `Math.round`ed,
   taking the max over `sans-serif` and the (uninstalled) `"Open Sans"` family —
