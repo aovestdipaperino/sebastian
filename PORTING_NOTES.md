@@ -1,11 +1,53 @@
 # Porting notes (mermaid 11.15.0 → Rust)
 
-Working notes for the pixel-perfect port. Reference sources:
-- `/tmp/mermaid-ref/mermaid` — mermaid checked out at tag `mermaid@11.15.0` (same version mmdc bundles)
-- `/tmp/mermaid-ref/dagre-d3-es` — dagre-d3-es 7.0.14 (npm pack), the exact layout engine mermaid uses
-- `/tmp/mermaid-ref/harness` — Node harness; `gen.mjs` regenerates `tests/fixtures/*.json`
+Working notes for the pixel-perfect port.
 
-## Status: COMPLETE
+## Reference toolchain (rebuild on demand)
+
+The reference SVGs are produced by mermaid-cli (`mmdc`) driving **mermaid
+11.15.0**. The harness lives under a scratch dir (historically
+`/tmp/mermaid-ref/`) and is wiped between machines/reboots — rebuild it with:
+
+```
+mkdir -p <scratch>/mermaid-ref/harness && cd $_
+npm init -y && npm install @mermaid-js/mermaid-cli@11.12.0 mermaid@11.15.0
+```
+
+`mermaid-cli` depends on `mermaid@^11.0.2`, so npm dedupes to the top-level
+`mermaid@11.15.0` — verify with `cat node_modules/mermaid/package.json | grep
+version`. Render with `node_modules/.bin/mmdc -i x.mmd -o y.svg -p pup.json`
+(a `{ "args": ["--no-sandbox"] }` puppeteer config), default id `my-svg`.
+**Do NOT use Homebrew `mmdc` (11.12.0) — it does not match the references.**
+For the readable TS/jison/langium sources, shallow-clone the repo at tag
+`mermaid@11.15.0` with a sparse checkout of `packages/mermaid/src/diagrams/…`
+and `packages/parser/src/language/…`.
+
+Verification loop: render `.mmd` with mmdc and with `seb -i x.mmd -o y.svg`,
+byte-diff, chase the first differing byte. Text metrics need the macOS system
+`Trebuchet MS.ttf`.
+
+## Status
+
+Ported diagram types (each with a byte-diff corpus test under
+`sebastian/tests/`; "modulo …" = randomness/render-time state mermaid itself
+embeds, unmatchable by any port):
+
+- **flowchart / graph** — dagre layout + full renderer (553-diagram corpus).
+- **stateDiagram-v2**, **sequenceDiagram**, **classDiagram**, **timeline**.
+- **pie**, **erDiagram**, **xychart-beta**, **gantt**, **journey**,
+  **quadrantChart**.
+- **gitGraph** (`LR`/`TB`/`BT`, incl. commit labels + tags).
+- **packet-beta**, **radar-beta**, **sankey-beta**.
+- **block-beta** (columns, space, spans, composites, classDef/style, edges).
+- **treemap-beta** (d3 squarify layout).
+
+See `README.md` for the fixture counts and per-type notes, `TODO.md` for the
+remaining types and why each is blocked (C4 = Helvetica ink metrics; ELK =
+engine scale; mindmap/architecture = non-deterministic force layouts;
+kanban = tractable but unported; requirement = rough-masked), and
+`docs/NUANCES.md` for the catalog of Chrome/V8/mermaid behaviors replicated.
+
+## Original flowchart port (still current)
 
 - `src/jsmap.rs`, `src/graphlib.rs`, `src/dagre/*` — dagre port, exact-match
   differential tests (17 fixtures).
@@ -205,8 +247,8 @@ Chrome float-semantics discoveries (apply to ALL diagrams):
   Skia: f32 control points, SkFindCubicExtrema (A=d-a+3(b-c), B=2(a-2b+c)
   with 2b as b+b, C=b-a; double discriminant), SkCubicCoeff::eval f32 Horner.
   All ported in render/bbox.rs (blink_float, RectF model).
-- Puppeteer probing (node_modules in /tmp/mermaid-ref/harness) is the way to
-  bisect browser float behavior: render minimal SVG structures and read
+- Puppeteer probing (node_modules in the rebuilt mermaid-ref harness) is the
+  way to bisect browser float behavior: render minimal SVG structures and read
   getBBox/matrix values directly.
 
 

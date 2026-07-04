@@ -75,8 +75,8 @@ is the same loop that got every ✅ row to byte-exact (details in
 
 The highest-leverage contributions right now:
 
-- **Verify `quadrantChart`.** It already renders; it needs a fixture
-  corpus and the byte-diff pass to promote it from experimental to done.
+- **kanban.** Tractable and byte-exact-able (plain rects + labels + arithmetic
+  column layout, no rough.js); a self-contained port, scoped in `TODO.md`.
 - **Flowchart ELK layout** (`defaultRenderer: elk`) — the big one, scoped
   in the section below.
 
