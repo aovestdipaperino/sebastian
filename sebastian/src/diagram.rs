@@ -35,6 +35,17 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         if t.starts_with("erDiagram") {
             return "er";
         }
+        if t.starts_with("requirementDiagram") {
+            return "requirement";
+        }
+        if t.starts_with("C4Context")
+            || t.starts_with("C4Container")
+            || t.starts_with("C4Component")
+            || t.starts_with("C4Dynamic")
+            || t.starts_with("C4Deployment")
+        {
+            return "c4";
+        }
         if t.starts_with("xychart-beta") {
             return "xychart";
         }
@@ -96,6 +107,8 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
         "state" => render_state(source, id).map_err(Into::into),
         "pie" => crate::pie::render_pie(source, id).map_err(Into::into),
         "er" => render_er(source, id).map_err(Into::into),
+        "requirement" => render_requirement(source, id).map_err(Into::into),
+        "c4" => crate::c4::render_c4(source, id).map_err(Into::into),
         "xychart" => crate::xychart::render_xychart(source, id).map_err(Into::into),
         "gantt" => crate::gantt::render_gantt(source, id).map_err(Into::into),
         "gitgraph" => crate::gitgraph::render_gitgraph(source, id).map_err(Into::into),
@@ -157,6 +170,33 @@ pub fn render_er(source: &str, id: &str) -> Result<String, crate::er::ErParseErr
         aria: "er",
         diagram_type: "er",
         css: render::css::themed_er_css(id, &theme_vars),
+    };
+    Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
+}
+
+/// Renders mermaid requirementDiagram source to a complete SVG document string.
+///
+/// This is an **approximate** (non-byte-exact) renderer: requirement/element
+/// boxes are laid out and drawn through the shared flowchart node pipeline
+/// rather than the byte-exact `requirementBox` shape (whose sizing needs
+/// Blink `getBBox()` ink metrics). See [`crate::requirement`].
+///
+/// # Errors
+/// Returns a [`crate::requirement::RequirementParseError`] when the source is
+/// not a valid requirement diagram.
+pub fn render_requirement(
+    source: &str,
+    id: &str,
+) -> Result<String, crate::requirement::RequirementParseError> {
+    let mut config = render::config::detect_init(source);
+    let theme_vars = render::themes::theme_variables(&config.theme, &config.theme_variables);
+    config.computed_theme.clone_from(&theme_vars);
+    let data = crate::requirement::get_layout_data(source, id)?;
+    let chrome = DiagramChrome {
+        svg_class: "requirementDiagram",
+        aria: "requirement",
+        diagram_type: "requirement",
+        css: render::css::themed_flowchart_css(id, &theme_vars),
     };
     Ok(render_unified(&data, &config, &theme_vars, &chrome, id))
 }

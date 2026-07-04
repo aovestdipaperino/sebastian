@@ -57,11 +57,11 @@ mermaid itself embeds, so no port can match those bytes.
 | block / block-beta | ✅ done | 12 | byte-exact (columns, space, spans, composites, classDef/style, edges incl. labels) |
 | treemap / treemap-beta | ✅ done | 4 | byte-exact (d3 squarify layout, sections/leaves, font-shrink labels) |
 | kanban | ✅ done | 3 | byte-exact (mindmap-indent parser, section clusters + item cards, arithmetic column layout) |
-| requirement | ⚠️ rough-masked | — | drives the reusable unified pipeline, but its box is a roughjs shape with randomized control points → only byte-exact modulo rough.js |
 | flowchart ELK layout | ⛔ blocked (scale) | — | `defaultRenderer: elk`; a 1.5 MB GWT-transpiled Java layout engine, scoped below |
-| C4 | ⛔ blocked (metrics) | — | needs a Helvetica ink-extent (`getBBox`) text-metrics subsystem the engine lacks |
 | mindmap | 🟡 approximate | smoke | renders with a deterministic tidy-tree layout; **not byte-exact** (mermaid uses the cose-bilkent force engine) |
 | architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
+| requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **not byte-exact** (box `max-width` needs Blink `getBBox` ink metrics) |
+| C4 (Context/Container/Component/Dynamic/Deployment) | 🟡 approximate | smoke | deterministic row-based layout; **not byte-exact** (shape widths need Blink `getBBox` ink metrics) |
 
 > **Note on mindmap and architecture (approximate renderers).** Mermaid lays
 > both out with force-directed engines that have no byte-exact path here:
@@ -74,6 +74,21 @@ mermaid itself embeds, so no port can match those bytes.
 > byte-identical to mmdc**; like the hand-drawn look, they are an explicit
 > opt-out of the byte-exact guarantee, validated by structural smoke tests
 > rather than the byte-diff corpus.
+
+> **Note on requirement and C4 (approximate renderers).** These two are blocked
+> on font metrics, not effort. Both size their boxes with mermaid's
+> `calculateTextDimensions`, which measures Blink `getBBox()` **ink extents**
+> over `sans-serif`/`Arial` (or Trebuchet), `Math.round`ed per line — and those
+> integers land verbatim in the output (a requirement label's `max-width`, a C4
+> shape's width). sebastian models Trebuchet *advances* and Times ink only; a
+> 2026-07 calibration confirmed raw `ttf_parser` glyph bounding boxes don't
+> reproduce Blink's `getBBox` at any font size. Byte-exact would need a
+> Blink-matching Helvetica/Arial ink-metrics subsystem (a research loop of its
+> own). Until then sebastian ships **approximate** renderers — requirement
+> reuses the unified dagre pipeline (multi-line boxes + shared markers); C4 uses
+> its own deterministic row-based layout with native-SVG boxes, person heads,
+> and relationship arrows. Clean and stable, but **not byte-identical to mmdc**;
+> validated by structural smoke tests.
 
 ## How to help
 
@@ -91,8 +106,10 @@ is the same loop that got every ✅ row to byte-exact (details in
 
 The highest-leverage contributions right now:
 
-- **kanban.** Tractable and byte-exact-able (plain rects + labels + arithmetic
-  column layout, no rough.js); a self-contained port, scoped in `TODO.md`.
+- **A Blink-matching Helvetica/Arial `getBBox` ink-metrics subsystem.** This is
+  the single unlock that would upgrade **both** requirement and C4 from
+  approximate to byte-exact (their box widths are `Math.round`ed `getBBox` ink
+  extents). A differential research loop against `mmdc`; scoped in `TODO.md`.
 - **Flowchart ELK layout** (`defaultRenderer: elk`) — the big one, scoped
   in the section below.
 

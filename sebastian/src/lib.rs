@@ -7,6 +7,7 @@
 
 pub mod architecture;
 pub mod block;
+pub mod c4;
 pub mod classdiag;
 pub mod dagre;
 pub mod diagram;
@@ -24,6 +25,7 @@ pub mod pie;
 pub mod quadrant;
 pub mod radar;
 pub mod render;
+pub mod requirement;
 pub mod sankey;
 pub mod sequence;
 pub mod state;

@@ -17,6 +17,20 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+- **requirement & C4 (approximate, non-byte-exact)** — sebastian now renders
+  `requirementDiagram` and the C4 family (`C4Context`/`C4Container`/
+  `C4Component`/`C4Dynamic`/`C4Deployment`) instead of erroring. requirement
+  reuses the unified dagre pipeline (each requirement/element is a multi-line
+  `squareRect` node; relationships map to the shared cross/arrow markers); C4
+  uses a self-contained deterministic row-based layout (shapes packed into rows
+  within nested boundaries, boundaries stacked) with native-SVG boxes, person
+  heads, and relationship arrows. Both are **not byte-identical to mmdc**: their
+  box geometry comes from mermaid's `calculateTextDimensions`, which measures
+  Blink `getBBox()` ink extents over sans-serif/Arial (or Trebuchet) — a
+  font-metric wall a 2026-07 calibration confirmed `ttf_parser` glyph bboxes
+  don't reproduce. They are an explicit opt-out of the byte-exact guarantee,
+  validated by structural smoke tests (see `TODO.md`).
+
 - **mindmap & architecture (approximate, non-byte-exact)** — sebastian now
   renders these two force-layout diagram types with its own deterministic
   layouts (a left-to-right tidy tree for mindmap, a directional grid for

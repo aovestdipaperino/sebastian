@@ -26,6 +26,8 @@ Already done:
 - **kanban** (3 cases, byte-exact - mindmap-indent parser, section clusters + item cards, column layout)
 - **mindmap** (APPROXIMATE, non-byte-exact - deterministic tidy-tree; smoke-tested)
 - **architecture** (APPROXIMATE, non-byte-exact - deterministic directional grid; smoke-tested)
+- **requirement** (APPROXIMATE, non-byte-exact - reuses the unified dagre pipeline; smoke-tested)
+- **C4** (`C4Context`/`Container`/`Component`/`Dynamic`/`Deployment`; APPROXIMATE, non-byte-exact - deterministic row-based layout; smoke-tested)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 
@@ -108,22 +110,19 @@ mapping + edge routing/label placement) still needs porting.
   mindmap's cose-bilkent and architecture's cytoscape-`fcose` are force-layout
   engines (the latter `Math.random`-seeded, non-deterministic even run-to-run),
   and no reusable Rust crate exists for either (spike found only ELK ports).
-- **requirement** — only byte-exact *modulo rough.js*. Drives the unified
-  `render()` pipeline (reusable), BUT the `requirementBox` shape draws its box
-  with roughjs curved double-strokes whose control points are randomized
-  (verified in the reference), so box paths can't be matched byte-for-byte
-  (same masking as er/state/class). Also uses `calculateTextWidth` (Arial ink,
-  the C4 problem) as a `+50`-slack wrap hint (harmless for short text). A large
-  port for a rough-masked result.
-- **C4** — blocked on text metrics, not effort. C4's `calculateTextDimensions`
-  measures with `getBBox()` **ink extents** (not advance widths), `Math.round`ed,
-  taking the max over `sans-serif` and the (uninstalled) `"Open Sans"` family —
-  so on the reference machine every measured width is Helvetica/Arial glyph-ink.
-  The engine only models Trebuchet *advances*, so byte-exact C4 needs a whole new
-  Helvetica ink-extent glyph-metrics subsystem, and the result would be fragile
-  (the fallback face is environment-dependent). Parser/db/svgDraw (~2.2k loc) are
-  straightforward; the measurement is the wall. Revisit only alongside a general
-  multi-font ink-measurement effort.
+- **requirement / C4** — now shipped as **approximate** (non-byte-exact)
+  renderers; see "Already done" above. Byte-exact remains blocked on text
+  metrics, not effort: both size their boxes with `calculateTextDimensions`,
+  which measures `getBBox()` **ink extents** (not advance widths), `Math.round`ed
+  per line, taking the max over `sans-serif` and the diagram font — so on the
+  reference machine every width is Helvetica/Arial (or Trebuchet) glyph-ink, and
+  those integers land verbatim in the output (requirement box label `max-width`;
+  C4 shape widths). Our engine models Trebuchet *advances* and Times ink only; a
+  2026-07 calibration confirmed raw `ttf_parser` glyph bboxes don't reproduce
+  Blink's `getBBox` at any font size. Byte-exact needs a Blink-matching
+  Helvetica/Arial ink-extent glyph-metrics subsystem — a differential research
+  loop of its own. (requirement additionally draws its box with randomized
+  roughjs strokes, needing the same er/state/class rough-masking.)
 
 ## Process for each new type
 
