@@ -91,13 +91,17 @@ effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
 ## Not planned (for now)
 
-- **mindmap / architecture** — cose-bilkent / cytoscape force layouts seeded
-  by `Math.random()`, so upstream output differs run-to-run: **the byte-exact
-  goal cannot apply**. They could be supported with an *approximate*
-  (non-byte-exact) layout — an opt-in stylization like the hand-drawn look,
-  validated by rasterized/structural comparison rather than the byte-diff
-  corpus — but that is a deliberate departure from this project's guarantee and
-  is left unimplemented for now. See the note in README.md.
+- **mindmap** — blocked on engine scale, not determinism. `mindmapDb.getData`
+  forces `layout: 'cose-bilkent'` (a *registered* force-directed layout engine;
+  `dagre` is only the generic fallback). Output is deterministic run-to-run
+  (nodes are plain circle/rounded-rect paths, edges curveBasis — no rough), so
+  it *could* be byte-exact — but only by porting the cose-bilkent physics engine,
+  a multi-session effort on the scale of the flowchart ELK port. The mermaid
+  side (parser + `getData` + node shapes) is small; the engine is the wall.
+- **architecture** — cytoscape-`fcose` force layout seeded from `Math.random()`;
+  two `mmdc` runs of the same source differ (verified), so **no port can be
+  byte-exact**, and it is also a large force-engine port. Could be approximated
+  (non-byte-exact) like the hand-drawn look; left unimplemented.
 - **requirement** — only byte-exact *modulo rough.js*. Drives the unified
   `render()` pipeline (reusable), BUT the `requirementBox` shape draws its box
   with roughjs curved double-strokes whose control points are randomized
