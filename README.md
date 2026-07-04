@@ -47,7 +47,7 @@ mermaid itself embeds, so no port can match those bytes.
 | pie | ✅ done | 4 | byte-exact |
 | erDiagram | ✅ done | 3 | byte-exact modulo rough.js randomness |
 | xychart-beta | ✅ done | 3 | byte-exact |
-| gitGraph (`LR` / `TB` / `BT`) | ✅ done | 7 | byte-exact modulo random commit ids + 1-ulp viewBox (TB/BT need `showCommitLabel: false`) |
+| gitGraph (`LR` / `TB` / `BT`) | ✅ done | 10 | byte-exact modulo random commit ids + 1-ulp viewBox/max-width |
 | journey | ✅ done | 3 | byte-exact |
 | quadrantChart | ✅ done | 3 | byte-exact |
 | packet / packet-beta | ✅ done | 3 | byte-exact |
@@ -76,9 +76,6 @@ The highest-leverage contributions right now:
 
 - **Verify `quadrantChart`.** It already renders; it needs a fixture
   corpus and the byte-diff pass to promote it from experimental to done.
-- **gitGraph commit labels in `TB`/`BT`.** The vertical orientations are
-  byte-exact with `showCommitLabel: false`; drawing the commit labels/tags in
-  those orientations is the remaining piece.
 - **Flowchart ELK layout** (`defaultRenderer: elk`) — the big one, scoped
   in the section below.
 

@@ -15,7 +15,7 @@ Already done:
 - **erDiagram** (2 cases, byte-exact / rough-masked)
 - **xychart-beta** (2 cases, byte-exact)
 - **gantt** (5 cases, byte-exact modulo the render-time today marker)
-- **gitGraph** (`LR`/`TB`/`BT`; 7 cases, byte-exact modulo random commit ids; TB/BT need showCommitLabel:false)
+- **gitGraph** (`LR`/`TB`/`BT`; 10 cases, byte-exact modulo random commit ids + 1-ulp viewBox/max-width; incl. commit labels + tags)
 - **journey** (2 cases, byte-exact)
 - **quadrantChart** (2 cases, byte-exact)
 - **packet / packet-beta** (3 cases, byte-exact - incl. multi-row wrap, +bits, no-title)
@@ -74,15 +74,6 @@ and theme section colors. Modest effort, low demand.
 d3 time scales, axis tick generation, and date parsing (dayjs semantics)
 make byte-exactness fiddlier than the value here suggests. Defer until
 the above are done.
-
-## gitGraph TB / BT commit labels — remaining
-
-`TB`/`BT` orientations are done and byte-exact with `showCommitLabel: false`
-(see the gitGraph row above). What's left is placing the commit labels/tags in
-the vertical orientations: `drawCommitLabel` / `drawCommitTags` branch on TB/BT
-with different anchor and rotation math (gitGraphRenderer.ts). The renderer
-already reads `gitGraph.showCommitLabel`; the LR label/tag code just needs its
-TB/BT coordinate variants.
 
 ## Flowchart ELK layout — scoped, not started
 

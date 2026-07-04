@@ -2,14 +2,34 @@
 //! as the reference. Two masks are applied before comparison:
 //! - auto-generated commit ids (`N-xxxxxxx`) embed `Math.random()` upstream;
 //! - the viewBox/max-width floats are rounded to 1e-3 (one open question:
-//!   a single-f32-ulp difference in Blink's rotated-rect bbox mapping).
+//!   a single-f32-ulp difference in Blink's rotated-rect bbox mapping — it
+//!   surfaces in `max-width` on the rotated TB/BT tag polygon).
 
 use sebastian::render_diagram;
 
 fn mask(svg: &str) -> String {
     let mut out = String::with_capacity(svg.len());
+    // Round `max-width: Npx` to 1e-3 (same f32-ulp bbox tolerance as viewBox).
+    let svg = {
+        let mut o = String::with_capacity(svg.len());
+        let mut r = svg;
+        while let Some(i) = r.find("max-width: ") {
+            let start = i + "max-width: ".len();
+            o.push_str(&r[..start]);
+            r = &r[start..];
+            let end = r.find("px").unwrap_or(0);
+            let rounded = r[..end]
+                .parse::<f64>()
+                .map_or_else(|_| r[..end].to_owned(), |v| format!("{v:.3}"));
+            o.push_str(&rounded);
+            r = &r[end..];
+        }
+        o.push_str(r);
+        o
+    };
+    let svg = svg.as_str();
     let mut rest = svg;
-    // Round viewBox and max-width numbers.
+    // Round viewBox numbers.
     while let Some(i) = rest.find("viewBox=\"") {
         let start = i + 9;
         out.push_str(&rest[..start]);

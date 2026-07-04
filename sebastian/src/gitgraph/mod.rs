@@ -1,5 +1,5 @@
 //! gitGraph support: parser subset, `gitGraphAst.ts` semantics, and a
-//! direct port of `gitGraphRenderer.ts` (LR orientation, classic look).
+//! direct port of `gitGraphRenderer.ts` (LR/TB/BT orientations, classic look).
 
 #![allow(
     clippy::assigning_clones,
@@ -1041,8 +1041,66 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                 acc_bullets.add_rect(x - 10.0, y - 10.0, 20.0, 20.0);
             }
 
-            // Label. (TB/BT commit-label placement is not yet supported, so
-            // TB/BT is only byte-exact with showCommitLabel:false.)
+            // Label (TB/BT): text + bkg each rotated -45 about the commit.
+            if show_commit_label
+                && is_vert
+                && symbol != CHERRY_PICK
+                && ((c.custom_id && c.ty == MERGE) || c.ty != MERGE)
+            {
+                let (cx, cy) = (x, y);
+                let (bw, bh) = text_dims(&c.id, 10.0);
+                let wrapper = append(&g_labels, "g");
+                let label_bkg = append(&wrapper, "rect");
+                set_attr(&label_bkg, "class", "commit-label-bkg");
+                let bx = cx - (bw + 4.0 * PX + 5.0);
+                let by = cy - 12.0;
+                let (bkw, bkh) = (bw + 2.0 * PY, bh + 2.0 * PY);
+                set_attr(&label_bkg, "x", js_num(bx));
+                set_attr(&label_bkg, "y", js_num(by));
+                set_attr(&label_bkg, "width", js_num(bkw));
+                set_attr(&label_bkg, "height", js_num(bkh));
+                let text = append(&wrapper, "text");
+                set_attr(&text, "x", js_num(cx - (bw + 4.0 * PX)));
+                set_attr(&text, "y", js_num(cy + bh - 12.0));
+                set_attr(&text, "class", "commit-label");
+                set_text(&text, &c.id);
+                if rotate_commit_label {
+                    let rot = format!("rotate({}, {}, {})", js_num(-45.0), js_num(cx), js_num(cy));
+                    set_attr(&text, "transform", &rot);
+                    set_attr(&label_bkg, "transform", &rot);
+                    // getBBox: bkg corners mapped through rotate(-45, cx, cy).
+                    let rad = (-45.0f64).to_radians();
+                    let (sa, ca) = (rad.sin(), rad.cos());
+                    let e = cx - (ca * cx - sa * cy);
+                    let f = cy - (sa * cx + ca * cy);
+                    let (mut x0, mut y0, mut x1, mut y1) = (
+                        f64::INFINITY,
+                        f64::INFINITY,
+                        f64::NEG_INFINITY,
+                        f64::NEG_INFINITY,
+                    );
+                    for (px, py) in [
+                        (bx, by),
+                        (bx + bkw, by),
+                        (bx, by + bkh),
+                        (bx + bkw, by + bkh),
+                    ] {
+                        #[allow(clippy::cast_possible_truncation)]
+                        let mx = f64::from((ca * px - sa * py + e) as f32);
+                        #[allow(clippy::cast_possible_truncation)]
+                        let my = f64::from((sa * px + ca * py + f) as f32);
+                        x0 = x0.min(mx);
+                        y0 = y0.min(my);
+                        x1 = x1.max(mx);
+                        y1 = y1.max(my);
+                    }
+                    acc_labels.add_bounds(x0, y0, x1, y1);
+                } else {
+                    acc_labels.add_rect(bx, by, bkw, bkh);
+                }
+            }
+
+            // Label (LR).
             if show_commit_label
                 && !is_vert
                 && symbol != CHERRY_PICK
@@ -1158,6 +1216,7 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                 for te in &tag_els {
                     let h2 = max_h / 2.0;
                     let ly = y - 19.2 - te.y_offset;
+                    // Common (LR) points/hole set first, then overridden for vert.
                     set_attr(&te.rect, "class", "tag-label-bkg");
                     set_attr(
                         &te.rect,
@@ -1182,13 +1241,74 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                     set_attr(&te.hole, "cx", js_num(pos - max_w / 2.0 + PX / 2.0));
                     set_attr(&te.hole, "r", "1.5");
                     set_attr(&te.hole, "class", "tag-hole");
-                    let _ = &te.text;
-                    acc_labels.add_rect(
-                        pos - max_w / 2.0 - PX / 2.0,
-                        ly - h2 - PY,
-                        pos_with_offset + max_w / 2.0 + PX - (pos - max_w / 2.0 - PX / 2.0),
-                        (h2 + PY) * 2.0,
-                    );
+                    if is_vert {
+                        let (cx, cy) = (x, y);
+                        let raw_pos = cy - LAYOUT_OFFSET;
+                        let y_origin = raw_pos + te.y_offset;
+                        let pts = [
+                            (cx, y_origin + 2.0),
+                            (cx, y_origin - 2.0),
+                            (cx + LAYOUT_OFFSET, y_origin - h2 - 2.0),
+                            (cx + LAYOUT_OFFSET + max_w + 4.0, y_origin - h2 - 2.0),
+                            (cx + LAYOUT_OFFSET + max_w + 4.0, y_origin + h2 + 2.0),
+                            (cx + LAYOUT_OFFSET, y_origin + h2 + 2.0),
+                        ];
+                        let pts_str = pts
+                            .iter()
+                            .map(|(px, py)| format!("{},{}", js_num(*px), js_num(*py)))
+                            .collect::<Vec<_>>()
+                            .join("\n        ");
+                        set_attr(&te.rect, "points", pts_str);
+                        let rot = format!(
+                            "translate(12,12) rotate(45, {},{})",
+                            js_num(cx),
+                            js_num(raw_pos)
+                        );
+                        set_attr(&te.rect, "transform", &rot);
+                        set_attr(&te.hole, "cx", js_num(cx + PX / 2.0));
+                        set_attr(&te.hole, "cy", js_num(y_origin));
+                        set_attr(&te.hole, "transform", &rot);
+                        set_attr(&te.text, "x", js_num(cx + 5.0));
+                        set_attr(&te.text, "y", js_num(y_origin + 3.0));
+                        set_attr(
+                            &te.text,
+                            "transform",
+                            format!(
+                                "translate(14,14) rotate(45, {},{})",
+                                js_num(cx),
+                                js_num(raw_pos)
+                            ),
+                        );
+                        // getBBox: polygon corners mapped through the transform.
+                        let rad = 45.0f64.to_radians();
+                        let (sa, ca) = (rad.sin(), rad.cos());
+                        let (mut x0, mut y0, mut x1, mut y1) = (
+                            f64::INFINITY,
+                            f64::INFINITY,
+                            f64::NEG_INFINITY,
+                            f64::NEG_INFINITY,
+                        );
+                        for (px, py) in pts {
+                            let dx = px - cx;
+                            let dy = py - raw_pos;
+                            #[allow(clippy::cast_possible_truncation)]
+                            let mx = f64::from((ca.mul_add(dx, -(sa * dy)) + cx + 12.0) as f32);
+                            #[allow(clippy::cast_possible_truncation)]
+                            let my = f64::from((sa.mul_add(dx, ca * dy) + raw_pos + 12.0) as f32);
+                            x0 = x0.min(mx);
+                            y0 = y0.min(my);
+                            x1 = x1.max(mx);
+                            y1 = y1.max(my);
+                        }
+                        acc_labels.add_bounds(x0, y0, x1, y1);
+                    } else {
+                        acc_labels.add_rect(
+                            pos - max_w / 2.0 - PX / 2.0,
+                            ly - h2 - PY,
+                            pos_with_offset + max_w / 2.0 + PX - (pos - max_w / 2.0 - PX / 2.0),
+                            (h2 + PY) * 2.0,
+                        );
+                    }
                 }
             }
         }
