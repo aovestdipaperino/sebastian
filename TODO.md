@@ -112,16 +112,41 @@ both engines (elkjs 0.9.3 in Node vs `elkrs` 0.11 via `layout_json`):
 So `elkrs` IS reusable and byte-exact for the (large) DAG subset of mermaid ELK
 flowcharts; only cyclic graphs need a 0.9.x-targeted engine for exactness.
 
-**Remaining work to wire it in** (de-risked, still multi-session): build the
-ELK-JSON from the parsed flow graph (node sizes already come from our
-text-measurement pass), map mermaid's layout options, call
-`elkrs::create_elk().layout_json`, read back node coordinates + edge sections,
-and port the `@mermaid-js/layout-elk` geometry glue (render.ts/geometry.ts) for
-edge routing/label placement. Reference generation needs a custom harness: mmdc
-does **not** auto-register layout-elk, and jsdom can't run mermaid's render — use
-puppeteer with an import map (elkjs is a CommonJS GWT bundle + d3), or compare at
-the ELK-JSON layer as the spike did. Reference fixture harness:
-`/tmp/gapcases/elk100.*` pattern.
+**End-to-end proof (2026-07).** Beyond the synthetic-graph spike, I captured the
+*exact* ELK-JSON mermaid feeds elkjs for a real flowchart (by hooking
+`ELK.prototype.layout` in an esbuild bundle of `mermaid` + `@mermaid-js/layout-elk`,
+run under puppeteer) and ran that identical input through `elkrs::layout_json`.
+**Every node coordinate was byte-identical** to elkjs 0.9.3 (e.g.
+`C: 138.5390625, 308.390625`; `E: 29.02734375, 397.390625`) — including mermaid's
+node dimensions (which sebastian *already* measures byte-exact for flowchart) and
+mermaid's actual layout options. So the ELK placement half is a solved problem.
+
+Mermaid's layout options (from the capture), needed when building the ELK graph:
+```
+elk.hierarchyHandling: INCLUDE_CHILDREN
+elk.algorithm:         elk.layered
+nodePlacement.strategy: BRANDES_KOEPF
+elk.layered.mergeEdges: false
+elk.direction:         DOWN   (from the flow direction)
+spacing.baseValue:     35
+elk.layered.unnecessaryBendpoints: true
+```
+
+**Remaining work to wire it in** (de-risked, still multi-session): construct that
+ELK-JSON from sebastian's parsed flow graph + measured node sizes, call
+`elkrs::create_elk().layout_json`, read back node coordinates (proven exact) +
+edge sections, and port the `@mermaid-js/layout-elk` geometry glue
+(render.ts/geometry.ts) for **edge routing / bendpoints / label placement** — the
+one remaining unproven piece — plus the container/cluster + port handling. Only
+cyclic graphs risk divergence (0.9 vs 0.11 cycle-breaking).
+
+**Reference-generation harness (working, in scratchpad):** mmdc does **not**
+auto-register layout-elk and jsdom can't run mermaid's render (`CSSStyleSheet`/
+`getBBox` missing). What works: `esbuild --bundle` an entry that imports mermaid +
+`@mermaid-js/layout-elk` (pulls in elkjs's CommonJS GWT blob + d3), inject the
+bundle via puppeteer `addScriptTag`, `registerLayoutLoaders`, then `render`. See
+`scratchpad/mermaid-ref/harness/{elkentry,elkrender,elkcap2}.mjs` +
+`scratchpad/elkprobe/` (elkrs runner).
 
 ## Not planned (for now)
 
