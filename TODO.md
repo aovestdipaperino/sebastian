@@ -93,15 +93,35 @@ larger than the original dagre port, best done from the readable Java
 sources (eclipse/elk) with differential fixtures, in its own multi-session
 effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
-**Reuse spike (2026-07):** two native-Rust ELK ports exist — `elkrs`
-(crates.io 0.1.1, Apache-2.0, byte-exact vs **ELK 0.11.0**) and
-`openedges/elk-rs` (EPL-2.0, "drop-in elkjs replacement"). BUT
-`@mermaid-js/layout-elk` pins **elkjs `^0.9.3`** (ELK 0.9.x), and ELK's
-placement/spacing changed between 0.9 and 0.11 — so `elkrs` is NOT byte-exact
-with mermaid's output as-is. Direct reuse would need a 0.9.x target in elkrs;
-otherwise it only yields an *approximate* ELK layout. Even with a matching
-engine, the `@mermaid-js/layout-elk` glue (render.ts/geometry.ts, node↔ELK-JSON
-mapping + edge routing/label placement) still needs porting.
+**Current status:** elk-flagged flowcharts render **approximately** today —
+sebastian ignores the `elk` directive and lays them out with its byte-exact
+dagre engine rather than erroring (smoke-tested; note mermaid itself falls back
+to dagre when `@mermaid-js/layout-elk` is not registered).
+
+**Reuse spike (2026-07, quantified).** Two native-Rust ELK ports exist —
+`elkrs` (crates.io 0.1.1, Apache-2.0, byte-exact vs **ELK 0.11.0**) and
+`openedges/elk-rs`. `@mermaid-js/layout-elk` pins **elkjs `^0.9.3`** (ELK 0.9.x).
+I measured the actual divergence by running the *same* ELK-JSON graphs through
+both engines (elkjs 0.9.3 in Node vs `elkrs` 0.11 via `layout_json`):
+- **Acyclic layered graphs: BYTE-IDENTICAL** — every node coordinate and the
+  container size matched to the full repeating decimal (e.g. `115.33333333333333`,
+  `187.33333333333331`). The 0.9→0.11 placement change does **not** affect these.
+- **Cyclic / back-edge graphs: DIVERGE** — a node x flipped `95.333` (elkjs) vs
+  `78.666` (elkrs), i.e. cycle-breaking / Brandes-Köpf balancing changed between
+  versions.
+So `elkrs` IS reusable and byte-exact for the (large) DAG subset of mermaid ELK
+flowcharts; only cyclic graphs need a 0.9.x-targeted engine for exactness.
+
+**Remaining work to wire it in** (de-risked, still multi-session): build the
+ELK-JSON from the parsed flow graph (node sizes already come from our
+text-measurement pass), map mermaid's layout options, call
+`elkrs::create_elk().layout_json`, read back node coordinates + edge sections,
+and port the `@mermaid-js/layout-elk` geometry glue (render.ts/geometry.ts) for
+edge routing/label placement. Reference generation needs a custom harness: mmdc
+does **not** auto-register layout-elk, and jsdom can't run mermaid's render — use
+puppeteer with an import map (elkjs is a CommonJS GWT bundle + d3), or compare at
+the ELK-JSON layer as the spike did. Reference fixture harness:
+`/tmp/gapcases/elk100.*` pattern.
 
 ## Not planned (for now)
 

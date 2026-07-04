@@ -57,7 +57,7 @@ mermaid itself embeds, so no port can match those bytes.
 | block / block-beta | ✅ done | 12 | byte-exact (columns, space, spans, composites, classDef/style, edges incl. labels) |
 | treemap / treemap-beta | ✅ done | 4 | byte-exact (d3 squarify layout, sections/leaves, font-shrink labels) |
 | kanban | ✅ done | 3 | byte-exact (mindmap-indent parser, section clusters + item cards, arithmetic column layout) |
-| flowchart ELK layout | ⛔ blocked (scale) | — | `defaultRenderer: elk`; a 1.5 MB GWT-transpiled Java layout engine, scoped below |
+| flowchart ELK layout | 🟡 approximate | smoke | `layout: elk` renders via the dagre engine (like mermaid's own no-layout-elk fallback); a 2026-07 spike found `elkrs` byte-identical to elkjs 0.9.x on acyclic graphs — a true ELK backend is scoped below |
 | mindmap | 🟡 approximate | smoke | renders with a deterministic tidy-tree layout; **not byte-exact** (mermaid uses the cose-bilkent force engine) |
 | architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
 | requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **not byte-exact** (box `max-width` needs Blink `getBBox` ink metrics) |

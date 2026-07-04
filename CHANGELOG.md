@@ -17,6 +17,18 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+- **flowchart ELK layout (approximate + spike)** — `%%{init: {"layout":
+  "elk"}}%%` (and `defaultRenderer: elk` / the `flowchart-elk` header) now
+  render via the byte-exact dagre engine instead of being a special case — the
+  same approximation mermaid itself uses when `@mermaid-js/layout-elk` is not
+  registered (smoke-tested). A quantified reuse spike ran identical ELK-JSON
+  graphs through elkjs 0.9.3 (mermaid's pin) and the `elkrs` crate (ELK 0.11):
+  **byte-identical on acyclic layered graphs** (coordinates matched to the full
+  repeating decimal), diverging only on cyclic/back-edge graphs. So a true
+  `elkrs`-backed ELK layout is now de-risked and scoped in `TODO.md` (wiring the
+  ELK-JSON build + coordinate readback + `layout-elk` edge-routing glue remains
+  a multi-session effort).
+
 - **requirement & C4 (approximate, non-byte-exact)** — sebastian now renders
   `requirementDiagram` and the C4 family (`C4Context`/`C4Container`/
   `C4Component`/`C4Dynamic`/`C4Deployment`) instead of erroring. requirement

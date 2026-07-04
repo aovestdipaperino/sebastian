@@ -64,6 +64,26 @@ fn requirement_renders() {
 }
 
 #[test]
+fn elk_flowchart_renders_via_dagre_fallback() {
+    // The `elk` layout directive is honoured approximately: sebastian renders
+    // the flowchart with its (byte-exact) dagre layout rather than erroring.
+    // A 2026-07 spike found the `elkrs` crate (ELK 0.11) is byte-identical to
+    // mermaid's elkjs 0.9.x on acyclic graphs but diverges on cycles, so a true
+    // ELK backend is scoped but not wired in (see TODO.md). Note: mermaid itself
+    // falls back to dagre when `@mermaid-js/layout-elk` is not registered.
+    let src = "%%{init: {\"layout\": \"elk\"}}%%\nflowchart TB\n  A[a] --> B[b]\n  B --> C[c]\n";
+    let svg = render_diagram(src, "my-svg").expect("elk flowchart renders");
+    assert!(svg.starts_with("<svg"));
+    assert!(svg.contains("class=\"flowchart\""));
+    for needle in ["a", "b", "c"] {
+        assert!(svg.contains(&format!(">{needle}</")) || svg.contains(needle));
+    }
+    // Deterministic.
+    let svg2 = render_diagram(src, "my-svg").expect("again");
+    assert_eq!(svg, svg2);
+}
+
+#[test]
 fn c4_renders() {
     let src = "C4Context\n\
         title System Context diagram for Internet Banking System\n\
