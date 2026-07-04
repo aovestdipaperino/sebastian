@@ -472,6 +472,169 @@ pub fn themed_quadrant_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The block stylesheet (port of `diagrams/block/styles.ts` through stylis,
+/// wrapped in the shared prefix/suffix).
+#[must_use]
+pub fn themed_block_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let font_family = v("fontFamily");
+    let text_color = v("textColor");
+    let line_color = v("lineColor");
+    let sw = stroke_width(vars);
+    let node_text = {
+        let n = v("nodeTextColor");
+        if n.is_empty() { text_color.clone() } else { n }
+    };
+    let title_color = v("titleColor");
+    let main_bkg = v("mainBkg");
+    let node_border = v("nodeBorder");
+    let arrowhead = v("arrowheadColor");
+    let edge_label_bg = v("edgeLabelBackground");
+    let cluster_bkg = v("clusterBkg");
+    let cluster_border = v("clusterBorder");
+    let tertiary = v("tertiaryColor");
+    let border2 = v("border2");
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    rule(
+        &mut o,
+        &i,
+        &[" .label"],
+        &format!("font-family:{font_family};color:{node_text};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .cluster-label text"],
+        &format!("fill:{title_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .cluster-label span", " p"],
+        &format!("color:{title_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .label text", " span", " p"],
+        &format!("fill:{node_text};color:{node_text};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .node rect",
+            " .node circle",
+            " .node ellipse",
+            " .node polygon",
+            " .node path",
+        ],
+        &format!("fill:{main_bkg};stroke:{node_border};stroke-width:{sw}px;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .flowchart-label text"],
+        "text-anchor:middle;",
+    );
+    rule(&mut o, &i, &[" .node .label"], "text-align:center;");
+    rule(&mut o, &i, &[" .node.clickable"], "cursor:pointer;");
+    rule(
+        &mut o,
+        &i,
+        &[" .arrowheadPath"],
+        &format!("fill:{arrowhead};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgePath .path"],
+        &format!("stroke:{line_color};stroke-width:2.0px;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .flowchart-link"],
+        &format!("stroke:{line_color};fill:none;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel"],
+        &format!("background-color:{edge_label_bg};text-align:center;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel p"],
+        "margin:0;padding:0;display:inline;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .edgeLabel rect"],
+        &format!("opacity:0.5;background-color:{edge_label_bg};fill:{edge_label_bg};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .labelBkg"],
+        &format!("background-color:{edge_label_bg};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .node .cluster"],
+        &format!(
+            "fill:{};stroke:{};box-shadow:rgba(50, 50, 93, 0.25) 0px 13px 27px -5px,rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;stroke-width:1px;",
+            fade(&cluster_bkg, 0.5),
+            fade(&cluster_border, 0.2),
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .cluster text"],
+        &format!("fill:{title_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .cluster span", " p"],
+        &format!("color:{title_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" div.mermaidTooltip"],
+        &format!(
+            "position:absolute;text-align:center;max-width:200px;padding:2px;font-family:{font_family};font-size:12px;background:{tertiary};border:1px solid {border2};border-radius:2px;pointer-events:none;z-index:100;"
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .flowchartTitleText"],
+        &format!("text-anchor:middle;font-size:18px;fill:{text_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .label-icon"],
+        "display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .node .label-icon path"],
+        "fill:currentColor;stroke:revert;stroke-width:revert;",
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The sankey stylesheet (port of `diagrams/sankey/styles.js`).
 #[must_use]
 pub fn themed_sankey_css(id: &str, vars: &Map<String, Value>) -> String {

@@ -5,6 +5,7 @@
 //! in dagre-d3-es 7.0.14), and the SVG generation with mermaid's default
 //! theme.
 
+pub mod block;
 pub mod classdiag;
 pub mod dagre;
 pub mod diagram;

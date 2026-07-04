@@ -18,6 +18,16 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 ## [Unreleased]
 
 ### Added
+- **block / block-beta** — block diagrams, byte-exact vs mermaid-cli 11.15.0
+  (plain-block subset). Ports the jison grammar, `blockDB` populate/hierarchy,
+  the bespoke `layout.ts` engine (`calculateBlockSizes` measure pass,
+  `setBlockSizes` column normalization, `layoutBlocks` per-row placement,
+  `findBounds`), and the legacy `dagre-wrapper` node shapes (rect, composite
+  cluster, circle, diamond, stadium, subroutine, doublecircle) drawn with the
+  shared `createText` HTML `foreignObject` labels (`width: Infinity`, no wrap).
+  Supports `columns`, `space` / `space:N`, `:N` column spans, nested
+  `block:name … end` composites, and `classDef` / `class` / `style` (via the
+  shared `class_defs_css`). Edges are not yet rendered. Seven corpus cases.
 - **sankey / sankey-beta** — sankey flow diagrams, byte-exact vs mermaid-cli
   11.15.0. Ports the CSV parser, the full `d3-sankey` iterative layout
   (`computeNodeLinks`/`Values`/`Depths`/`Heights`/`Breadths`, six relaxation

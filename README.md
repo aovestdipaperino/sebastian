@@ -9,7 +9,7 @@ diagram renderers (mermaid 11.15.0). Named after Sebastian, the crab
 from Disney's *The Little Mermaid* — a fitting mascot for a
 mermaid renderer. For supported diagram types — **flowchart, stateDiagram-v2,
 sequenceDiagram, classDiagram, timeline, pie, erDiagram, xychart-beta,
-gantt, gitGraph, journey, quadrantChart, packet, radar, sankey** — the output SVG is
+gantt, gitGraph, journey, quadrantChart, packet, radar, sankey, block** — the output SVG is
 **byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
 
 The workspace contains two crates:
@@ -53,10 +53,11 @@ mermaid itself embeds, so no port can match those bytes.
 | packet / packet-beta | ✅ done | 3 | byte-exact |
 | radar / radar-beta | ✅ done | 3 | byte-exact |
 | sankey / sankey-beta | ✅ done | 3 | byte-exact (labels-within-bounds; getBBox ignores text) |
+| block / block-beta | ✅ done | 7 | byte-exact (plain-block subset: columns, space, spans, composites, classDef/style; edges not yet) |
 | gitGraph (`TB` / `BT`) | ❌ not started | — | only the `LR` orientation is ported |
 | flowchart ELK layout | ❌ not started | — | `defaultRenderer: elk`; a large engine port, scoped below |
 | mindmap / architecture | ❌ not planned | — | force layouts (cose-bilkent / cytoscape), non-deterministic |
-| C4, sankey, block, packet, kanban, requirement, radar, treemap | ❌ not planned | — | no corpus demand yet; revisit when fixtures show up |
+| C4, kanban, requirement, treemap | ❌ not planned | — | no corpus demand yet; revisit when fixtures show up |
 
 ## How to help
 
