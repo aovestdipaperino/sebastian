@@ -55,9 +55,11 @@ mermaid itself embeds, so no port can match those bytes.
 | sankey / sankey-beta | ✅ done | 3 | byte-exact (labels-within-bounds; getBBox ignores text) |
 | block / block-beta | ✅ done | 12 | byte-exact (columns, space, spans, composites, classDef/style, edges incl. labels) |
 | treemap / treemap-beta | ✅ done | 4 | byte-exact (d3 squarify layout, sections/leaves, font-shrink labels) |
-| flowchart ELK layout | ❌ not started | — | `defaultRenderer: elk`; a large engine port, scoped below |
-| mindmap / architecture | ❌ not planned | — | force layouts (cose-bilkent / cytoscape), non-deterministic |
-| C4, kanban, requirement | ❌ not planned | — | no corpus demand yet; C4 also needs Helvetica ink metrics |
+| kanban | ⬜ not started | — | tractable and byte-exact-able (plain rects + labels + arithmetic column layout, no rough.js); scoped in `TODO.md` |
+| requirement | ⚠️ rough-masked | — | drives the reusable unified pipeline, but its box is a roughjs shape with randomized control points → only byte-exact modulo rough.js |
+| flowchart ELK layout | ⛔ blocked (scale) | — | `defaultRenderer: elk`; a 1.5 MB GWT-transpiled Java layout engine, scoped below |
+| C4 | ⛔ blocked (metrics) | — | needs a Helvetica ink-extent (`getBBox`) text-metrics subsystem the engine lacks |
+| mindmap / architecture | ⛔ infeasible | — | `Math.random`-seeded cose-bilkent / cytoscape force layouts; upstream differs run-to-run, so no port can be byte-exact |
 
 ## How to help
 
