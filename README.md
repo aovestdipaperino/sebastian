@@ -53,7 +53,7 @@ mermaid itself embeds, so no port can match those bytes.
 | packet / packet-beta | ✅ done | 3 | byte-exact |
 | radar / radar-beta | ✅ done | 3 | byte-exact |
 | sankey / sankey-beta | ✅ done | 3 | byte-exact (labels-within-bounds; getBBox ignores text) |
-| block / block-beta | ✅ done | 7 | byte-exact (plain-block subset: columns, space, spans, composites, classDef/style; edges not yet) |
+| block / block-beta | ✅ done | 12 | byte-exact (columns, space, spans, composites, classDef/style, edges incl. labels) |
 | gitGraph (`TB` / `BT`) | ❌ not started | — | only the `LR` orientation is ported |
 | flowchart ELK layout | ❌ not started | — | `defaultRenderer: elk`; a large engine port, scoped below |
 | mindmap / architecture | ❌ not planned | — | force layouts (cose-bilkent / cytoscape), non-deterministic |

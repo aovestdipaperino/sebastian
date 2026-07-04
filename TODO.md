@@ -21,7 +21,7 @@ Already done:
 - **packet / packet-beta** (3 cases, byte-exact - incl. multi-row wrap, +bits, no-title)
 - **radar / radar-beta** (3 cases, byte-exact - incl. circle/polygon graticule, axis-ref entries, options)
 - **sankey / sankey-beta** (3 cases, byte-exact - full d3-sankey iterative layout; labels-within-bounds cases)
-- **block / block-beta** (7 cases, byte-exact - plain-block subset: columns, space, `:N` spans, nested composites, classDef/class/style; edges not yet rendered)
+- **block / block-beta** (12 cases, byte-exact - columns, space, `:N` spans, nested composites, classDef/class/style, and edges incl. labels)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 

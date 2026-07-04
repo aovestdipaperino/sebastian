@@ -691,6 +691,20 @@ fn linear_path(ctx: &mut D3Path, points: &[(f64, f64)]) {
     }
 }
 
+/// Builds a `curveBasis` path string (with marker offsets applied) from the
+/// clipped edge points. Shared by the block diagram's legacy edge renderer.
+pub(crate) fn basis_edge_path(points: &[Point], arrow_start: &str, arrow_end: &str) -> String {
+    let line_data: Vec<Point> = points.iter().copied().filter(|p| !p.y.is_nan()).collect();
+    let with_offsets = offset_points(&line_data, arrow_start, arrow_end);
+    let mut path = D3Path::default();
+    let mut curve = BasisCurve::new(&mut path);
+    for &(x, y) in &with_offsets {
+        curve.point(x, y);
+    }
+    curve.line_end();
+    path.d
+}
+
 /// `getLineFunctionsWithOffset` — x/y accessors with marker offsets.
 #[allow(clippy::similar_names)]
 fn offset_points(line_data: &[Point], arrow_start: &str, arrow_end: &str) -> Vec<(f64, f64)> {

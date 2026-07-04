@@ -26,8 +26,12 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
   cluster, circle, diamond, stadium, subroutine, doublecircle) drawn with the
   shared `createText` HTML `foreignObject` labels (`width: Infinity`, no wrap).
   Supports `columns`, `space` / `space:N`, `:N` column spans, nested
-  `block:name … end` composites, and `classDef` / `class` / `style` (via the
-  shared `class_defs_css`). Edges are not yet rendered. Seven corpus cases.
+  `block:name … end` composites, `classDef` / `class` / `style` (via the
+  shared `class_defs_css`), and **edges** (`-->`, `---`, `--x`, `--o`, `==>`,
+  `-.->`, and `-- "label" -->`) — a port of `renderHelpers.insertEdges` +
+  the legacy `dagre-wrapper` `insertEdge`/`insertEdgeLabel` (rect-clipped
+  3-point `curveBasis` paths, block markers, CSSOM-styled edge labels).
+  Twelve corpus cases.
 - **sankey / sankey-beta** — sankey flow diagrams, byte-exact vs mermaid-cli
   11.15.0. Ports the CSV parser, the full `d3-sankey` iterative layout
   (`computeNodeLinks`/`Values`/`Depths`/`Heights`/`Breadths`, six relaxation

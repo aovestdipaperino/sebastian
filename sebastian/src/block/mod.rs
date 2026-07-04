@@ -126,6 +126,16 @@ enum Stmt {
         ids: String,
         styles: String,
     },
+    /// An edge between two nodes.
+    Edge {
+        start: String,
+        end: String,
+        label: String,
+        thickness: String,
+        pattern: String,
+        arrow_start: String,
+        arrow_end: String,
+    },
 }
 
 fn type_str_to_type(s: &str) -> &'static str {
@@ -146,6 +156,40 @@ fn type_str_to_type(s: &str) -> &'static str {
         "[\\/]" => "inv_trapezoid",
         "<[]>" => "block_arrow",
         _ => "na",
+    }
+}
+
+fn edge_str_to_edge_data(type_str: &str) -> &'static str {
+    match type_str.trim().chars().last() {
+        Some('x') => "arrow_cross",
+        Some('o') => "arrow_circle",
+        Some('>') => "arrow_point",
+        _ => "",
+    }
+}
+
+fn edge_str_to_edge_start_data(type_str: &str) -> &'static str {
+    match type_str.trim().chars().next() {
+        Some('x') => "arrow_cross",
+        Some('o') => "arrow_circle",
+        Some('<') => "arrow_point",
+        _ => "arrow_open",
+    }
+}
+
+fn edge_str_to_thickness(type_str: &str) -> &'static str {
+    if type_str.contains("==") {
+        "thick"
+    } else {
+        "normal"
+    }
+}
+
+fn edge_str_to_pattern(type_str: &str) -> &'static str {
+    if type_str.contains(".-") {
+        "dotted"
+    } else {
+        "solid"
     }
 }
 
@@ -285,6 +329,40 @@ impl<'a> Parser<'a> {
         None
     }
 
+    /// Reads an edge link if one starts here, returning (edgeTypeStr, label).
+    /// Handles plain links (`-->`, `---`, `--x`, `==>`, `-.->`) and the labelled
+    /// `-- "text" -->` form. Returns None when no link is present.
+    fn read_link(&mut self) -> Option<(String, Option<String>)> {
+        let save = self.pos;
+        self.skip_ws_inline();
+        let run1 = self.read_link_chars();
+        if run1.is_empty() || !run1.contains(['-', '=', '.', '~']) {
+            self.pos = save;
+            return None;
+        }
+        self.skip_ws_inline();
+        if self.pos < self.s.len() && self.s[self.pos] == b'"' {
+            let label = self.read_string();
+            self.skip_ws_inline();
+            let run2 = self.read_link_chars();
+            return Some((run2, Some(label)));
+        }
+        Some((run1, None))
+    }
+
+    fn read_link_chars(&mut self) -> String {
+        let start = self.pos;
+        while self.pos < self.s.len() {
+            let c = self.s[self.pos];
+            if matches!(c, b'-' | b'=' | b'.' | b'<' | b'>' | b'x' | b'o' | b'~') {
+                self.pos += 1;
+            } else {
+                break;
+            }
+        }
+        self.src[start..self.pos].to_owned()
+    }
+
     fn skip_ws_inline(&mut self) {
         while self.pos < self.s.len() {
             let c = self.s[self.pos];
@@ -362,12 +440,12 @@ fn parse_document(p: &mut Parser, nested: bool) -> Result<Vec<Stmt>, BlockParseE
             p.pos += "end".len();
             break;
         }
-        stmts.push(parse_statement(p)?);
+        stmts.extend(parse_statement(p)?);
     }
     Ok(stmts)
 }
 
-fn parse_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
+fn parse_statement(p: &mut Parser) -> Result<Vec<Stmt>, BlockParseError> {
     p.skip_ws();
     // columns
     if p.peek_word("columns") {
@@ -375,13 +453,13 @@ fn parse_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
         p.skip_ws_inline();
         if p.peek_word("auto") {
             p.pos += "auto".len();
-            return Ok(Stmt::Column(-1));
+            return Ok(vec![Stmt::Column(-1)]);
         }
         let num = p.read_word();
         let n = num
             .parse::<i64>()
             .map_err(|_| BlockParseError(format!("bad columns value: {num}")))?;
-        return Ok(Stmt::Column(n));
+        return Ok(vec![Stmt::Column(n)]);
     }
     // space / space:N
     if p.peek_word("space") {
@@ -390,9 +468,9 @@ fn parse_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
             p.pos += 1;
             let num = p.read_word();
             let n = num.parse::<i64>().unwrap_or(1);
-            return Ok(Stmt::Space(n));
+            return Ok(vec![Stmt::Space(n)]);
         }
-        return Ok(Stmt::Space(1));
+        return Ok(vec![Stmt::Space(1)]);
     }
     // classDef
     if p.peek_word("classDef") {
@@ -401,7 +479,7 @@ fn parse_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
         let id = p.read_word();
         p.skip_ws_inline();
         let css = p.read_to_eol();
-        return Ok(Stmt::ClassDef { id, css });
+        return Ok(vec![Stmt::ClassDef { id, css }]);
     }
     // class
     if p.peek_word("class") {
@@ -410,7 +488,7 @@ fn parse_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
         let ids = p.read_word();
         p.skip_ws_inline();
         let class = p.read_to_eol();
-        return Ok(Stmt::ApplyClass { ids, class });
+        return Ok(vec![Stmt::ApplyClass { ids, class }]);
     }
     // style
     if p.peek_word("style") {
@@ -419,7 +497,7 @@ fn parse_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
         let ids = p.read_word();
         p.skip_ws_inline();
         let styles = p.read_to_eol();
-        return Ok(Stmt::ApplyStyle { ids, styles });
+        return Ok(vec![Stmt::ApplyStyle { ids, styles }]);
     }
     // nested block:  "block:name … end"  or  "block … end"
     if p.peek_word("block") {
@@ -430,20 +508,56 @@ fn parse_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
             p.skip_ws_inline();
             let id = p.read_node_id();
             let children = parse_document(p, true)?;
-            return Ok(Stmt::Composite {
+            return Ok(vec![Stmt::Composite {
                 id: Some(id),
                 children,
-            });
+            }]);
         }
         p.pos = after;
         let children = parse_document(p, true)?;
-        return Ok(Stmt::Composite { id: None, children });
+        return Ok(vec![Stmt::Composite { id: None, children }]);
     }
-    // node statement
+    // node statement (with optional link chains)
     parse_node_statement(p)
 }
 
-fn parse_node_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
+/// Parses `node (link node)*`, emitting the node statements plus an `Edge`
+/// statement between each linked pair (mirrors the jison nodeStatement rule).
+fn parse_node_statement(p: &mut Parser) -> Result<Vec<Stmt>, BlockParseError> {
+    let mut out = Vec::new();
+    let mut prev_id = parse_single_node(p, &mut out)?;
+    loop {
+        let save = p.pos;
+        let Some((type_str, label)) = p.read_link() else {
+            break;
+        };
+        p.skip_ws_inline();
+        // Next must be a node; if not, roll back (link belonged to nothing).
+        if p.eof() || p.peek_word("end") {
+            p.pos = save;
+            break;
+        }
+        let Ok(next_id) = parse_single_node(p, &mut out) else {
+            p.pos = save;
+            break;
+        };
+        out.push(Stmt::Edge {
+            start: prev_id.clone(),
+            end: next_id.clone(),
+            label: label.unwrap_or_default(),
+            thickness: edge_str_to_thickness(&type_str).to_owned(),
+            pattern: edge_str_to_pattern(&type_str).to_owned(),
+            arrow_start: edge_str_to_edge_start_data(&type_str).to_owned(),
+            arrow_end: edge_str_to_edge_data(&type_str).to_owned(),
+        });
+        prev_id = next_id;
+    }
+    Ok(out)
+}
+
+/// Parses a single `node` (id + optional shape + optional `:N` span), pushes its
+/// `Node` statement onto `out`, and returns its id.
+fn parse_single_node(p: &mut Parser, out: &mut Vec<Stmt>) -> Result<String, BlockParseError> {
     p.skip_ws();
     let id = p.read_node_id();
     if id.is_empty() {
@@ -466,12 +580,13 @@ fn parse_node_statement(p: &mut Parser) -> Result<Stmt, BlockParseError> {
             width_in_columns = n;
         }
     }
-    Ok(Stmt::Node {
-        id,
+    out.push(Stmt::Node {
+        id: id.clone(),
         typ,
         label,
         width_in_columns,
-    })
+    });
+    Ok(id)
 }
 
 // ---------------------------------------------------------------------------
@@ -487,6 +602,21 @@ struct Db {
     /// classDef definitions in insertion order: (name, styles, textStyles).
     classes: Vec<(String, Vec<String>, Vec<String>)>,
     class_index: HashMap<String, usize>,
+    /// Edges in source order, with count-prefixed ids.
+    edges: Vec<BlockEdge>,
+    edge_count: HashMap<String, usize>,
+}
+
+#[derive(Debug, Clone)]
+struct BlockEdge {
+    id: String,
+    start: String,
+    end: String,
+    label: String,
+    thickness: String,
+    pattern: String,
+    arrow_start: String,
+    arrow_end: String,
 }
 
 impl Db {
@@ -504,6 +634,8 @@ impl Db {
             id_counter: 0,
             classes: Vec::new(),
             class_index: HashMap::new(),
+            edges: Vec::new(),
+            edge_count: HashMap::new(),
         }
     }
 
@@ -557,6 +689,29 @@ fn populate(db: &mut Db, stmts: &[Stmt], parent: usize) -> Vec<usize> {
                 if let Some(&idx) = db.index.get(ids.trim()) {
                     db.blocks[idx].styles = styles.split(',').map(str::to_owned).collect();
                 }
+            }
+            Stmt::Edge {
+                start,
+                end,
+                label,
+                thickness,
+                pattern,
+                arrow_start,
+                arrow_end,
+            } => {
+                let base_id = format!("{start}-{end}");
+                let count = db.edge_count.get(&base_id).copied().unwrap_or(0) + 1;
+                db.edge_count.insert(base_id.clone(), count);
+                db.edges.push(BlockEdge {
+                    id: format!("{count}-{base_id}"),
+                    start: start.clone(),
+                    end: end.clone(),
+                    label: label.clone(),
+                    thickness: thickness.clone(),
+                    pattern: pattern.clone(),
+                    arrow_start: arrow_start.clone(),
+                    arrow_end: arrow_end.clone(),
+                });
             }
             Stmt::ApplyClass { ids, class } => {
                 for id in ids.split(',') {
@@ -1202,6 +1357,161 @@ fn insert_blocks(
     }
 }
 
+/// `intersect.rect`: the point where the segment from the node center to
+/// `point` crosses the node's rectangle border.
+fn intersect_rect(size: &Size, point: crate::dagre::types::Point) -> crate::dagre::types::Point {
+    let x = size.x;
+    let y = size.y;
+    let dx = point.x - x;
+    let dy = point.y - y;
+    let mut w = size.width / 2.0;
+    let mut h = size.height / 2.0;
+    let (sx, sy);
+    if dy.abs() * w > dx.abs() * h {
+        if dy < 0.0 {
+            h = -h;
+        }
+        sx = if dy == 0.0 { 0.0 } else { h * dx / dy };
+        sy = h;
+    } else {
+        if dx < 0.0 {
+            w = -w;
+        }
+        sx = w;
+        sy = if dx == 0.0 { 0.0 } else { w * dy / dx };
+    }
+    crate::dagre::types::Point {
+        x: x + sx,
+        y: y + sy,
+    }
+}
+
+/// Renders the block edges (renderHelpers.insertEdges + dagre-wrapper
+/// insertEdge). Appended to the block group after the nodes.
+fn insert_edges(parent: &Element, db: &Db, diagram_id: &str) {
+    use crate::dagre::types::Point;
+    for edge in &db.edges {
+        let (Some(&si), Some(&ti)) = (db.index.get(&edge.start), db.index.get(&edge.end)) else {
+            continue;
+        };
+        let (Some(start), Some(end)) = (db.blocks[si].size.clone(), db.blocks[ti].size.clone())
+        else {
+            continue;
+        };
+        let mid = Point {
+            x: start.x + (end.x - start.x) / 2.0,
+            y: start.y + (end.y - start.y) / 2.0,
+        };
+        // insertEdge clipping: [tail∩mid, mid, head∩mid]
+        let points = vec![intersect_rect(&start, mid), mid, intersect_rect(&end, mid)];
+        let d = crate::render::edges::basis_edge_path(&points, &edge.arrow_start, &edge.arrow_end);
+
+        let thickness_class = if edge.thickness == "thick" {
+            "edge-thickness-thick"
+        } else {
+            "edge-thickness-normal"
+        };
+        let pattern_class = if edge.pattern == "dotted" {
+            "edge-pattern-dotted"
+        } else {
+            "edge-pattern-solid"
+        };
+        let dynamic = format!("{thickness_class} {pattern_class} flowchart-link LS-a1 LE-b1");
+        // insertEdge strokeClasses
+        let mut stroke = match edge.thickness.as_str() {
+            "thick" | "invisible" => "edge-thickness-thick".to_owned(),
+            "normal" => "edge-thickness-normal".to_owned(),
+            _ => String::new(),
+        };
+        match edge.pattern.as_str() {
+            "solid" => stroke.push_str(" edge-pattern-solid"),
+            "dotted" => stroke.push_str(" edge-pattern-dotted"),
+            "dashed" => stroke.push_str(" edge-pattern-dashed"),
+            _ => {}
+        }
+
+        let path = append(parent, "path");
+        set_attr(&path, "d", d);
+        set_attr(&path, "id", format!("{diagram_id}-{}", edge.id));
+        set_attr(&path, "class", format!(" {stroke} {dynamic}"));
+        // marker-start / marker-end (block diagramType)
+        if let Some(m) = arrow_marker_type(&edge.arrow_start) {
+            set_attr(
+                &path,
+                "marker-start",
+                format!("url(#{diagram_id}_block-{m}Start)"),
+            );
+        }
+        if let Some(m) = arrow_marker_type(&edge.arrow_end) {
+            set_attr(
+                &path,
+                "marker-end",
+                format!("url(#{diagram_id}_block-{m}End)"),
+            );
+        }
+
+        // Edge label (insertEdgeLabel + positionEdgeLabel).
+        if !edge.label.is_empty() {
+            build_edge_label(parent, &edge.label, mid);
+        }
+    }
+}
+
+/// Builds the `<g class="edgeLabel">` for a block edge. The block edge
+/// labelStyle is always `stroke: #333; stroke-width: 1.5px;fill:none;`, so the
+/// CSSOM-normalized div/span styles are fixed.
+fn build_edge_label(parent: &Element, label: &str, mid: crate::dagre::types::Point) {
+    let m = crate::text::TextMeasurer::new();
+    let b = measure_label_sized(&m, label, f64::INFINITY, FONT_SIZE);
+    let (w, h) = (b.width, b.height);
+
+    let edge_label = append(parent, "g");
+    set_attr(&edge_label, "class", "edgeLabel");
+    set_attr(
+        &edge_label,
+        "transform",
+        format!("translate({}, {})", js_num(mid.x), js_num(mid.y)),
+    );
+    let label_g = append(&edge_label, "g");
+    set_attr(&label_g, "class", "label");
+    set_attr(
+        &label_g,
+        "transform",
+        format!("translate({}, {})", js_num(-w / 2.0), js_num(-h / 2.0)),
+    );
+    let fo = append(&label_g, "foreignObject");
+    set_attr(&fo, "width", js_num(w));
+    set_attr(&fo, "height", js_num(h));
+    let div = append_xhtml(&fo, "div");
+    set_attr(
+        &div,
+        "style",
+        "stroke: rgb(51, 51, 51); stroke-width: 1.5px; display: table-cell; white-space: nowrap; line-height: 1.5;",
+    );
+    set_attr(&div, "xmlns", "http://www.w3.org/1999/xhtml");
+    let span = append_xhtml(&div, "span");
+    set_attr(
+        &span,
+        "style",
+        "stroke: #333; stroke-width: 1.5px;color:none;",
+    );
+    set_attr(&span, "class", "edgeLabel");
+    if !label.is_empty() {
+        let p = append_xhtml(&span, "p");
+        set_text_append(&p, label);
+    }
+}
+
+/// arrowTypesMap: maps an arrow type to its marker base name (None → no marker).
+fn arrow_marker_type(arrow: &str) -> Option<&'static str> {
+    match arrow {
+        "arrow_cross" => Some("cross"),
+        "arrow_point" => Some("point"),
+        "arrow_circle" => Some("circle"),
+        _ => None,
+    }
+}
+
 /// Renders mermaid `block-beta` source to a complete SVG document string.
 ///
 /// # Errors
@@ -1251,6 +1561,7 @@ pub fn render_block(source: &str, id: &str) -> Result<String, BlockParseError> {
     set_attr(&nodes, "class", "block");
     let root_children = db.blocks[db.root].children.clone();
     insert_blocks(&nodes, &db, &root_children, id, &measurer);
+    insert_edges(&nodes, &db, id);
 
     // viewBox: `${x-5} ${y-5} ${width+10} ${height+10}`
     let vb_w = width + 10.0;
