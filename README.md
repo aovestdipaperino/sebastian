@@ -60,21 +60,20 @@ mermaid itself embeds, so no port can match those bytes.
 | requirement | ⚠️ rough-masked | — | drives the reusable unified pipeline, but its box is a roughjs shape with randomized control points → only byte-exact modulo rough.js |
 | flowchart ELK layout | ⛔ blocked (scale) | — | `defaultRenderer: elk`; a 1.5 MB GWT-transpiled Java layout engine, scoped below |
 | C4 | ⛔ blocked (metrics) | — | needs a Helvetica ink-extent (`getBBox`) text-metrics subsystem the engine lacks |
-| mindmap | ⛔ blocked (engine) | — | deterministic, but `getData` forces `layout: cose-bilkent` — a registered force-directed layout engine; byte-exact needs that engine ported (ELK-tier) |
-| architecture | 🚫 not byte-exact by nature | — | cytoscape-`fcose` force layout, seeded from `Math.random()`; two `mmdc` runs of the same source differ, so no port can match its bytes |
+| mindmap | 🟡 approximate | smoke | renders with a deterministic tidy-tree layout; **not byte-exact** (mermaid uses the cose-bilkent force engine) |
+| architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
 
-> **Note on mindmap and architecture.** Both lay out with force-directed
-> engines, but they differ. **mindmap** routes through the unified pipeline
-> with `layout: cose-bilkent` (a *registered* engine, `dagre` is only the
-> generic fallback); its output is deterministic across runs, so it *could* be
-> byte-exact — but only by porting the cose-bilkent physics engine, a
-> multi-session effort on the scale of the flowchart ELK port. **architecture**
-> uses cytoscape-`fcose`, which is seeded from `Math.random()`; two `mmdc` runs
-> of the same source already differ, so there is no canonical byte stream to
-> match. Either could still be **supported with an approximate, non-byte-exact
-> layout** (an opt-in stylization like the hand-drawn look, validated by
-> rasterized/structural comparison), but that departs from this project's
-> byte-exact guarantee. Left unimplemented.
+> **Note on mindmap and architecture (approximate renderers).** Mermaid lays
+> both out with force-directed engines that have no byte-exact path here:
+> **mindmap** forces `layout: cose-bilkent` (deterministic, but a physics engine
+> that would be an ELK-tier port), and **architecture** uses cytoscape-`fcose`,
+> which is `Math.random`-seeded and *not even deterministic run-to-run*. So
+> sebastian ships **approximate** renderers for these two — its own
+> deterministic layouts (a left-to-right tidy tree for mindmap, a directional
+> grid for architecture). They produce clean, stable output but are **not
+> byte-identical to mmdc**; like the hand-drawn look, they are an explicit
+> opt-out of the byte-exact guarantee, validated by structural smoke tests
+> rather than the byte-diff corpus.
 
 ## How to help
 

@@ -24,6 +24,8 @@ Already done:
 - **block / block-beta** (12 cases, byte-exact - columns, space, `:N` spans, nested composites, classDef/class/style, and edges incl. labels)
 - **treemap / treemap-beta** (4 cases, byte-exact - d3 squarify layout, sections/leaves, font-shrink labels)
 - **kanban** (3 cases, byte-exact - mindmap-indent parser, section clusters + item cards, column layout)
+- **mindmap** (APPROXIMATE, non-byte-exact - deterministic tidy-tree; smoke-tested)
+- **architecture** (APPROXIMATE, non-byte-exact - deterministic directional grid; smoke-tested)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 
@@ -89,19 +91,23 @@ larger than the original dagre port, best done from the readable Java
 sources (eclipse/elk) with differential fixtures, in its own multi-session
 effort. Reference fixture harness: /tmp/gapcases/elk100.* pattern.
 
+**Reuse spike (2026-07):** two native-Rust ELK ports exist — `elkrs`
+(crates.io 0.1.1, Apache-2.0, byte-exact vs **ELK 0.11.0**) and
+`openedges/elk-rs` (EPL-2.0, "drop-in elkjs replacement"). BUT
+`@mermaid-js/layout-elk` pins **elkjs `^0.9.3`** (ELK 0.9.x), and ELK's
+placement/spacing changed between 0.9 and 0.11 — so `elkrs` is NOT byte-exact
+with mermaid's output as-is. Direct reuse would need a 0.9.x target in elkrs;
+otherwise it only yields an *approximate* ELK layout. Even with a matching
+engine, the `@mermaid-js/layout-elk` glue (render.ts/geometry.ts, node↔ELK-JSON
+mapping + edge routing/label placement) still needs porting.
+
 ## Not planned (for now)
 
-- **mindmap** — blocked on engine scale, not determinism. `mindmapDb.getData`
-  forces `layout: 'cose-bilkent'` (a *registered* force-directed layout engine;
-  `dagre` is only the generic fallback). Output is deterministic run-to-run
-  (nodes are plain circle/rounded-rect paths, edges curveBasis — no rough), so
-  it *could* be byte-exact — but only by porting the cose-bilkent physics engine,
-  a multi-session effort on the scale of the flowchart ELK port. The mermaid
-  side (parser + `getData` + node shapes) is small; the engine is the wall.
-- **architecture** — cytoscape-`fcose` force layout seeded from `Math.random()`;
-  two `mmdc` runs of the same source differ (verified), so **no port can be
-  byte-exact**, and it is also a large force-engine port. Could be approximated
-  (non-byte-exact) like the hand-drawn look; left unimplemented.
+- **mindmap / architecture** — now shipped as **approximate** (non-byte-exact)
+  renderers; see "Already done" above. Byte-exact remains out of reach:
+  mindmap's cose-bilkent and architecture's cytoscape-`fcose` are force-layout
+  engines (the latter `Math.random`-seeded, non-deterministic even run-to-run),
+  and no reusable Rust crate exists for either (spike found only ELK ports).
 - **requirement** — only byte-exact *modulo rough.js*. Drives the unified
   `render()` pipeline (reusable), BUT the `requirementBox` shape draws its box
   with roughjs curved double-strokes whose control points are randomized

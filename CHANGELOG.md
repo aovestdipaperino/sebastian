@@ -17,6 +17,16 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+- **mindmap & architecture (approximate, non-byte-exact)** — sebastian now
+  renders these two force-layout diagram types with its own deterministic
+  layouts (a left-to-right tidy tree for mindmap, a directional grid for
+  architecture) instead of erroring. They are **not byte-identical to mmdc**
+  (mermaid uses cose-bilkent / cytoscape-fcose, the latter `Math.random`-seeded
+  and not even deterministic), so they are an explicit opt-out of the byte-exact
+  guarantee — validated by structural smoke tests. A crate spike found native
+  ELK ports (`elkrs`) but at ELK 0.11 vs mermaid's elkjs 0.9.x, so not directly
+  reusable for byte-exact flowchart-ELK; no Rust cose-bilkent/fcose crate exists.
+
 - **kanban** — kanban boards, byte-exact vs mermaid-cli 11.15.0. Ports the
   mindmap-style indentation parser, `kanbanDb` (sections + items), the bespoke
   arithmetic column layout, the section cluster (`insertCluster` rect +
