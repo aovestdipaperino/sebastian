@@ -22,6 +22,7 @@ pub mod kanban;
 pub mod mindmap;
 pub mod packet;
 pub mod pie;
+pub mod pyramid;
 pub mod quadrant;
 pub mod radar;
 pub mod render;

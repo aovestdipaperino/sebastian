@@ -28,6 +28,7 @@ Already done:
 - **architecture** (APPROXIMATE, non-byte-exact - deterministic directional grid; smoke-tested)
 - **requirement** (APPROXIMATE, non-byte-exact - reuses the unified dagre pipeline; smoke-tested)
 - **C4** (`C4Context`/`Container`/`Component`/`Dynamic`/`Deployment`; APPROXIMATE, non-byte-exact - deterministic row-based layout; smoke-tested)
+- **pyramid** (sebastian EXTENSION, no mermaid equivalent - pyramid chart + pyramid of components; original renderer, smoke-tested)
 
 ## 1. stateDiagram-v2 — 28 corpus blocks
 

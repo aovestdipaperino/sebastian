@@ -17,6 +17,14 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+- **pyramid (sebastian extension).** A new `pyramid` diagram type with no
+  mermaid equivalent — an original renderer. Plain levels produce a **pyramid
+  chart** (stacked trapezoid bands forming a triangle); a `: a, b, c` component
+  list on a level produces a **pyramid of components** (named boxes laid out in
+  a row inside the band), and the two forms mix. Deterministic layout, theme
+  `cScale` colours, native-SVG (rasterizes without a browser). Structural smoke
+  tests in `tests/pyramid_smoke.rs`.
+
 - **flowchart ELK layout — `elk` feature, wired end-to-end.** A new opt-in `elk`
   cargo feature routes `layout: elk` (and `flowchart.defaultRenderer: elk`)
   flowcharts through the native `elkrs` ELK engine instead of dagre. `render::elk`

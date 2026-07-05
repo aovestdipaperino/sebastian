@@ -67,6 +67,7 @@ mermaid itself embeds, so no port can match those bytes.
 | architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
 | requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **byte-exact closed as intractable** (box `max-width` doesn't match ground-truth Chrome `getBBox`) |
 | C4 (Context/Container/Component/Dynamic/Deployment) | 🟡 approximate | smoke | deterministic row-based layout; **byte-exact closed as intractable** (same `getBBox` finding) |
+| pyramid | 🔵 extension | smoke | **sebastian-only** diagram (no mermaid equivalent): pyramid chart + pyramid of components; original renderer, not a port |
 
 > **Note on mindmap and architecture (approximate renderers).** Mermaid lays
 > both out with force-directed engines that have no byte-exact path here:
@@ -202,6 +203,38 @@ leaves a few elements crisp: self-message bezier curves, the loop label tab,
 the thin lifelines, and arrowhead markers. See
 `sebastian/src/sequence/render.rs` (module docs) and
 `sebastian/tests/sequence_handdrawn.rs`.
+
+## Pyramid diagrams (sebastian extension)
+
+`pyramid` is a **sebastian-only** diagram type with no mermaid equivalent, so
+it is an original renderer (not byte-exact against anything). It draws stacked
+trapezoid bands as a triangle — narrow apex on top, wide base at the bottom —
+one labelled band per level:
+
+```
+pyramid
+  title Company Hierarchy
+  CEO
+  Directors
+  Managers
+  Staff
+```
+
+Add a `: a, b, c` component list to any level and that band becomes a **pyramid
+of components** — the named boxes are laid out in a row inside the band. The two
+forms mix freely:
+
+```
+pyramid
+  title System Architecture
+  Presentation: Web, Mobile
+  Business: Auth, Orders, Billing
+  Data: Postgres, Redis, Queue
+```
+
+Layout is deterministic and band colours come from the theme `cScale` palette;
+it renders in pure-SVG rasterizers (native `<text>`, no `foreignObject`).
+Validated by `sebastian/tests/pyramid_smoke.rs`.
 
 ## Rasterization (PNG) — `raster` feature
 
