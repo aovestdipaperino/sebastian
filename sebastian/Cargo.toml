@@ -26,6 +26,11 @@ resvg = { version = "0.44", optional = true }
 elkrs = { version = "0.1.1", optional = true }
 
 [features]
+# On by default. `mermaid-extensions` enables sebastian-original diagram types
+# that have no mermaid equivalent (currently `pyramid`). Build with
+# `--no-default-features` to restrict output to faithful mermaid diagram types.
+default = ["mermaid-extensions"]
+mermaid-extensions = []
 # Adds the `render::raster` module: SVG -> PNG with an embedded font.
 raster = ["dep:resvg"]
 # Adds the `render::elk` module: ELK layered layout via the `elkrs` crate.

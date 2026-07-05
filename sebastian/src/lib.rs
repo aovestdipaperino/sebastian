@@ -22,6 +22,9 @@ pub mod kanban;
 pub mod mindmap;
 pub mod packet;
 pub mod pie;
+/// sebastian-original diagram types with no mermaid equivalent (see the
+/// `mermaid-extensions` feature, on by default).
+#[cfg(feature = "mermaid-extensions")]
 pub mod pyramid;
 pub mod quadrant;
 pub mod radar;

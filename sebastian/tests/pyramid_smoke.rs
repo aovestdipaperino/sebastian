@@ -1,6 +1,8 @@
 //! Structural smoke tests for the `pyramid` diagram — a sebastian extension
 //! (no mermaid equivalent), so it is validated by structure rather than a
-//! byte-diff against `mmdc`.
+//! byte-diff against `mmdc`. Gated on the `mermaid-extensions` feature (default).
+
+#![cfg(feature = "mermaid-extensions")]
 
 use sebastian::render_diagram;
 

@@ -23,7 +23,10 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
   list on a level produces a **pyramid of components** (named boxes laid out in
   a row inside the band), and the two forms mix. Deterministic layout, theme
   `cScale` colours, native-SVG (rasterizes without a browser). Structural smoke
-  tests in `tests/pyramid_smoke.rs`.
+  tests in `tests/pyramid_smoke.rs`. Gated behind the new **`mermaid-extensions`**
+  cargo feature (on by default; `--no-default-features` restricts sebastian to
+  faithful mermaid diagram types). Future non-mermaid diagram types will live
+  behind this same feature.
 
 - **flowchart ELK layout — `elk` feature, wired end-to-end.** A new opt-in `elk`
   cargo feature routes `layout: elk` (and `flowchart.defaultRenderer: elk`)

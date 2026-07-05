@@ -67,7 +67,7 @@ mermaid itself embeds, so no port can match those bytes.
 | architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
 | requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **byte-exact closed as intractable** (box `max-width` doesn't match ground-truth Chrome `getBBox`) |
 | C4 (Context/Container/Component/Dynamic/Deployment) | 🟡 approximate | smoke | deterministic row-based layout; **byte-exact closed as intractable** (same `getBBox` finding) |
-| pyramid | 🔵 extension | smoke | **sebastian-only** diagram (no mermaid equivalent): pyramid chart + pyramid of components; original renderer, not a port |
+| pyramid | 🔵 extension | smoke | **sebastian-only** diagram (no mermaid equivalent): pyramid chart + pyramid of components; original renderer, not a port. Behind the `mermaid-extensions` feature (on by default) |
 
 > **Note on mindmap and architecture (approximate renderers).** Mermaid lays
 > both out with force-directed engines that have no byte-exact path here:
@@ -207,7 +207,10 @@ the thin lifelines, and arrowhead markers. See
 ## Pyramid diagrams (sebastian extension)
 
 `pyramid` is a **sebastian-only** diagram type with no mermaid equivalent, so
-it is an original renderer (not byte-exact against anything). It draws stacked
+it is an original renderer (not byte-exact against anything). It lives behind
+the **`mermaid-extensions`** cargo feature, which is **on by default** — build
+with `--no-default-features` to restrict sebastian to faithful mermaid diagram
+types only. It draws stacked
 trapezoid bands as a triangle — narrow apex on top, wide base at the bottom —
 one labelled band per level:
 
