@@ -166,9 +166,22 @@ otherwise. `tests/elk_layout.rs` renders a `layout: elk` flowchart end-to-end;
    `layout-elk`'s *own* measuring-context `getBBox` — a second getBBox model for
    1/128px. Disproportionate; deferred. `y` (layer positions) is already exact,
    and node placement is exact when the input dims are exact (stage-1 test).
-2. **Edge routing.** Edges currently use ELK's raw section points; port the
-   `@mermaid-js/layout-elk` geometry glue (render.ts/geometry.ts) for
-   bendpoints/border-clipping/label placement to make edges byte-exact.
+2. **Edge routing.** Edges currently use ELK's raw section points; sebastian's
+   `insert_edge` then clips them. Straight edges already match mermaid to ~1/128;
+   diamond-source edges are ~3px off. Algorithm fully mapped from layout-elk
+   (`render-*.mjs` ~101910): `points = [src, ...bendPoints, dest]` (offset for
+   nesting); if the source shape is a diamond, `unshift` the source node *center*;
+   if the target is a diamond, `push` the target center; then
+   `cutPathAtIntersect(points.reverse(), {x,y=node center, width: sw, height,
+   padding}, isDiamond).reverse()` to clip the source end, then
+   `cutPathAtIntersect(points, {…endNode…}, isDiamond)` for the target; then
+   `insertEdge` with curveBasis. `cutPathAtIntersect`/`intersection`/
+   `diamondIntersection` are the same funcs sebastian already has for dagre — the
+   work is the assembly + reverse/clip/reverse + not double-clipping with
+   sebastian's `insert_edge`. **Note:** even done perfectly this is *not*
+   byte-exact until the node-dim gap (#1) is closed, since edge endpoints are node
+   centers. So it's an approximate visual refinement (~3px on diamonds) unless #1
+   is solved first — low value-per-effort; defer behind #1.
 3. **Clusters/ports.** Subgraphs are laid out flat for now; ELK
    `INCLUDE_CHILDREN` hierarchy + port constraints need handling.
 
