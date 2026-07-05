@@ -13,6 +13,11 @@ gantt, gitGraph, journey, quadrantChart, packet, radar, sankey, block, treemap,
 kanban** — the output SVG is
 **byte-for-byte identical** to the official `mmdc` (mermaid-cli) output.
 
+Four more types — **mindmap, architecture, requirement, C4** — render as
+**approximate** (non-byte-exact) diagrams, and **flowchart ELK layout**
+(`layout: elk`) is available behind an opt-in feature; see the status table
+below for exactly what each guarantees.
+
 The workspace contains two crates:
 
 - **`sebastian`** — the rendering library (`sebastian::render_diagram`)
@@ -109,11 +114,11 @@ is the same loop that got every ✅ row to byte-exact (details in
 
 The highest-leverage contributions right now:
 
-- **An `elkrs`-backed ELK layout for flowcharts** (`layout: elk`). A 2026-07
-  spike proved `elkrs` (ELK 0.11) is byte-identical to mermaid's elkjs 0.9.x on
-  acyclic layered graphs, so this is de-risked; the remaining work is wiring the
-  ELK-JSON build + coordinate/edge readback + the `layout-elk` geometry glue.
-  Scoped in the section below.
+- **Finishing the `elkrs`-backed ELK layout** (`layout: elk`, the `elk`
+  feature). It is already wired end-to-end with byte-exact node placement; the
+  remaining pieces — closing the node-dimension 1/128 gap, byte-exact edge
+  routing, and native ELK cluster layout — are scoped in the section below and
+  in `TODO.md`. All three are gated on the same sub-pixel `getBBox` artifact.
 
 (Note: byte-exact **requirement** and **C4** were investigated and closed as
 intractable — their box widths don't match ground-truth Chrome `getBBox` at the
@@ -247,7 +252,7 @@ Two reference suites assert output against captured `mmdc` SVGs:
 - `sebastian/tests/state_corpus.rs` — 29 stateDiagram-v2 diagrams (23
   byte-identical; 6 compared modulo mermaid's own rough-path randomness
   and its random divider `generateId()` token).
-- `sebastian/tests/sequence_corpus.rs` — 34 sequence diagrams (blocks,
+- `sebastian/tests/sequence_corpus.rs` — 37 sequence diagrams (blocks,
   activations, autonumber, boxes, actor figures), all byte-identical.
 - `sebastian/tests/timeline_corpus.rs` — 4 timeline diagrams, all byte-identical.
 - `sebastian/tests/pie_corpus.rs`, `sebastian/tests/er_corpus.rs`,
@@ -257,11 +262,23 @@ Two reference suites assert output against captured `mmdc` SVGs:
 - `sebastian/tests/class_corpus.rs` — 9 class diagrams (generics, notes,
   namespaces, lollipop interfaces), byte-identical modulo the rough
   rectangle/divider randomness mermaid itself embeds.
-- `sebastian/tests/gitgraph_corpus.rs` — 2 gitGraphs (`LR`), byte-identical
-  modulo the `Math.random()`-seeded auto-generated commit ids and a
-  single-f32-ulp viewBox difference in Blink's rotated-rect bbox mapping.
+- `sebastian/tests/gitgraph_corpus.rs` — 10 gitGraphs (`LR`/`TB`/`BT`, incl.
+  commit labels + tags), byte-identical modulo the `Math.random()`-seeded
+  auto-generated commit ids and a single-f32-ulp viewBox/max-width difference
+  in Blink's rotated-rect bbox mapping.
 - `sebastian/tests/journey_corpus.rs` — 2 user-journey diagrams, all
   byte-identical.
+- `sebastian/tests/quadrant_corpus.rs`, `sebastian/tests/packet_corpus.rs`,
+  `sebastian/tests/radar_corpus.rs`, `sebastian/tests/sankey_corpus.rs`,
+  `sebastian/tests/block_corpus.rs`, `sebastian/tests/treemap_corpus.rs`,
+  `sebastian/tests/kanban_corpus.rs` — quadrantChart, packet-beta, radar-beta,
+  sankey-beta, block-beta, treemap-beta, and kanban fixtures, all byte-identical.
+- `sebastian/tests/approximate_smoke.rs` — structural smoke tests for the
+  **approximate** renderers (mindmap, architecture, requirement, C4) and the
+  ELK dagre-fallback path: valid SVG with the expected elements, not byte-diff.
+- `sebastian/tests/elk_layout.rs` (needs `--features elk`) — the `elk` backend:
+  byte-exact node placement vs mermaid's elkjs, near-exact full render, subgraph
+  fallback, and direction/self-loop coverage.
 
 Reproducing the corpus required matching Chrome's text pipeline in detail:
 HTML-entity decoding via innerHTML semantics, DOMPurify tag/attribute
@@ -284,19 +301,45 @@ bytes).
 - The Trebuchet MS font (preinstalled on macOS and Windows) — text metrics
   and therefore the entire layout depend on it.
 
-## Flowchart ELK layout (not started)
+## Flowchart ELK layout (`elk` feature, in progress)
 
-`%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%` routes layout
-through elkjs, a 1.5 MB GWT transpilation of the Java ELK *layered* engine
-(network-simplex layering, Forster-constrained crossing minimization, ELK's
-modified Brandes-Köpf placement, orthogonal edge routing, port constraints).
-The mermaid glue (`@mermaid-js/layout-elk`, ~1.3k lines) is small; the
-engine is the real work — a port larger than the original dagre port, best
-done from the readable Java sources (`eclipse/elk`) with differential
-fixtures in its own multi-session effort.
+`%%{init: {"layout": "elk"}}%%` (or `flowchart.defaultRenderer: "elk"`)
+routes layout through the Java ELK *layered* engine. Rather than porting
+that engine, sebastian reuses the native-Rust [`elkrs`](https://crates.io/crates/elkrs)
+crate — a 2026-07 spike proved it is **byte-identical to mermaid's elkjs
+0.9.x on acyclic layered graphs** (it diverges only on cyclic graphs, where
+0.9→0.11 cycle-breaking changed). Enable it with the opt-in `elk` cargo
+feature (keeps `elkrs`'s dependencies out of the default build):
+
+```bash
+cargo build --features elk       # library
+cargo run -p seb --features sebastian/elk -- -i x.mmd -o x.svg
+```
+
+What works today (`sebastian/tests/elk_layout.rs`):
+
+- **Node placement is byte-exact** given exact input dimensions — the exact
+  ELK-JSON mermaid feeds elkjs, run through `elkrs`, matches coordinate for
+  coordinate. In a full render it lands within ~1/128px.
+- Flat graphs in **all directions** (TB/BT/LR/RL), **self-loops**, and
+  **multi-edges** use real ELK layout; straight edges match mermaid to ~1/128.
+- Flowcharts **with subgraphs** fall back to dagre for the whole render, so
+  their cluster boxes are correct (native ELK cluster layout is not ported).
+
+Remaining work (all scoped in `TODO.md`), none of it byte-exact yet because
+it is gated on one sub-pixel artifact — mermaid measures ELK node widths in a
+throwaway CSS-less container, so its `getBBox` width differs from the (byte-exact)
+dagre width by a node-dependent 0-or-1/128:
+
+1. the node-dimension gap (needs modeling mermaid's ELK-context `getBBox`),
+2. byte-exact edge routing (the `@mermaid-js/layout-elk` geometry glue is
+   mapped in `TODO.md`; edge endpoints inherit the node-dim gap), and
+3. native ELK cluster layout (a nested `INCLUDE_CHILDREN` graph).
 
 ## Development
 
 - `cargo test` — unit tests, dagre differential fixtures, byte-exact
   rendering tests.
+- `cargo test --features elk` — additionally runs the ELK backend tests
+  (`elk_layout.rs`).
 - `/tmp`-based reference tooling and porting details: see `PORTING_NOTES.md`.
