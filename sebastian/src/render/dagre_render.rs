@@ -272,8 +272,18 @@ pub fn recursive_render(
         }
     }
 
-    // Layout.
-    layout_with_dagre(graph);
+    // Layout. `layout: elk` routes through the ELK backend (feature-gated);
+    // everything else uses the byte-exact dagre port.
+    #[cfg(feature = "elk")]
+    let use_elk = ctx.config.layout == "elk";
+    #[cfg(not(feature = "elk"))]
+    let use_elk = false;
+    if use_elk {
+        #[cfg(feature = "elk")]
+        layout_with_elk(graph, &ctx.config.direction);
+    } else {
+        layout_with_dagre(graph);
+    }
 
     // Position nodes.
     for v in sort_nodes_by_hierarchy(graph) {
@@ -423,6 +433,77 @@ fn position_edge_label(edge: &EdgeRef, paths: &super::edges::InsertedEdge, ctx: 
             "transform",
             format!("translate({}, {})", js_num(pos.x), js_num(pos.y)),
         );
+    }
+}
+
+/// Adapter: runs the ELK backend on a `RenderGraph` and copies results back.
+///
+/// Node **placement** is byte-exact vs mermaid's elkjs (see `render::elk`); edge
+/// routing uses ELK's raw sections (the `layout-elk` geometry glue for
+/// bendpoints/clipping is not yet ported, so edges are not byte-exact). Clusters
+/// are laid out flat for now. Falls back to dagre if ELK errors.
+#[cfg(feature = "elk")]
+fn layout_with_elk(graph: &RenderGraph, direction: &str) {
+    use super::elk::{ElkEdgeInput, ElkNodeInput};
+
+    let node_ids = graph.nodes();
+    let nodes: Vec<ElkNodeInput> = node_ids
+        .iter()
+        .filter_map(|v| {
+            graph.node(v).map(|n| {
+                let n = n.borrow();
+                ElkNodeInput {
+                    id: v.clone(),
+                    width: n.width,
+                    height: n.height,
+                }
+            })
+        })
+        .collect();
+
+    let edge_objs = graph.edges();
+    let edges: Vec<ElkEdgeInput> = edge_objs
+        .iter()
+        .enumerate()
+        .filter_map(|(i, e)| {
+            graph.edge_for(e).map(|edge| {
+                let ed = edge.borrow();
+                ElkEdgeInput {
+                    id: format!("e{i}"),
+                    source: e.v.clone(),
+                    target: e.w.clone(),
+                    label_text: ed.label.clone(),
+                    label_width: ed.width,
+                    label_height: ed.height,
+                }
+            })
+        })
+        .collect();
+
+    let Ok(result) = super::elk::layout(&nodes, &edges, direction) else {
+        layout_with_dagre(graph);
+        return;
+    };
+
+    // ELK returns top-left coordinates; the renderer positions nodes by center.
+    for nl in &result.nodes {
+        if let Some(node) = graph.node(&nl.id) {
+            let mut n = node.borrow_mut();
+            n.x = nl.x + n.width / 2.0;
+            n.y = nl.y + n.height / 2.0;
+        }
+    }
+    for (i, e) in edge_objs.iter().enumerate() {
+        let id = format!("e{i}");
+        if let (Some(el), Some(edge)) =
+            (result.edges.iter().find(|x| x.id == id), graph.edge_for(e))
+        {
+            edge.borrow_mut().points = el
+                .points
+                .iter()
+                .map(|p| crate::dagre::types::Point { x: p.x, y: p.y })
+                .collect();
+        }
     }
 }
 

@@ -30,6 +30,9 @@ pub struct RenderConfig {
     pub edge_label_font_size: Option<f64>,
     /// `gitGraph.showCommitLabel` (defaults to true when unset).
     pub git_show_commit_label: Option<bool>,
+    /// Layout engine: `"dagre"` (default) or `"elk"`. Set by the top-level
+    /// `layout` directive or `flowchart.defaultRenderer: "elk"`.
+    pub layout: String,
 }
 
 impl Default for RenderConfig {
@@ -49,6 +52,7 @@ impl Default for RenderConfig {
             direction: "TB".to_owned(),
             edge_label_font_size: None,
             git_show_commit_label: None,
+            layout: "dagre".to_owned(),
         }
     }
 }
@@ -125,6 +129,10 @@ fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
     if let Some(look) = map.get("look").and_then(Value::as_str) {
         look.clone_into(&mut config.look);
     }
+    // Top-level `layout` selects the layout engine ("elk" / "dagre").
+    if let Some(layout) = map.get("layout").and_then(Value::as_str) {
+        layout.clone_into(&mut config.layout);
+    }
     if let Some(Value::Object(vars)) = map.get("themeVariables") {
         for (k, v) in vars {
             config.theme_variables.insert(k.clone(), v.clone());
@@ -148,6 +156,12 @@ fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
         }
         if let Some(c) = flow.get("curve").and_then(Value::as_str) {
             config.curve = Some(c.to_owned());
+        }
+        // `flowchart.defaultRenderer: "elk"` also selects ELK (legacy spelling).
+        if let Some(r) = flow.get("defaultRenderer").and_then(Value::as_str)
+            && r == "elk"
+        {
+            "elk".clone_into(&mut config.layout);
         }
     }
     if let Some(Value::Object(git)) = map.get("gitGraph")

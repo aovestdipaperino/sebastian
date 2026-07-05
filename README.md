@@ -57,7 +57,7 @@ mermaid itself embeds, so no port can match those bytes.
 | block / block-beta | ✅ done | 12 | byte-exact (columns, space, spans, composites, classDef/style, edges incl. labels) |
 | treemap / treemap-beta | ✅ done | 4 | byte-exact (d3 squarify layout, sections/leaves, font-shrink labels) |
 | kanban | ✅ done | 3 | byte-exact (mindmap-indent parser, section clusters + item cards, arithmetic column layout) |
-| flowchart ELK layout | 🟢 in progress | 1 (elk feat) | `layout: elk` renders via dagre by default; the opt-in `elk` feature adds byte-exact ELK **node placement** via `elkrs` (validated in-tree against mermaid's elkjs 0.9.3). Pipeline wiring + edge routing remain — scoped below |
+| flowchart ELK layout | 🟢 in progress | 2 (elk feat) | opt-in `elk` feature routes `layout: elk` through `elkrs` end-to-end; node placement byte-exact from exact dims, ~1/128px in full render (known node-dim gap); edge-routing geometry + that gap remain — scoped below |
 | mindmap | 🟡 approximate | smoke | renders with a deterministic tidy-tree layout; **not byte-exact** (mermaid uses the cose-bilkent force engine) |
 | architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
 | requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **byte-exact closed as intractable** (box `max-width` doesn't match ground-truth Chrome `getBBox`) |

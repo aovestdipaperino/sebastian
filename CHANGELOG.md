@@ -17,20 +17,30 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
-- **flowchart ELK layout — `elk` feature, byte-exact node placement (stage 1).**
-  A new opt-in `elk` cargo feature adds `render::elk`, which builds the ELK graph
-  exactly as mermaid's `@mermaid-js/layout-elk` does (same `layoutOptions`, node
-  dimensions, and per-edge label reservations) and runs it through the native
-  `elkrs` crate. An in-tree test (`tests/elk_layout.rs`) feeds the exact graph
-  mermaid hands elkjs 0.9.3 for a real flowchart and asserts the node
-  coordinates match **byte-for-byte**. So the ELK *placement* half is byte-exact
-  and validated in-tree; wiring it into the flowchart render pipeline (node
-  measurement → ELK → draw) and porting the `layout-elk` edge-routing geometry is
-  the remaining multi-session work. Gated behind the feature so the default build
-  stays lean (`elkrs` is pulled in only with `--features elk`). Found along the
-  way: ELK reserves an edge-label layer (affecting between-layer spacing) only
-  when the label `text` is non-empty, so the label text must be threaded into the
-  ELK graph, not just its measured size.
+- **flowchart ELK layout — `elk` feature, wired end-to-end.** A new opt-in `elk`
+  cargo feature routes `layout: elk` (and `flowchart.defaultRenderer: elk`)
+  flowcharts through the native `elkrs` ELK engine instead of dagre. `render::elk`
+  builds the ELK graph exactly as mermaid's `@mermaid-js/layout-elk` does (same
+  `layoutOptions`, node dimensions, per-edge label reservations), `elkrs` lays it
+  out, and the flowchart pipeline positions nodes (center = ELK top-left + size/2)
+  and routes edges from the ELK sections — the existing byte-exact dagre path is
+  untouched when `layout` isn't `elk`.
+  - *Stage 1 (placement, byte-exact):* `tests/elk_layout.rs` feeds the exact
+    graph mermaid hands elkjs 0.9.3 and asserts node coordinates match
+    **byte-for-byte**.
+  - *Stage 2 (end-to-end):* a rendered `layout: elk` flowchart places nodes to
+    within ~1/128px of mermaid's own ELK render (`y` layer positions already
+    exact). The residual is a known node-dimension measurement-path difference —
+    mermaid's layout-elk feeds ELK a width exactly 1/128 smaller than the drawn
+    rect (which sebastian reproduces byte-exact for dagre via Blink's round-up
+    `getBBox`). Closing that, plus porting the `layout-elk` edge-routing geometry
+    for byte-exact edges, is the remaining work (see `TODO.md`).
+
+  Gated behind the feature so the default build stays lean (`elkrs` is pulled in
+  only with `--features elk`). Found along the way: ELK reserves an edge-label
+  layer (affecting between-layer spacing) only when the label `text` is
+  non-empty, so the label text must be threaded into the ELK graph, not just its
+  measured size.
 
 - **flowchart ELK layout (approximate + spike)** — `%%{init: {"layout":
   "elk"}}%%` (and `defaultRenderer: elk` / the `flowchart-elk` header) now

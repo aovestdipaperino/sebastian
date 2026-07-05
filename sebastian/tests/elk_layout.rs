@@ -83,3 +83,54 @@ fn elk_placement_matches_mermaid_elkjs_byte_for_byte() {
         assert_eq!(n.y, *ey, "node {id} y: got {} want {ey}", n.y);
     }
 }
+
+#[test]
+fn elk_flowchart_render_places_nodes_near_exact() {
+    // End-to-end: sebastian parses + measures the flowchart, routes layout
+    // through the ELK backend, and positions node groups (center = ELK top-left
+    // + size/2). Placement matches mermaid's own ELK render to within ~1/128px.
+    //
+    // The residual gap is a *known* node-dimension measurement-path difference:
+    // mermaid's `@mermaid-js/layout-elk` feeds ELK a node width that is exactly
+    // 1/128 smaller than the drawn rect (which sebastian reproduces byte-exact
+    // for dagre via Blink's round-up `getBBox`). Closing it to byte-exact needs
+    // the layout-elk node-dimension measurement ported. The `y` layer positions
+    // (from node heights) are already exact. See TODO.md.
+    let src = "%%{init: {\"layout\": \"elk\"}}%%\nflowchart TB\n\
+        A[Start] --> B{Decision}\n\
+        B -->|yes| C[OK]\n\
+        B -->|no| D[Stop]\n\
+        C --> E[End]\n\
+        D --> E\n";
+    let svg = sebastian::render_diagram(src, "my-svg").expect("elk flowchart renders");
+
+    // (expected center from mermaid's ELK render, per node).
+    let expected: &[(f64, f64)] = &[
+        (76.66796875, 39.0),
+        (76.66796875, 157.6953125),
+        (178.53515625, 335.390625),
+        (57.76953125, 335.390625),
+        (72.140625, 424.390625),
+    ];
+    let got: Vec<(f64, f64)> = svg
+        .match_indices("<g class=\"node default")
+        .filter_map(|(i, _)| {
+            let rest = &svg[i..];
+            let t = rest.find("transform=\"translate(")? + "transform=\"translate(".len();
+            let close = rest[t..].find(')')?;
+            let inner = &rest[t..t + close];
+            let (x, y) = inner.split_once(", ")?;
+            Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
+        })
+        .collect();
+
+    assert_eq!(got.len(), expected.len(), "node count");
+    for ((gx, gy), (ex, ey)) in got.iter().zip(expected) {
+        assert!(
+            (gx - ex).abs() < 0.02,
+            "node x {gx} vs {ex} (gap {})",
+            (gx - ex).abs()
+        );
+        assert!((gy - ey).abs() < 1e-6, "node y {gy} vs {ey} must be exact");
+    }
+}

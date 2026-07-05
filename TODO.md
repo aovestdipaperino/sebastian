@@ -143,13 +143,29 @@ ELK reserves an edge-label layer (which shifts between-layer spacing) only when
 the label `text` is non-empty — so `ElkEdgeInput.label_text` must be threaded
 through, not just the measured `label_width`/`label_height`.
 
-**Remaining work (multi-session):** wire `render::elk::layout` into the flowchart
-render pipeline — feed it the parsed graph + the node sizes sebastian already
-measures byte-exact, then draw nodes at the returned coordinates — and port the
-`@mermaid-js/layout-elk` geometry glue (render.ts/geometry.ts) for **edge routing
-/ bendpoints / label placement** (the one still-unproven piece), plus
-container/cluster + port handling. Only cyclic graphs risk divergence
-(0.9 vs 0.11 cycle-breaking).
+**Stage 2 (DONE, 2026-07): wired into the flowchart pipeline.** `config.layout`
+(from the top-level `layout` directive or `flowchart.defaultRenderer: "elk"`)
+selects the engine; `dagre_render`'s layout step calls `layout_with_elk` (build
+ELK inputs from the measured `RenderGraph`, run `elkrs`, set node centers = ELK
+top-left + size/2, edge points from ELK sections) instead of dagre when
+`layout == "elk"` and the `elk` feature is on. The dagre path is untouched
+otherwise. `tests/elk_layout.rs` renders a `layout: elk` flowchart end-to-end;
+`y` layer positions are byte-exact and `x` matches mermaid to ~1/128px.
+
+**Remaining work:**
+1. **Node-dimension gap (~1/128px).** mermaid's `layout-elk` feeds ELK a node
+   width *exactly 1/128 smaller* than the drawn rect. sebastian reuses its
+   dagre-path node dimension (`f32q(getBBox)`, Blink round-up, byte-exact vs mmdc
+   *dagre*), so ELK `x` is off by that 1/128, which propagates to node centers.
+   Byte-exact needs `layout-elk`'s own node-dimension measurement (read the raw
+   pre-`getBBox` label box, or its rounding). `y` is already exact.
+2. **Edge routing.** Edges currently use ELK's raw section points; port the
+   `@mermaid-js/layout-elk` geometry glue (render.ts/geometry.ts) for
+   bendpoints/border-clipping/label placement to make edges byte-exact.
+3. **Clusters/ports.** Subgraphs are laid out flat for now; ELK
+   `INCLUDE_CHILDREN` hierarchy + port constraints need handling.
+
+Only cyclic graphs risk placement divergence (0.9 vs 0.11 cycle-breaking).
 
 **Reference-generation harness (working, in scratchpad):** mmdc does **not**
 auto-register layout-elk and jsdom can't run mermaid's render (`CSSStyleSheet`/
