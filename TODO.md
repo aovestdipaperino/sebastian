@@ -132,13 +132,24 @@ spacing.baseValue:     35
 elk.layered.unnecessaryBendpoints: true
 ```
 
-**Remaining work to wire it in** (de-risked, still multi-session): construct that
-ELK-JSON from sebastian's parsed flow graph + measured node sizes, call
-`elkrs::create_elk().layout_json`, read back node coordinates (proven exact) +
-edge sections, and port the `@mermaid-js/layout-elk` geometry glue
-(render.ts/geometry.ts) for **edge routing / bendpoints / label placement** — the
-one remaining unproven piece — plus the container/cluster + port handling. Only
-cyclic graphs risk divergence (0.9 vs 0.11 cycle-breaking).
+**Stage 1 (DONE, 2026-07): `elk` feature + byte-exact node placement, in-tree.**
+`src/render/elk.rs` (behind the opt-in `elk` cargo feature) builds the ELK-JSON
+exactly as mermaid does — the seven `layoutOptions` above, `children` with
+measured `width`/`height`, and per-edge `labels` — runs it through
+`elkrs::create_elk().layout_json`, and parses back node coordinates + edge
+sections. `tests/elk_layout.rs` feeds the exact graph mermaid hands elkjs 0.9.3
+and asserts node coordinates match **byte-for-byte**. Gotcha found and encoded:
+ELK reserves an edge-label layer (which shifts between-layer spacing) only when
+the label `text` is non-empty — so `ElkEdgeInput.label_text` must be threaded
+through, not just the measured `label_width`/`label_height`.
+
+**Remaining work (multi-session):** wire `render::elk::layout` into the flowchart
+render pipeline — feed it the parsed graph + the node sizes sebastian already
+measures byte-exact, then draw nodes at the returned coordinates — and port the
+`@mermaid-js/layout-elk` geometry glue (render.ts/geometry.ts) for **edge routing
+/ bendpoints / label placement** (the one still-unproven piece), plus
+container/cluster + port handling. Only cyclic graphs risk divergence
+(0.9 vs 0.11 cycle-breaking).
 
 **Reference-generation harness (working, in scratchpad):** mmdc does **not**
 auto-register layout-elk and jsdom can't run mermaid's render (`CSSStyleSheet`/

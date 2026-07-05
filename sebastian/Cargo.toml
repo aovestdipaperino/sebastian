@@ -19,10 +19,17 @@ ttf-parser = "0.25.1"
 # Optional rasterizer (SVG -> PNG). Pulled in only with the `raster` feature so
 # pure-SVG consumers stay lightweight.
 resvg = { version = "0.44", optional = true }
+# Optional ELK layout backend (`layout: elk` flowcharts). A native-Rust port of
+# the Eclipse Layout Kernel; byte-identical to mermaid's elkjs 0.9.x on acyclic
+# graphs (see TODO.md). Pulled in only with the `elk` feature so the default
+# build stays lean.
+elkrs = { version = "0.1.1", optional = true }
 
 [features]
 # Adds the `render::raster` module: SVG -> PNG with an embedded font.
 raster = ["dep:resvg"]
+# Adds the `render::elk` module: ELK layered layout via the `elkrs` crate.
+elk = ["dep:elkrs"]
 
 [dev-dependencies]
 serde_json = "1.0.150"

@@ -7,6 +7,7 @@ pub mod css;
 pub mod dagre_render;
 pub mod data;
 pub mod edges;
+pub mod elk;
 pub mod graph;
 pub mod handdrawn;
 pub mod khroma;
