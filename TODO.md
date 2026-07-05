@@ -182,8 +182,14 @@ otherwise. `tests/elk_layout.rs` renders a `layout: elk` flowchart end-to-end;
    byte-exact until the node-dim gap (#1) is closed, since edge endpoints are node
    centers. So it's an approximate visual refinement (~3px on diamonds) unless #1
    is solved first — low value-per-effort; defer behind #1.
-3. **Clusters/ports.** Subgraphs are laid out flat for now; ELK
-   `INCLUDE_CHILDREN` hierarchy + port constraints need handling.
+3. **Clusters/ports.** Subgraphs now **fall back to dagre** for the whole render
+   (decided once in `render()` when any node `is_group`/has a parent) so the
+   cluster box is correct rather than a broken zero-height rect — flat `layout:
+   elk` graphs still use ELK. Native ELK cluster layout needs a *nested* ELK
+   graph (`INCLUDE_CHILDREN`, children under parents, positions read back
+   relative-to-parent) instead of sebastian's per-level cluster extraction — a
+   rework of the recursion, deferred. Directions (TB/BT/LR/RL), self-loops, and
+   multi-edges are handled by the flat ELK path (smoke-tested).
 
 Only cyclic graphs risk placement divergence (0.9 vs 0.11 cycle-breaking).
 

@@ -45,6 +45,23 @@ pub struct RenderCtx {
 /// Port of the top-level `render(data4Layout, svg)`.
 pub fn render(data: &LayoutData, svg_root_g: &Element, ctx: &mut RenderCtx) {
     ctx.config.direction.clone_from(&data.direction);
+
+    // ELK cluster/subgraph layout isn't ported yet (it needs a nested ELK graph
+    // rather than sebastian's per-level cluster extraction). When a diagram has
+    // subgraphs, fall back to dagre for the *whole* render so the output is
+    // correct rather than a broken cluster box — decided once here so every
+    // recursion level agrees on the engine. Flat `layout: elk` graphs still use
+    // ELK. See TODO.md.
+    #[cfg(feature = "elk")]
+    if ctx.config.layout == "elk"
+        && data.nodes.iter().any(|n| {
+            let n = n.borrow();
+            n.is_group || n.parent_id.is_some()
+        })
+    {
+        "dagre".clone_into(&mut ctx.config.layout);
+    }
+
     let mut graph = new_render_graph(RenderGraphLabel {
         rankdir: data.direction.clone(),
         nodesep: ctx.config.node_spacing,

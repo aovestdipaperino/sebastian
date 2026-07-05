@@ -85,6 +85,41 @@ fn elk_placement_matches_mermaid_elkjs_byte_for_byte() {
 }
 
 #[test]
+fn elk_subgraph_falls_back_to_dagre_and_renders_cluster() {
+    // ELK cluster layout isn't ported; a `layout: elk` flowchart *with a
+    // subgraph* must fall back to dagre for the whole render so the cluster box
+    // is drawn correctly (not a broken zero-height rect).
+    let src = "%%{init: {\"layout\": \"elk\"}}%%\nflowchart TB\n\
+        A[Start] --> B\n\
+        subgraph one [Group One]\n\
+        B[In group] --> C[Also in]\n\
+        end\n\
+        C --> D[End]\n";
+    let svg = sebastian::render_diagram(src, "my-svg").expect("elk subgraph renders");
+    assert!(svg.contains("Group One"), "cluster label present");
+    assert!(svg.contains("class=\"cluster\""), "cluster group present");
+    // The broken-ELK symptom was a zero-height cluster rect; ensure it's gone.
+    assert!(
+        !svg.contains("height=\"0\"/>"),
+        "no zero-height cluster rect (broken ELK cluster)"
+    );
+}
+
+#[test]
+fn elk_directions_and_selfloops_render() {
+    // Flat ELK graphs across directions + a self-loop should render coherently.
+    for src in [
+        "%%{init: {\"layout\": \"elk\"}}%%\nflowchart LR\n  A[A]-->B[B]-->C[C]\n",
+        "%%{init: {\"layout\": \"elk\"}}%%\nflowchart TB\n  A[A]-->A\n  A-->B[B]\n",
+        "%%{init: {\"layout\": \"elk\"}}%%\nflowchart TB\n  A-->B\n  A-->B\n",
+    ] {
+        let svg = sebastian::render_diagram(src, "my-svg").expect("renders");
+        assert!(svg.starts_with("<svg"));
+        assert!(svg.contains("class=\"flowchart\""));
+    }
+}
+
+#[test]
 fn elk_flowchart_render_places_nodes_near_exact() {
     // End-to-end: sebastian parses + measures the flowchart, routes layout
     // through the ELK backend, and positions node groups (center = ELK top-left

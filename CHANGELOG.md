@@ -30,7 +30,10 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
     **byte-for-byte**.
   - *Stage 2 (end-to-end):* a rendered `layout: elk` flowchart places nodes to
     within ~1/128px of mermaid's own ELK render (`y` layer positions already
-    exact). The residual is a known node-dimension measurement-path difference —
+    exact). Directions (TB/BT/LR/RL), self-loops, and multi-edges are handled;
+    flowcharts **with subgraphs** fall back to dagre for the whole render (native
+    ELK cluster layout isn't ported), so their cluster boxes are correct rather
+    than broken. The residual is a known node-dimension measurement-path difference —
     mermaid's layout-elk feeds ELK a width exactly 1/128 smaller than the drawn
     rect (which sebastian reproduces byte-exact for dagre via Blink's round-up
     `getBBox`). Closing that, plus porting the `layout-elk` edge-routing geometry
