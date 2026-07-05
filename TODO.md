@@ -153,12 +153,19 @@ otherwise. `tests/elk_layout.rs` renders a `layout: elk` flowchart end-to-end;
 `y` layer positions are byte-exact and `x` matches mermaid to ~1/128px.
 
 **Remaining work:**
-1. **Node-dimension gap (~1/128px).** mermaid's `layout-elk` feeds ELK a node
-   width *exactly 1/128 smaller* than the drawn rect. sebastian reuses its
-   dagre-path node dimension (`f32q(getBBox)`, Blink round-up, byte-exact vs mmdc
-   *dagre*), so ELK `x` is off by that 1/128, which propagates to node centers.
-   Byte-exact needs `layout-elk`'s own node-dimension measurement (read the raw
-   pre-`getBBox` label box, or its rounding). `y` is already exact.
+1. **Node-dimension gap (~1/128px, node-dependent — NOT a clean offset).**
+   Investigated 2026-07: mermaid's *own* dagre and elk passes measure node WIDTH
+   differently (heights agree). Comparing mmdc-dagre vs mermaid-elk-input widths:
+   most nodes differ by exactly 1/128 (Alpha 177.25 vs 177.2421875; "B" 69.0625
+   vs 69.0546875) but some agree exactly ("D" 69.8125 == 69.8125). sebastian's
+   dagre width == mmdc-dagre width byte-exact (95.015625), so sebastian is *not*
+   wrong — mermaid's `layout-elk` inserts nodes into a throwaway measuring `<g>`
+   (no diagram CSS) and reads a subtly different `getBBox` width. Because the
+   delta is node-dependent (0 or 1/128), a blanket `-1/128` correction is wrong
+   (it would break the exact-match nodes). Byte-exact `x` needs modeling
+   `layout-elk`'s *own* measuring-context `getBBox` — a second getBBox model for
+   1/128px. Disproportionate; deferred. `y` (layer positions) is already exact,
+   and node placement is exact when the input dims are exact (stage-1 test).
 2. **Edge routing.** Edges currently use ELK's raw section points; port the
    `@mermaid-js/layout-elk` geometry glue (render.ts/geometry.ts) for
    bendpoints/border-clipping/label placement to make edges byte-exact.
