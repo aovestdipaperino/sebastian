@@ -42,15 +42,33 @@ use std::fmt::Write as _;
 use crate::svg::{append, js_num, new_element, serialize, set_attr, set_text};
 use crate::text::TextMeasurer;
 
-const BAND_H: f64 = 72.0;
-const FONT_SIZE: f64 = 16.0;
+const BAND_H: f64 = 78.0;
+const FONT_SIZE: f64 = 17.0;
+const MIN_FONT_SIZE: f64 = 9.0;
 const COMP_FONT_SIZE: f64 = 13.0;
 const COMP_H: f64 = 30.0;
 const COMP_PAD_X: f64 = 12.0;
 const COMP_GAP: f64 = 10.0;
 const MIN_BASE: f64 = 220.0;
+/// Base-width : total-height ratio for a plain (label-only) pyramid — keeps a
+/// proper triangle instead of a wide, flat sliver. Component bands may widen the
+/// base beyond this to fit their boxes.
+const ASPECT: f64 = 1.35;
 const PAD: f64 = 24.0;
 const TITLE_H: f64 = 34.0;
+
+/// A vivid, visually distinct palette (readable with black text), cycled per
+/// level. Higher contrast than the washed theme pastels.
+const PALETTE: [&str; 8] = [
+    "#7EA8F0", // blue
+    "#7BD389", // green
+    "#F5CB5C", // gold
+    "#F08C8C", // coral
+    "#B991E6", // purple
+    "#6FD0CC", // teal
+    "#F2A75C", // orange
+    "#A8D26A", // lime
+];
 
 /// Parse error for pyramid diagrams.
 #[derive(Debug)]
@@ -144,13 +162,17 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
     }
 
     let n = db.levels.len();
-    // Base width so every band fits its content at its midline width
-    // (`base * (i + 0.5) / n`), with a floor.
-    let mut base = MIN_BASE;
+    // Base width from a fixed aspect ratio → a proper triangle. Component bands
+    // can't shrink their boxes, so those (only) may widen the base to fit; plain
+    // labels instead shrink their font per band (below), so a long apex label no
+    // longer blows the whole pyramid out to a wide, flat sliver.
+    let height = n as f64 * BAND_H;
+    let mut base = (height * ASPECT).max(MIN_BASE);
     for (i, level) in db.levels.iter().enumerate() {
-        let mid_frac = (i as f64 + 0.5) / n as f64;
-        let need = (level_content_width(level, &measurer) + 24.0) / mid_frac;
-        base = base.max(need);
+        if !level.components.is_empty() {
+            let mid_frac = (i as f64 + 0.5) / n as f64;
+            base = base.max((level_content_width(level, &measurer) + 24.0) / mid_frac);
+        }
     }
 
     let title_offset = if db.title.is_empty() { 0.0 } else { TITLE_H };
@@ -178,7 +200,7 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
     let bands = append(&svg, "g");
     set_attr(&bands, "class", "pyramid-bands");
     for (i, level) in db.levels.iter().enumerate() {
-        let sect = i % 12;
+        let sect = i % PALETTE.len();
         let top_y = PAD + title_offset + i as f64 * BAND_H;
         let bot_y = top_y + BAND_H;
         let top_w = base * i as f64 / n as f64;
@@ -206,12 +228,21 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
 
         let mid_y = (top_y + bot_y) / 2.0;
         if level.components.is_empty() {
+            // Shrink the font so the label fits this band's midline width
+            // (narrow apex bands get a smaller font instead of forcing a wider
+            // pyramid).
+            let avail = (top_w + bot_w) / 2.0 - 16.0;
+            let mut fs = FONT_SIZE;
+            while fs > MIN_FONT_SIZE && measurer.measure_width(&level.label, fs) > avail {
+                fs -= 0.5;
+            }
             let label = append(&g, "text");
             set_attr(&label, "x", js_num(cx));
             set_attr(&label, "y", js_num(mid_y));
             set_attr(&label, "text-anchor", "middle");
             set_attr(&label, "dominant-baseline", "central");
             set_attr(&label, "class", "pyramid-label");
+            set_attr(&label, "style", format!("font-size:{}px;", js_num(fs)));
             set_text(&label, &level.label);
         } else {
             draw_components(&g, level, cx, mid_y, &measurer);
@@ -281,13 +312,12 @@ fn pyramid_css(id: &str, tv: &dyn Fn(&str) -> String) -> String {
         "#{id}{{font-family:{font};}}\
          #{id} .pyramid-title{{font-size:20px;font-weight:bold;fill:{text_color};}}\
          #{id} .pyramid-band{{stroke:{line};stroke-width:1px;}}\
-         #{id} .pyramid-label{{font-size:{FONT_SIZE}px;font-weight:bold;fill:#ffffff;}}\
-         #{id} .pyramid-component-rect{{fill:rgba(255,255,255,0.88);stroke:{line};stroke-width:1px;}}\
-         #{id} .pyramid-component-label{{font-size:{COMP_FONT_SIZE}px;fill:{text_color};}}"
+         #{id} .pyramid-label{{font-weight:bold;fill:#1a1a1a;}}\
+         #{id} .pyramid-component-rect{{fill:rgba(255,255,255,0.92);stroke:{line};stroke-width:1px;}}\
+         #{id} .pyramid-component-label{{font-size:{COMP_FONT_SIZE}px;fill:#1a1a1a;}}"
     );
-    for i in 0..12 {
-        let c = tv(&format!("cScale{i}"));
-        let _ = write!(o, "#{id} .section-{i} .pyramid-band{{fill:{c};}}");
+    for (i, color) in PALETTE.iter().enumerate() {
+        let _ = write!(o, "#{id} .section-{i} .pyramid-band{{fill:{color};}}");
     }
     o
 }
