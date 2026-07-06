@@ -133,6 +133,34 @@ fn parse(source: &str) -> Result<PyramidDb, PyramidParseError> {
     Ok(db)
 }
 
+/// Greedy word-wrap: splits `text` on whitespace into lines that each fit
+/// `avail` px at font size `fs`. A single word wider than `avail` is kept on its
+/// own line (the caller shrinks the font to handle that case).
+fn wrap_label(text: &str, avail: f64, fs: f64, m: &TextMeasurer) -> Vec<String> {
+    let mut lines: Vec<String> = Vec::new();
+    let mut cur = String::new();
+    for word in text.split_whitespace() {
+        let trial = if cur.is_empty() {
+            word.to_owned()
+        } else {
+            format!("{cur} {word}")
+        };
+        if cur.is_empty() || m.measure_width(&trial, fs) <= avail {
+            cur = trial;
+        } else {
+            lines.push(std::mem::take(&mut cur));
+            cur = word.to_owned();
+        }
+    }
+    if !cur.is_empty() {
+        lines.push(cur);
+    }
+    if lines.is_empty() {
+        lines.push(String::new());
+    }
+    lines
+}
+
 /// The content width a level needs at its vertical midline.
 fn level_content_width(level: &Level, measurer: &TextMeasurer) -> f64 {
     if level.components.is_empty() {
@@ -228,22 +256,39 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
 
         let mid_y = (top_y + bot_y) / 2.0;
         if level.components.is_empty() {
-            // Shrink the font so the label fits this band's midline width
-            // (narrow apex bands get a smaller font instead of forcing a wider
-            // pyramid).
+            // Fit the label into this band's midline width by wrapping onto
+            // multiple lines; only shrink the font when even the wrapped lines
+            // (by width, or by the number that fit the band height) won't fit.
             let avail = (top_w + bot_w) / 2.0 - 16.0;
             let mut fs = FONT_SIZE;
-            while fs > MIN_FONT_SIZE && measurer.measure_width(&level.label, fs) > avail {
+            let mut lines = wrap_label(&level.label, avail, fs, &measurer);
+            loop {
+                let lh = fs * 1.25;
+                let widest = lines
+                    .iter()
+                    .map(|l| measurer.measure_width(l, fs))
+                    .fold(0.0, f64::max);
+                let fits = widest <= avail && lines.len() as f64 * lh <= BAND_H - 8.0;
+                if fits || fs <= MIN_FONT_SIZE {
+                    break;
+                }
                 fs -= 0.5;
+                lines = wrap_label(&level.label, avail, fs, &measurer);
             }
+            let lh = fs * 1.25;
             let label = append(&g, "text");
             set_attr(&label, "x", js_num(cx));
-            set_attr(&label, "y", js_num(mid_y));
             set_attr(&label, "text-anchor", "middle");
-            set_attr(&label, "dominant-baseline", "central");
             set_attr(&label, "class", "pyramid-label");
             set_attr(&label, "style", format!("font-size:{}px;", js_num(fs)));
-            set_text(&label, &level.label);
+            let first_y = mid_y - (lines.len() as f64 - 1.0) * lh / 2.0;
+            for (k, line) in lines.iter().enumerate() {
+                let ts = append(&label, "tspan");
+                set_attr(&ts, "x", js_num(cx));
+                set_attr(&ts, "y", js_num(first_y + k as f64 * lh));
+                set_attr(&ts, "dominant-baseline", "central");
+                set_text(&ts, line);
+            }
         } else {
             draw_components(&g, level, cx, mid_y, &measurer);
         }
