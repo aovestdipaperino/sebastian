@@ -334,8 +334,26 @@ bytes).
 
 ## Requirements
 
-- The Trebuchet MS font (preinstalled on macOS and Windows) — text metrics
-  and therefore the entire layout depend on it.
+- For **byte-exact** output: the Trebuchet MS font (preinstalled on macOS and
+  Windows) — text metrics and therefore the entire layout depend on it.
+  Sequence diagrams additionally use Times New Roman.
+- Without those fonts (bare Linux, wasm), sebastian falls back to embedded
+  SIL-OFL faces — Cabin for Trebuchet MS, Tinos (Times-metric-compatible)
+  for Times New Roman. Output is well-proportioned but not byte-exact.
+  Hosts can also supply real font bytes at runtime via
+  `sebastian::text::register_font(file_name, bytes)`, which takes precedence
+  over system fonts.
+
+## WebAssembly
+
+`sebastian` compiles for `wasm32-unknown-unknown`; the `sebastian-wasm`
+workspace crate wraps it with wasm-bindgen (`render`, `detect_diagram_type`,
+`register_font`) and ships a browser demo. Build with
+`wasm-pack build sebastian-wasm --target web` and see
+[`sebastian-wasm/README.md`](sebastian-wasm/README.md). wasm-only caveats:
+gantt date math runs in UTC, and transcendentals use `libm` instead of the
+correctly-rounded `core-math`, so final-ULP coordinate differences vs mmdc
+are possible.
 
 ## Flowchart ELK layout (`elk` feature, in progress)
 
@@ -379,3 +397,10 @@ dagre width by a node-dependent 0-or-1/128:
 - `cargo test --features elk` — additionally runs the ELK backend tests
   (`elk_layout.rs`).
 - `/tmp`-based reference tooling and porting details: see `PORTING_NOTES.md`.
+- The gantt corpus references were generated in Pacific time — run
+  `TZ=America/Los_Angeles cargo test -p sebastian --test gantt_corpus`
+  (CI pins this TZ; in other zones the corpus diffs).
+- CI (GitHub Actions): fmt/clippy/test on macOS (the corpora need the real
+  fonts), a wasm build check, and automatic publishing of `sebastian` then
+  `seb` to crates.io on `v*` tags matching the workspace version.
+- Environment/tooling gotchas collected in [`FINDINGS.md`](FINDINGS.md).
