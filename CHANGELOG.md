@@ -220,7 +220,7 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
   measurement quirk included), `note` / `note for` with dotted note edges,
   `namespace` clusters, and lollipop interfaces (`--()`), plus a faithful
   CSSOM merge for label div styles. Corpus grew to 9 cases.
-- `docs/NUANCES.md`: the catalog of Chrome/V8/mermaid behaviors discovered
+- `docs/NUANCES.md` (now `FINDINGS.md`): the catalog of Chrome/V8/mermaid behaviors discovered
   while reaching byte-exact output.
 - **Hand-drawn sequence diagrams (sebastian extension, no upstream equivalent).**
   `look: handDrawn` now also stylizes sequence diagrams: actor/footer/note boxes,

@@ -45,7 +45,7 @@ See `README.md` for the fixture counts and per-type notes, `TODO.md` for the
 remaining types and why each is blocked (C4 = Helvetica ink metrics; ELK =
 engine scale; mindmap/architecture = non-deterministic force layouts;
 kanban = tractable but unported; requirement = rough-masked), and
-`docs/NUANCES.md` for the catalog of Chrome/V8/mermaid behaviors replicated.
+`FINDINGS.md` for the catalog of Chrome/V8/mermaid behaviors replicated.
 
 ## Original flowchart port (still current)
 

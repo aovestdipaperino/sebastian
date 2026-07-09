@@ -32,7 +32,7 @@ as true-color terminal art, rendered from `sebastian/resources/LOGO.png`
 via the [`logo-art`](https://crates.io/crates/logo-art) crate.
 
 The non-obvious Chrome/V8/mermaid behaviors this required are cataloged
-in [docs/NUANCES.md](docs/NUANCES.md).
+in [FINDINGS.md](FINDINGS.md).
 
 ## Status
 
@@ -403,4 +403,5 @@ dagre width by a node-dependent 0-or-1/128:
 - CI (GitHub Actions): fmt/clippy/test on macOS (the corpora need the real
   fonts), a wasm build check, and automatic publishing of `sebastian` then
   `seb` to crates.io on `v*` tags matching the workspace version.
-- Environment/tooling gotchas collected in [`FINDINGS.md`](FINDINGS.md).
+- Rendering nuances and environment/tooling gotchas are both collected in
+  [`FINDINGS.md`](FINDINGS.md).
