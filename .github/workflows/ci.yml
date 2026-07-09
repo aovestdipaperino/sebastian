@@ -13,7 +13,13 @@ env:
 jobs:
   check:
     name: Check & Test
-    runs-on: ubuntu-latest
+    # macOS: the byte-exact test corpora require the real Trebuchet MS /
+    # Times New Roman system fonts (Linux hosts fall back to the embedded
+    # Cabin/Tinos faces, whose metrics differ). The gantt references were
+    # generated in Pacific time, hence the pinned TZ.
+    runs-on: macos-latest
+    env:
+      TZ: America/Los_Angeles
     steps:
       - uses: actions/checkout@v4
 
