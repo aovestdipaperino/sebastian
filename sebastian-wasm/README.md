@@ -17,12 +17,16 @@ TypeScript definitions — ready to `npm publish` or vendor directly.
 
 ## Fonts
 
-sebastian's pixel-perfect output depends on real font metrics, and wasm has no
-filesystem, so the host must register font bytes before the first render:
+Rendering works out of the box: sebastian embeds Cabin (standing in for
+Trebuchet MS) and Tinos (Times-metric-compatible), both SIL OFL. Output with
+the embedded fallbacks is well-proportioned but **not byte-exact vs mmdc**.
+
+For pixel-perfect output, register the real font bytes before the first
+render:
 
 | file name | needed for |
 |---|---|
-| `Trebuchet MS.ttf` | everything (required) |
+| `Trebuchet MS.ttf` | most diagram types |
 | `Trebuchet MS Bold.ttf` | bold labels, class/timeline titles |
 | `Times New Roman.ttf` | sequence diagrams |
 | `Verdana.ttf`, `Arial.ttf`, … | fallback glyphs (symbols, CJK) |

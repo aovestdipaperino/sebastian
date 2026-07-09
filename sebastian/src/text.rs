@@ -36,6 +36,25 @@ const ARIAL_UNICODE_IDX: usize = 3;
 
 const APPLE_COLOR_EMOJI: &str = "/System/Library/Fonts/Apple Color Emoji.ttc";
 
+const BOLD_CANDIDATES: &[&str] = &[
+    "/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf",
+    "/Library/Fonts/Trebuchet MS Bold.ttf",
+    "C:/Windows/Fonts/trebucbd.ttf",
+];
+
+const TIMES_CANDIDATES: &[&str] = &[
+    "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+    "/Library/Fonts/Times New Roman.ttf",
+    "C:/Windows/Fonts/times.ttf",
+];
+
+/// Embedded last-resort faces for hosts without the proprietary fonts
+/// (bare Linux, wasm): Cabin (SIL OFL) stands in for Trebuchet MS and
+/// Tinos (SIL OFL, Times-metric-compatible) for Times New Roman. With a
+/// fallback in play, output is well-proportioned but NOT byte-exact vs mmdc.
+const CABIN_FALLBACK: &[u8] = include_bytes!("../fonts/Cabin.ttf");
+const TINOS_FALLBACK: &[u8] = include_bytes!("../fonts/Tinos-Regular.ttf");
+
 thread_local! {
     /// Host-registered font bytes, keyed by file name (e.g. "Trebuchet MS.ttf").
     /// Consulted before the filesystem; the only font source on wasm, where
@@ -156,17 +175,14 @@ struct MeasurerInner {
 }
 
 impl TextMeasurer {
-    /// Loads the system Trebuchet MS font.
-    ///
-    /// # Panics
-    /// Panics when no font candidate exists; pixel-perfect output is
-    /// impossible without the real font.
+    /// Loads Trebuchet MS from the registry or the system, falling back to
+    /// the embedded Cabin face (output then stops being byte-exact vs mmdc).
     #[must_use]
     pub fn new() -> Self {
         let data = FONT_CANDIDATES
             .iter()
             .find_map(|p| read_font(p))
-            .expect("Trebuchet MS font not found; required for pixel-perfect text metrics");
+            .unwrap_or_else(|| CABIN_FALLBACK.to_vec());
         let face = Face::parse(&data, 0).expect("valid font");
         let units_per_em = f64::from(face.units_per_em());
         let fallbacks = FALLBACK_FONTS
@@ -176,7 +192,9 @@ impl TextMeasurer {
         let emoji_font = read_font(APPLE_COLOR_EMOJI);
         let helvetica = read_font(HELVETICA);
         let apple_symbols = read_font(APPLE_SYMBOLS);
-        let bold_data = read_font("/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf")
+        let bold_data = BOLD_CANDIDATES
+            .iter()
+            .find_map(|p| read_font(p))
             .unwrap_or_default();
         Self {
             inner: Rc::new(MeasurerInner {
@@ -432,14 +450,14 @@ impl Default for SeqMeasurer {
 }
 
 impl SeqMeasurer {
-    /// Loads the system Times New Roman face.
-    ///
-    /// # Panics
-    /// Panics when the system font is missing.
+    /// Loads Times New Roman from the registry or the system, falling back
+    /// to the embedded Tinos face (Times-metric-compatible, not byte-exact).
     #[must_use]
     pub fn new() -> Self {
-        let data = read_font("/System/Library/Fonts/Supplemental/Times New Roman.ttf")
-            .expect("Times New Roman.ttf available");
+        let data = TIMES_CANDIDATES
+            .iter()
+            .find_map(|p| read_font(p))
+            .unwrap_or_else(|| TINOS_FALLBACK.to_vec());
         Self { data }
     }
 
@@ -605,14 +623,14 @@ impl TextMeasurer {
     }
 
     /// Bold-face integer ascent/descent and svg advance for `text` at
-    /// `font_size` (used by the timeline title).
-    ///
-    /// # Panics
-    /// Panics when the system bold font is missing.
+    /// `font_size` (used by the timeline title); embedded Cabin when
+    /// Trebuchet MS Bold is unavailable.
     #[must_use]
     pub fn bold_metrics(&self, text: &str, font_size: f64) -> (f64, f64, f64) {
-        let data = read_font("/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf")
-            .expect("Trebuchet MS Bold available");
+        let data = BOLD_CANDIDATES
+            .iter()
+            .find_map(|p| read_font(p))
+            .unwrap_or_else(|| CABIN_FALLBACK.to_vec());
         let face = Face::parse(&data, 0).expect("valid font");
         let upem = f64::from(face.units_per_em());
         let asc = (f64::from(face.ascender()) * font_size / upem).round();

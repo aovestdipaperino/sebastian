@@ -27,12 +27,10 @@
 
     await init();
 
-    // sebastian measures text with real font metrics; wasm has no
-    // filesystem, so fonts are fetched and registered up front.
-    // "Trebuchet MS.ttf" is required; the others improve fidelity
-    // (bold labels, sequence diagrams) and may be omitted.
+    // Rendering works without any fonts (embedded Cabin/Tinos fallbacks);
+    // registering the real fonts makes output byte-exact vs mermaid-cli.
     const fonts = [
-      "Trebuchet MS.ttf",          // required
+      "Trebuchet MS.ttf",          // most diagram types
       "Trebuchet MS Bold.ttf",     // bold labels, timeline titles
       "Times New Roman.ttf",       // sequence diagrams
     ];
@@ -40,9 +38,6 @@
       const resp = await fetch(`./fonts/${encodeURIComponent(name)}`);
       if (resp.ok) {
         register_font(name, new Uint8Array(await resp.arrayBuffer()));
-      } else if (name === "Trebuchet MS.ttf") {
-        document.getElementById("err").textContent =
-          `Missing ./fonts/${name} — copy it next to this page (see README).`;
       }
     }
 

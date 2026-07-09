@@ -33,6 +33,8 @@ libc = "0.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 libm = "0.2"
+# JS Date.now() for the gantt today marker (SystemTime panics on wasm).
+js-sys = "0.3"
 
 [features]
 # On by default. `mermaid-extensions` enables sebastian-original diagram types

@@ -1,17 +1,17 @@
 //! WASM bindings for [sebastian](https://crates.io/crates/sebastian).
 //!
-//! wasm has no filesystem, so the host must register font bytes before the
-//! first render: `"Trebuchet MS.ttf"` is required, `"Trebuchet MS Bold.ttf"`
-//! and `"Times New Roman.ttf"` unlock bold and sequence-diagram metrics, and
-//! the remaining fallback faces (Verdana, Arial, …) are optional.
+//! Works out of the box via embedded SIL-OFL fallback faces (Cabin for
+//! Trebuchet MS, Tinos for Times New Roman); for byte-exact-vs-mmdc output,
+//! register the real font bytes before the first render — wasm has no
+//! filesystem, so fonts only come from [`register_font`].
 //!
 //! Build with `wasm-pack build --target web` (or `--target nodejs`).
 
 use wasm_bindgen::prelude::*;
 
-/// Registers font bytes under a file name (e.g. `"Trebuchet MS.ttf"`).
-/// Must be called before [`render`]; see the crate docs for which faces
-/// are required.
+/// Registers font bytes under a file name (e.g. `"Trebuchet MS.ttf"`),
+/// overriding the embedded fallback faces. Call before [`render`] for
+/// byte-exact-vs-mmdc output; without it, embedded Cabin/Tinos are used.
 #[wasm_bindgen]
 pub fn register_font(file_name: &str, data: &[u8]) {
     sebastian::text::register_font(file_name, data.to_vec());

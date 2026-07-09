@@ -4,19 +4,19 @@ All notable changes to this project are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.1.1] — 2026-07-03
-
-### Changed
-- Trimmed the published `sebastian` tarball ~90% (16.4 MiB → 1.2 MiB) by
-  excluding the test corpora and logo (`exclude = ["tests/**",
-  "resources/**"]`); fonts and the theme CSS are still bundled.
-
-## [0.1.0] — 2026-07-03
-
-First crates.io release: `sebastian` (library) and `seb` (CLI).
-
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-09
+
+### Added
+- **Embedded fallback fonts.** When Trebuchet MS / Times New Roman are neither
+  registered nor installed, sebastian falls back to embedded SIL-OFL faces
+  (Cabin for Trebuchet, Tinos — Times-metric-compatible — for Times New Roman)
+  instead of panicking, and the Windows font paths (`trebucbd.ttf`,
+  `times.ttf`) are now probed too. Output with a fallback in play is
+  well-proportioned but not byte-exact vs mmdc; systems with the real fonts
+  are unaffected. This also makes the wasm build render out of the box with
+  no font registration.
 - **WASM target (#4).** `sebastian` now compiles for `wasm32-unknown-unknown`.
   New `sebastian-wasm` crate (built with wasm-pack, npm-oriented, not on
   crates.io) exposes `render`, `detect_diagram_type` and `register_font`;
@@ -27,9 +27,6 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
   transcendentals use `libm` instead of the correctly-rounded `core-math`
   (whose vendored C does not cross-compile to wasm), so final-ULP coordinate
   differences vs mmdc are possible. Native output is unchanged.
-- **CI.** GitHub Actions workflow: fmt/clippy/test plus a wasm build check on
-  pushes and PRs, and publishing of `sebastian` then `seb` to crates.io on
-  `v*` tags (tag must match the workspace version).
 - **pyramid (sebastian extension).** A new `pyramid` diagram type with no
   mermaid equivalent — an original renderer. Plain levels produce a **pyramid
   chart** (stacked trapezoid bands forming a triangle); a `: a, b, c` component
@@ -40,7 +37,9 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
   cargo feature (on by default; `--no-default-features` restricts sebastian to
   faithful mermaid diagram types). Future non-mermaid diagram types will live
   behind this same feature.
-
+- **CI.** GitHub Actions workflow: fmt/clippy/test plus a wasm build check on
+  pushes and PRs, and publishing of `sebastian` then `seb` to crates.io on
+  `v*` tags (tag must match the workspace version).
 - **flowchart ELK layout — `elk` feature, wired end-to-end.** A new opt-in `elk`
   cargo feature routes `layout: elk` (and `flowchart.defaultRenderer: elk`)
   flowcharts through the native `elkrs` ELK engine instead of dagre. `render::elk`
@@ -167,6 +166,16 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
   xychart, erDiagram, gitGraph) — all byte-exact (er masked for rough.js
   randomness; gitGraph masked for the known 1e-3 viewBox rounding).
 
+## [0.1.1] — 2026-07-03
+
+### Changed
+- Trimmed the published `sebastian` tarball ~90% (16.4 MiB → 1.2 MiB) by
+  excluding the test corpora and logo (`exclude = ["tests/**",
+  "resources/**"]`); fonts and the theme CSS are still bundled.
+
+## [0.1.0] — 2026-07-03
+
+First crates.io release: `sebastian` (library) and `seb` (CLI).
 ### Changed
 - Renamed the project to **sebastian** (the crab from the mermaid) and
   split it into a workspace: the `sebastian` library crate and the `seb`

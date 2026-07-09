@@ -155,14 +155,26 @@ fn days_in_month(y: i64, m: i64) -> i64 {
     ) - days_from_civil(y, m, 1)
 }
 
+/// Current epoch milliseconds (`SystemTime` panics on wasm32-unknown-unknown,
+/// where the clock comes from JS `Date.now()` instead).
+fn now_epoch_ms() -> f64 {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        #[allow(clippy::cast_precision_loss)]
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0.0, |d| d.as_millis() as f64)
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        js_sys::Date::now()
+    }
+}
+
 /// Local "today at midnight" (dayjs defaults missing date parts to the
 /// current local date).
 fn today_midnight() -> Ts {
-    #[allow(clippy::cast_precision_loss)]
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0.0, |d| d.as_millis() as f64);
-    let (y, m, d, ..) = ts_to_civil(Ts(now));
+    let (y, m, d, ..) = ts_to_civil(Ts(now_epoch_ms()));
     civil_to_ts(y, m, d, 0, 0, 0, 0)
 }
 
@@ -1334,11 +1346,7 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
         let g = append(&svg, "g");
         set_attr(&g, "class", "today");
         let line = append(&g, "line");
-        #[allow(clippy::cast_precision_loss)]
-        let now_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0.0, |d| d.as_millis() as f64);
-        let x = scale(now_ms) + LEFT_PADDING;
+        let x = scale(now_epoch_ms()) + LEFT_PADDING;
         set_attr(&line, "x1", js_num(x));
         set_attr(&line, "x2", js_num(x));
         set_attr(&line, "y1", js_num(TITLE_TOP_MARGIN));
