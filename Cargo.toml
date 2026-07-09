@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["sebastian", "seb"]
+members = ["sebastian", "seb", "sebastian-wasm"]
 
 [workspace.package]
 version = "0.1.1"

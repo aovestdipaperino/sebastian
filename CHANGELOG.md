@@ -17,6 +17,19 @@ First crates.io release: `sebastian` (library) and `seb` (CLI).
 
 ## [Unreleased]
 
+- **WASM target (#4).** `sebastian` now compiles for `wasm32-unknown-unknown`.
+  New `sebastian-wasm` crate (built with wasm-pack, npm-oriented, not on
+  crates.io) exposes `render`, `detect_diagram_type` and `register_font`;
+  browser demo in `sebastian-wasm/demo/`. Since wasm has no filesystem, hosts
+  register font bytes via `sebastian::text::register_font` (the registry also
+  works natively, taking precedence over system fonts). wasm-only fidelity
+  caveats: gantt date math runs in UTC (no libc `mktime`/`localtime_r`), and
+  transcendentals use `libm` instead of the correctly-rounded `core-math`
+  (whose vendored C does not cross-compile to wasm), so final-ULP coordinate
+  differences vs mmdc are possible. Native output is unchanged.
+- **CI.** GitHub Actions workflow: fmt/clippy/test plus a wasm build check on
+  pushes and PRs, and publishing of `sebastian` then `seb` to crates.io on
+  `v*` tags (tag must match the workspace version).
 - **pyramid (sebastian extension).** A new `pyramid` diagram type with no
   mermaid equivalent — an original renderer. Plain levels produce a **pyramid
   chart** (stacked trapezoid bands forming a triangle); a `: a, b, c` component

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>sebastian — WASM demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 60rem; }
+    textarea { width: 100%; height: 12rem; font-family: monospace; font-size: 14px; }
+    #out { border: 1px solid #ccc; margin-top: 1rem; padding: 1rem; overflow-x: auto; }
+    #err { color: #b00; white-space: pre-wrap; }
+    button { margin-top: .5rem; padding: .4rem 1rem; }
+  </style>
+</head>
+<body>
+  <h1>sebastian — mermaid in the browser, no browser engine</h1>
+  <textarea id="src">flowchart TD
+    A[Start] --> B{Is it WASM?}
+    B -- Yes --> C[Render natively]
+    B -- No --> D[Ship a binary per platform]</textarea>
+  <br>
+  <button id="go">Render</button>
+  <div id="err"></div>
+  <div id="out"></div>
+
+  <script type="module">
+    import init, { register_font, render } from "../pkg/sebastian_wasm.js";
+
+    await init();
+
+    // sebastian measures text with real font metrics; wasm has no
+    // filesystem, so fonts are fetched and registered up front.
+    // "Trebuchet MS.ttf" is required; the others improve fidelity
+    // (bold labels, sequence diagrams) and may be omitted.
+    const fonts = [
+      "Trebuchet MS.ttf",          // required
+      "Trebuchet MS Bold.ttf",     // bold labels, timeline titles
+      "Times New Roman.ttf",       // sequence diagrams
+    ];
+    for (const name of fonts) {
+      const resp = await fetch(`./fonts/${encodeURIComponent(name)}`);
+      if (resp.ok) {
+        register_font(name, new Uint8Array(await resp.arrayBuffer()));
+      } else if (name === "Trebuchet MS.ttf") {
+        document.getElementById("err").textContent =
+          `Missing ./fonts/${name} — copy it next to this page (see README).`;
+      }
+    }
+
+    document.getElementById("go").onclick = () => {
+      const err = document.getElementById("err");
+      const out = document.getElementById("out");
+      err.textContent = "";
+      try {
+        out.innerHTML = render(document.getElementById("src").value, "mermaid-0");
+      } catch (e) {
+        out.innerHTML = "";
+        err.textContent = String(e);
+      }
+    };
+    document.getElementById("go").click();
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+[package]
+name = "sebastian-wasm"
+description = "WASM bindings for sebastian — render mermaid diagrams to SVG in the browser or Node.js"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+# Built with wasm-pack and distributed as an npm package, not via crates.io.
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+sebastian = { path = "../sebastian", version = "0.1.1" }
+
+[lints]
+workspace = true

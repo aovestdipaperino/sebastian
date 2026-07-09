@@ -118,10 +118,10 @@ const EPSILON: f64 = 1e-12; // d3-shape epsilon
 const PATH_EPSILON: f64 = 1e-6; // d3-path epsilon
 
 fn cos(x: f64) -> f64 {
-    core_math::cos(x)
+    crate::mathx::cos(x)
 }
 fn sin(x: f64) -> f64 {
-    core_math::sin(x)
+    crate::mathx::sin(x)
 }
 
 /// `d3.arc().innerRadius(0).outerRadius(r1)` path for one sector, with the

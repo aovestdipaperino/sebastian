@@ -172,8 +172,8 @@ pub fn hd_ellipse(
         #[allow(clippy::cast_precision_loss)]
         let angle = std::f64::consts::TAU * (i as f64) / (steps as f64);
         points.push(Point {
-            x: rx * core_math::cos(angle),
-            y: ry * core_math::sin(angle),
+            x: rx * crate::mathx::cos(angle),
+            y: ry * crate::mathx::sin(angle),
         });
     }
     hd_polygon(parent, &points, fill, stroke, stroke_width, style, seed)

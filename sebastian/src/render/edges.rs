@@ -1205,30 +1205,30 @@ pub fn calc_terminal_label_position(
     let distance_to_cardinality = 25.0 + terminal_marker_size;
     let center = calculate_point(&points, distance_to_cardinality);
     let d = 10.0 + terminal_marker_size * 0.5;
-    let angle = core_math::atan2(points[0].y - center.y, points[0].x - center.x);
+    let angle = crate::mathx::atan2(points[0].y - center.y, points[0].x - center.x);
     let mut pos = Point { x: 0.0, y: 0.0 };
     match position {
         "start_left" => {
-            pos.x = core_math::sin(angle + std::f64::consts::PI) * d
+            pos.x = crate::mathx::sin(angle + std::f64::consts::PI) * d
                 + f64::midpoint(points[0].x, center.x);
-            pos.y = -core_math::cos(angle + std::f64::consts::PI) * d
+            pos.y = -crate::mathx::cos(angle + std::f64::consts::PI) * d
                 + f64::midpoint(points[0].y, center.y);
         }
         "end_right" => {
-            pos.x = core_math::sin(angle - std::f64::consts::PI) * d
+            pos.x = crate::mathx::sin(angle - std::f64::consts::PI) * d
                 + f64::midpoint(points[0].x, center.x)
                 - 5.0;
-            pos.y = -core_math::cos(angle - std::f64::consts::PI) * d
+            pos.y = -crate::mathx::cos(angle - std::f64::consts::PI) * d
                 + f64::midpoint(points[0].y, center.y)
                 - 5.0;
         }
         "end_left" => {
-            pos.x = core_math::sin(angle) * d + f64::midpoint(points[0].x, center.x) - 5.0;
-            pos.y = -core_math::cos(angle) * d + f64::midpoint(points[0].y, center.y) - 5.0;
+            pos.x = crate::mathx::sin(angle) * d + f64::midpoint(points[0].x, center.x) - 5.0;
+            pos.y = -crate::mathx::cos(angle) * d + f64::midpoint(points[0].y, center.y) - 5.0;
         }
         _ => {
-            pos.x = core_math::sin(angle) * d + f64::midpoint(points[0].x, center.x);
-            pos.y = -core_math::cos(angle) * d + f64::midpoint(points[0].y, center.y);
+            pos.x = crate::mathx::sin(angle) * d + f64::midpoint(points[0].x, center.x);
+            pos.y = -crate::mathx::cos(angle) * d + f64::midpoint(points[0].y, center.y);
         }
     }
     pos

@@ -36,6 +36,41 @@ const ARIAL_UNICODE_IDX: usize = 3;
 
 const APPLE_COLOR_EMOJI: &str = "/System/Library/Fonts/Apple Color Emoji.ttc";
 
+thread_local! {
+    /// Host-registered font bytes, keyed by file name (e.g. "Trebuchet MS.ttf").
+    /// Consulted before the filesystem; the only font source on wasm, where
+    /// there is no filesystem at all.
+    static FONT_REGISTRY: std::cell::RefCell<HashMap<String, Vec<u8>>> =
+        std::cell::RefCell::new(HashMap::new());
+}
+
+/// Registers font bytes under a file name (e.g. `"Trebuchet MS.ttf"`), taking
+/// precedence over the same file on disk. On wasm this is the only way to
+/// provide fonts; `"Trebuchet MS.ttf"` is required, `"Trebuchet MS Bold.ttf"`
+/// and `"Times New Roman.ttf"` unlock bold and sequence-diagram metrics, and
+/// the remaining fallback faces are optional.
+pub fn register_font(file_name: &str, data: Vec<u8>) {
+    FONT_REGISTRY.with(|r| r.borrow_mut().insert(file_name.to_string(), data));
+}
+
+/// Font bytes for `path`: the registry (keyed by file name) first, then the
+/// filesystem on targets that have one.
+fn read_font(path: &str) -> Option<Vec<u8>> {
+    let name = path.rsplit('/').next().unwrap_or(path);
+    let registered = FONT_REGISTRY.with(|r| r.borrow().get(name).cloned());
+    if registered.is_some() {
+        return registered;
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::fs::read(path).ok()
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        None
+    }
+}
+
 /// BMP characters with `Emoji_Presentation=Yes` (UTS #51); SMP emoji are
 /// handled by codepoint range.
 fn is_emoji_presentation(c: char) -> bool {
@@ -128,21 +163,20 @@ impl TextMeasurer {
     /// impossible without the real font.
     #[must_use]
     pub fn new() -> Self {
-        let path = FONT_CANDIDATES
+        let data = FONT_CANDIDATES
             .iter()
-            .find(|p| std::path::Path::new(p).exists())
+            .find_map(|p| read_font(p))
             .expect("Trebuchet MS font not found; required for pixel-perfect text metrics");
-        let data = std::fs::read(path).expect("font file readable");
         let face = Face::parse(&data, 0).expect("valid font");
         let units_per_em = f64::from(face.units_per_em());
         let fallbacks = FALLBACK_FONTS
             .iter()
-            .map(|p| std::fs::read(p).unwrap_or_default())
+            .map(|p| read_font(p).unwrap_or_default())
             .collect();
-        let emoji_font = std::fs::read(APPLE_COLOR_EMOJI).ok();
-        let helvetica = std::fs::read(HELVETICA).ok();
-        let apple_symbols = std::fs::read(APPLE_SYMBOLS).ok();
-        let bold_data = std::fs::read("/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf")
+        let emoji_font = read_font(APPLE_COLOR_EMOJI);
+        let helvetica = read_font(HELVETICA);
+        let apple_symbols = read_font(APPLE_SYMBOLS);
+        let bold_data = read_font("/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf")
             .unwrap_or_default();
         Self {
             inner: Rc::new(MeasurerInner {
@@ -404,7 +438,7 @@ impl SeqMeasurer {
     /// Panics when the system font is missing.
     #[must_use]
     pub fn new() -> Self {
-        let data = std::fs::read("/System/Library/Fonts/Supplemental/Times New Roman.ttf")
+        let data = read_font("/System/Library/Fonts/Supplemental/Times New Roman.ttf")
             .expect("Times New Roman.ttf available");
         Self { data }
     }
@@ -577,7 +611,7 @@ impl TextMeasurer {
     /// Panics when the system bold font is missing.
     #[must_use]
     pub fn bold_metrics(&self, text: &str, font_size: f64) -> (f64, f64, f64) {
-        let data = std::fs::read("/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf")
+        let data = read_font("/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf")
             .expect("Trebuchet MS Bold available");
         let face = Face::parse(&data, 0).expect("valid font");
         let upem = f64::from(face.units_per_em());

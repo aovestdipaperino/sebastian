@@ -19,6 +19,7 @@ pub mod graphlib;
 pub mod journey;
 pub mod jsmap;
 pub mod kanban;
+mod mathx;
 pub mod mindmap;
 pub mod packet;
 pub mod pie;

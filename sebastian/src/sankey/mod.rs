@@ -355,7 +355,7 @@ fn layout(g: &mut Graph) {
     // iterations
     let links = &g.links;
     for iter in 0..ITERATIONS {
-        let alpha = core_math::pow(0.99, iter as f64);
+        let alpha = crate::mathx::pow(0.99, iter as f64);
         let beta = (1.0 - alpha).max((iter as f64 + 1.0) / ITERATIONS as f64);
         relax_right_to_left(nodes, links, &columns, alpha, beta, py, y0, y1);
         relax_left_to_right(nodes, links, &columns, alpha, beta, py, y0, y1);

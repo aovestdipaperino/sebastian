@@ -122,10 +122,10 @@ fn mouth_arc(start_angle: f64, end_angle: f64, r_inner: f64, r_outer: f64) -> St
     let a0 = start_angle - half_pi;
     let a1 = end_angle - half_pi;
     let large = i32::from(a1 - a0 >= std::f64::consts::PI);
-    let (x01, y01) = (r1 * core_math::cos(a0), r1 * core_math::sin(a0));
-    let (x11, y11) = (r1 * core_math::cos(a1), r1 * core_math::sin(a1));
-    let (x10, y10) = (r0 * core_math::cos(a1), r0 * core_math::sin(a1));
-    let (x00, y00) = (r0 * core_math::cos(a0), r0 * core_math::sin(a0));
+    let (x01, y01) = (r1 * crate::mathx::cos(a0), r1 * crate::mathx::sin(a0));
+    let (x11, y11) = (r1 * crate::mathx::cos(a1), r1 * crate::mathx::sin(a1));
+    let (x10, y10) = (r0 * crate::mathx::cos(a1), r0 * crate::mathx::sin(a1));
+    let (x00, y00) = (r0 * crate::mathx::cos(a0), r0 * crate::mathx::sin(a0));
     format!(
         "M{},{}A{},{},0,{},1,{},{}L{},{}A{},{},0,{},0,{},{}Z",
         round3(x01),

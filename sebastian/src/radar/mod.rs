@@ -387,8 +387,8 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
                     let angle = (2.0 * j as f64 * PI) / num_axes as f64 - PI / 2.0;
                     format!(
                         "{},{}",
-                        js_num(r * core_math::cos(angle)),
-                        js_num(r * core_math::sin(angle))
+                        js_num(r * crate::mathx::cos(angle)),
+                        js_num(r * crate::mathx::sin(angle))
                     )
                 })
                 .collect();
@@ -408,24 +408,24 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
         set_attr(
             &line,
             "x2",
-            js_num(radius * AXIS_SCALE_FACTOR * core_math::cos(angle)),
+            js_num(radius * AXIS_SCALE_FACTOR * crate::mathx::cos(angle)),
         );
         set_attr(
             &line,
             "y2",
-            js_num(radius * AXIS_SCALE_FACTOR * core_math::sin(angle)),
+            js_num(radius * AXIS_SCALE_FACTOR * crate::mathx::sin(angle)),
         );
         set_attr(&line, "class", "radarAxisLine");
         let text = append(&g, "text");
         set_attr(
             &text,
             "x",
-            js_num(radius * AXIS_LABEL_FACTOR * core_math::cos(angle)),
+            js_num(radius * AXIS_LABEL_FACTOR * crate::mathx::cos(angle)),
         );
         set_attr(
             &text,
             "y",
-            js_num(radius * AXIS_LABEL_FACTOR * core_math::sin(angle)),
+            js_num(radius * AXIS_LABEL_FACTOR * crate::mathx::sin(angle)),
         );
         set_attr(&text, "class", "radarAxisLabel");
         set_text(&text, &axis.label);
@@ -443,7 +443,7 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
             .map(|(i, &entry)| {
                 let angle = (2.0 * PI * i as f64) / num_axes as f64 - PI / 2.0;
                 let r = relative_radius(entry, min_value, max_value, radius);
-                (r * core_math::cos(angle), r * core_math::sin(angle))
+                (r * crate::mathx::cos(angle), r * crate::mathx::sin(angle))
             })
             .collect();
         if db.options.graticule == "circle" {

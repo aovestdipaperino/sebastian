@@ -1597,7 +1597,7 @@ fn rough_ellipse_d(rx: f64, ry: f64) -> String {
 
     // Chrome's V8 ships correctly-rounded sin/cos (CORE-MATH); system libm
     // and fdlibm differ in the last ulp at some angles.
-    let at = |angle: f64| (rx * core_math::cos(angle), ry * core_math::sin(angle));
+    let at = |angle: f64| (rx * crate::mathx::cos(angle), ry * crate::mathx::sin(angle));
     let mut pts: Vec<(f64, f64)> = vec![at(-increment)];
     let mut angle = 0.0_f64;
     while angle <= std::f64::consts::TAU {
