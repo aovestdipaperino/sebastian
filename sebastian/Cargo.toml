@@ -24,11 +24,13 @@ resvg = { version = "0.44", optional = true }
 elkrs = { version = "0.1.1", optional = true }
 
 # Native-only: core-math's vendored C (correctly-rounded transcendentals,
-# matching V8) does not cross-compile to wasm, and libc's localtime_r/mktime
-# (gantt local-time date math) has no wasm equivalent. See `src/mathx.rs` and
-# the gantt UTC fallback.
+# matching V8) does not cross-compile to wasm. See `src/mathx.rs`.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 core-math = "1.1.1"
+
+# Unix-only: localtime_r/mktime (gantt local-time date math) don't exist in
+# Windows' CRT or on wasm — those targets use the gantt UTC fallback.
+[target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

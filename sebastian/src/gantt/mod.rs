@@ -63,7 +63,7 @@ fn civil_from_days(z: i64) -> (i64, i64, i64) {
 pub struct Ts(pub f64);
 
 /// Epoch ms -> local civil (y, m, d, hh, mm, ss, ms).
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
 #[allow(clippy::cast_possible_truncation)]
 fn ts_to_civil(t: Ts) -> (i64, i64, i64, i64, i64, i64, i64) {
     let secs = (t.0 / 1000.0).floor() as libc::time_t;
@@ -83,9 +83,10 @@ fn ts_to_civil(t: Ts) -> (i64, i64, i64, i64, i64, i64, i64) {
     )
 }
 
-/// Epoch ms -> civil (UTC: wasm has no libc and no system timezone, so gantt
-/// calendar arithmetic runs in UTC instead of local time there).
-#[cfg(target_arch = "wasm32")]
+/// Epoch ms -> civil (UTC: wasm has no libc and Windows' libc lacks
+/// `localtime_r`/`mktime`, so gantt calendar arithmetic runs in UTC
+/// instead of local time there).
+#[cfg(not(unix))]
 #[allow(clippy::cast_possible_truncation)]
 fn ts_to_civil(t: Ts) -> (i64, i64, i64, i64, i64, i64, i64) {
     let days = (t.0 / MS_PER_DAY).floor() as i64;
@@ -103,7 +104,7 @@ fn ts_to_civil(t: Ts) -> (i64, i64, i64, i64, i64, i64, i64) {
 }
 
 /// Civil -> epoch ms (UTC, see [`ts_to_civil`]).
-#[cfg(target_arch = "wasm32")]
+#[cfg(not(unix))]
 #[allow(clippy::cast_precision_loss)]
 fn civil_to_ts(y: i64, m: i64, d: i64, hh: i64, mi: i64, ss: i64, ms: i64) -> Ts {
     let secs = days_from_civil(y, m, d) * 86_400 + hh * 3600 + mi * 60 + ss;
@@ -111,7 +112,7 @@ fn civil_to_ts(y: i64, m: i64, d: i64, hh: i64, mi: i64, ss: i64, ms: i64) -> Ts
 }
 
 /// Local civil -> epoch ms (mktime, DST resolved automatically).
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 fn civil_to_ts(y: i64, m: i64, d: i64, hh: i64, mi: i64, ss: i64, ms: i64) -> Ts {
     let mut tm: libc::tm = unsafe { std::mem::zeroed() };

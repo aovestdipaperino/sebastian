@@ -375,6 +375,8 @@ bytes).
   Hosts can also supply real font bytes at runtime via
   `sebastian::text::register_font(file_name, bytes)`, which takes precedence
   over system fonts.
+- On Windows (and wasm), gantt calendar arithmetic runs in UTC rather than
+  the system timezone — the C runtime there lacks `localtime_r`/`mktime`.
 
 ## WebAssembly
 
