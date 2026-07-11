@@ -17,3 +17,14 @@ logo-art = "0.2.1"
 
 [lints]
 workspace = true
+
+# `cargo binstall seb` — archives are produced by .github/workflows/release.yml
+# with the bare binary at the archive root.
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/seb-{ target }.tar.gz"
+pkg-fmt = "tgz"
+bin-dir = "{ bin }{ binary-ext }"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/v{ version }/seb-{ target }.zip"
+pkg-fmt = "zip"

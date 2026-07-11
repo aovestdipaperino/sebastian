@@ -27,6 +27,20 @@ The workspace contains two crates:
 cargo run -p seb -- -i diagram.mmd -o diagram.svg
 ```
 
+Try it in the browser (WASM, no server round-trip):
+**<https://aovestdipaperino.github.io/sebastian/>**
+
+## Install
+
+```sh
+cargo install seb            # build from crates.io
+cargo binstall seb           # or grab a prebuilt binary
+```
+
+Prebuilt binaries for macOS (arm64/x86_64), Linux (x86_64/aarch64) and
+Windows are attached to each [GitHub release](https://github.com/aovestdipaperino/sebastian/releases).
+The library crate is [`sebastian`](https://crates.io/crates/sebastian).
+
 Run `seb` with no arguments (or `seb --logo`) to print the sebastian logo
 as true-color terminal art, rendered from `sebastian/resources/LOGO.png`
 via the [`logo-art`](https://crates.io/crates/logo-art) crate.
@@ -266,6 +280,24 @@ Fonts are selected by `RasterOptions::fonts`:
 cargo build --features raster
 ```
 
+## Performance
+
+The reason this project exists in one number: `mmdc` renders by launching a
+headless Chrome; sebastian is a native binary. Measured with
+[hyperfine](https://github.com/sharkdp/hyperfine) on an Apple M5 Max
+(macOS 26.5), rendering the same flowchart to byte-identical SVG:
+
+| | mean per diagram | vs mmdc |
+|---|---:|---:|
+| `seb` 0.2.0 | 22.5 ms ± 1.2 ms | **~30× faster** |
+| `mmdc` (mermaid-cli 11.12, mermaid 11.15) | 670.1 ms ± 3.2 ms | 1× |
+
+Most of seb's 22 ms is process startup (font loading); the render itself is
+single-digit milliseconds, so batch use through the library API is faster
+still. Rendering the full 553-diagram book corpus takes seb **14.3 s**
+(one process per diagram, ~26 ms each); at mmdc's per-diagram cost the same
+corpus takes about **6 minutes**.
+
 ## Fidelity
 
 Two reference suites assert output against captured `mmdc` SVGs:
@@ -348,7 +380,9 @@ bytes).
 
 `sebastian` compiles for `wasm32-unknown-unknown`; the `sebastian-wasm`
 workspace crate wraps it with wasm-bindgen (`render`, `detect_diagram_type`,
-`register_font`) and ships a browser demo. Build with
+`register_font`) and ships a browser demo — live at
+<https://aovestdipaperino.github.io/sebastian/>, deployed from `main` by
+`.github/workflows/pages.yml`. Build locally with
 `wasm-pack build sebastian-wasm --target web` and see
 [`sebastian-wasm/README.md`](sebastian-wasm/README.md). wasm-only caveats:
 gantt date math runs in UTC, and transcendentals use `libm` instead of the
