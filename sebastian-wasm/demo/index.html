@@ -26,6 +26,7 @@
     <label for="example">Example:</label>
     <select id="example"></select>
     <button id="go">Render</button>
+    <label><input type="checkbox" id="handdrawn"> hand-drawn</label>
     <span class="hint">edits render live on the button</span>
   </div>
   <textarea id="src" spellcheck="false"></textarea>
@@ -213,15 +214,23 @@ text,svg,80`,
     const err = document.getElementById("err");
     const out = document.getElementById("out");
 
+    const handdrawn = document.getElementById("handdrawn");
+
     function renderNow() {
       err.textContent = "";
+      // Excalidraw-style look (flowchart + sequence); other types ignore it.
+      const source = handdrawn.checked
+        ? `%%{init: {'look': 'handDrawn'}}%%\n${src.value}`
+        : src.value;
       try {
-        out.innerHTML = render(src.value, "mermaid-0");
+        out.innerHTML = render(source, "mermaid-0");
       } catch (e) {
         out.innerHTML = "";
         err.textContent = String(e);
       }
     }
+
+    handdrawn.onchange = renderNow;
 
     sel.onchange = () => { src.value = EXAMPLES[sel.value]; renderNow(); };
     document.getElementById("go").onclick = renderNow;
