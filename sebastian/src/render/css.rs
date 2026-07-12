@@ -112,9 +112,15 @@ pub fn hand_drawn_font_css(id: &str) -> String {
 fn font_override_css(id: &str, family: &str, ttf: &[u8], stack: &str) -> String {
     let data = super::edges::base64_encode(ttf);
     let i = format!("#{id}#{id}");
+    // The text-stroke rule is the HTML-label counterpart of
+    // `handdrawn::embolden_text`: the single-weight face gets no reliable
+    // synthetic bold from the browser (class titles, markdown bold), so
+    // bold runs are thickened with a same-color text stroke. resvg never
+    // draws foreignObject content, so this is browser-only.
     format!(
         "@font-face{{font-family:\"{family}\";src:url(data:font/ttf;base64,{data}) format(\"truetype\");}}\
-         {i} .nodeLabel,{i} .edgeLabel,{i} .label text,{i} span,{i} p,{i} text,{i} tspan{{font-family:{stack}!important;}}"
+         {i} .nodeLabel,{i} .edgeLabel,{i} .label text,{i} span,{i} p,{i} text,{i} tspan{{font-family:{stack}!important;}}\
+         {i} g.label[style*=\"bolder\"] p,{i} g.label[style*=\"bolder\"] span,{i} b,{i} strong{{-webkit-text-stroke:0.5px currentColor;}}"
     )
 }
 
