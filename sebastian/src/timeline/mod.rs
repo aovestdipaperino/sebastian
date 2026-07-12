@@ -463,6 +463,13 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
         set_attr(&title, "font-size", "4ex");
         set_attr(&title, "font-weight", "bold");
         set_attr(&title, "y", "20");
+        if config.is_hand_drawn() {
+            // Inherits the root `fill: textColor` rule.
+            crate::render::handdrawn::embolden_text(
+                &title,
+                &crate::render::themes::get(&theme_vars, "textColor"),
+            );
+        }
         // Title bbox: 4ex of the inherited 16px Trebuchet, bold face.
         let ex = measurer.x_height_px(FONT_SIZE);
         let fs = 4.0 * ex;

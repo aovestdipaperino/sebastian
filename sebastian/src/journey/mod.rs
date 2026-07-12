@@ -484,6 +484,13 @@ pub fn render_journey(source: &str, id: &str) -> Result<String, JourneyParseErro
         set_attr(&title, "font-weight", "bold");
         set_attr(&title, "y", "25");
         set_attr(&title, "fill", "");
+        if config.is_hand_drawn() {
+            // The empty fill inherits the root `fill: textColor` rule.
+            crate::render::handdrawn::embolden_text(
+                &title,
+                &crate::render::themes::get(&theme_vars, "textColor"),
+            );
+        }
         set_attr(
             &title,
             "font-family",

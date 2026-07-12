@@ -585,12 +585,13 @@ fn c4_css(id: &str, tv: &dyn Fn(&str) -> String) -> String {
     let font = tv("fontFamily");
     let text_color = tv("textColor");
     let line = tv("lineColor");
+    let bold_stroke = crate::render::handdrawn::embolden_decls(&text_color);
     let mut o = String::new();
     let _ = write!(
         o,
         "#{id}{{font-family:{font};font-size:{FONT_SIZE}px;fill:{text_color};}}\
          #{id} .c4-boundary-rect{{fill:none;stroke:{line};stroke-width:1px;stroke-dasharray:7,5;}}\
-         #{id} .c4-boundary-label{{font-weight:bold;fill:{text_color};}}\
+         #{id} .c4-boundary-label{{font-weight:bold;fill:{text_color};{bold_stroke}}}\
          #{id} .c4-boundary-type{{fill:{text_color};font-size:12px;opacity:0.7;}}\
          #{id} .c4-shape-rect{{fill:#1168bd;stroke:#3c7fc0;stroke-width:1px;}}\
          #{id} .c4-external .c4-shape-rect{{fill:#8c8c8c;stroke:#6b6b6b;}}\

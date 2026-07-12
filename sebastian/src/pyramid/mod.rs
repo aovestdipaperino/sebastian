@@ -351,13 +351,15 @@ fn pyramid_css(id: &str, tv: &dyn Fn(&str) -> String) -> String {
     let font = tv("fontFamily");
     let text_color = tv("textColor");
     let line = tv("lineColor");
+    let title_stroke = crate::render::handdrawn::embolden_decls(&text_color);
+    let label_stroke = crate::render::handdrawn::embolden_decls("#1a1a1a");
     let mut o = String::new();
     let _ = write!(
         o,
         "#{id}{{font-family:{font};}}\
-         #{id} .pyramid-title{{font-size:20px;font-weight:bold;fill:{text_color};}}\
+         #{id} .pyramid-title{{font-size:20px;font-weight:bold;fill:{text_color};{title_stroke}}}\
          #{id} .pyramid-band{{stroke:{line};stroke-width:1px;}}\
-         #{id} .pyramid-label{{font-weight:bold;fill:#1a1a1a;}}\
+         #{id} .pyramid-label{{font-weight:bold;fill:#1a1a1a;{label_stroke}}}\
          #{id} .pyramid-component-rect{{fill:rgba(255,255,255,0.92);stroke:{line};stroke-width:1px;}}\
          #{id} .pyramid-component-label{{font-size:{COMP_FONT_SIZE}px;fill:#1a1a1a;}}"
     );

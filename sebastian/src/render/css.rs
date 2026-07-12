@@ -2476,7 +2476,10 @@ pub fn themed_statediagram_css(id: &str, vars: &Map<String, Value>) -> String {
         &mut o,
         &i,
         &[" g.stateGroup .state-title"],
-        &format!("font-weight:bolder;fill:{state_label};"),
+        &format!(
+            "font-weight:bolder;fill:{state_label};{}",
+            super::handdrawn::embolden_decls(&state_label)
+        ),
     );
     rule(
         &mut o,
@@ -2566,7 +2569,10 @@ pub fn themed_statediagram_css(id: &str, vars: &Map<String, Value>) -> String {
         &mut o,
         &i,
         &[" .stateLabel text"],
-        &format!("fill:{state_label};font-size:10px;font-weight:bold;"),
+        &format!(
+            "fill:{state_label};font-size:10px;font-weight:bold;{}",
+            super::handdrawn::embolden_decls(&state_label)
+        ),
     );
     rule(
         &mut o,

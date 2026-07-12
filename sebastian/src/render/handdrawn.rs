@@ -12,6 +12,30 @@ use crate::dagre::types::Point;
 use crate::svg::{Element, append, insert_first, js_num, set_attr};
 use std::fmt::Write;
 
+/// Faux bold for hand-drawn text: Excalifont has no bold face and resvg
+/// does not synthesize one (browsers do, PNGs silently lost the weight),
+/// so bold runs are painted with a thin same-color stroke — explicit faux
+/// bold that renders identically in browsers and resvg. `color` must be
+/// the text's effective fill. Call only when hand-drawn mode is active.
+pub fn embolden_text(el: &Element, color: &str) {
+    set_attr(el, "stroke", color);
+    set_attr(el, "stroke-width", "0.55");
+    set_attr(el, "paint-order", "stroke");
+}
+
+/// The same faux-bold emulation as [`embolden_text`], as CSS declarations
+/// to append to a themed rule that sets `font-weight:bold` with a known
+/// fill. Empty outside hand-drawn mode, so classic stylesheets are
+/// unchanged byte for byte.
+#[must_use]
+pub fn embolden_decls(fill: &str) -> String {
+    if crate::text::is_hand_drawn() {
+        format!("paint-order:stroke;stroke:{fill};stroke-width:0.55px;")
+    } else {
+        String::new()
+    }
+}
+
 /// rough.js default-ish drawing parameters tuned for diagram-sized shapes.
 const MAX_OFFSET: f64 = 2.0;
 const ROUGHNESS: f64 = 1.0;

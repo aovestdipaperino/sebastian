@@ -611,6 +611,9 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
                     "dominant-baseline: middle; font-size: 12px; fill:{c}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
                 ),
             );
+            if hand_drawn {
+                crate::render::handdrawn::embolden_text(&lbl, &c);
+            }
             set_text(&lbl, &name);
         }
         // value
