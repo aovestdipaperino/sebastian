@@ -223,6 +223,18 @@ glyphs exactly (classic-look renders are untouched and stay byte-exact).
 Pairs naturally with `htmlLabels: false` for offline rasterization — the
 rasterizer registers the embedded face, so PNGs come out in Excalifont too.
 
+Excalifont ships a single weight, so **bold** text (class titles,
+timeline/journey titles, treemap section headers, markdown `**bold**`) is
+emulated explicitly: bold runs are painted with a thin stroke in their own
+text color, which renders identically in browsers and in resvg — instead
+of relying on the browser's synthetic bold, which resvg lacks entirely.
+
+On hosts without the real fonts (wasm without registered fonts, bare
+Linux), classic-look renders apply the same principle: the embedded face
+that measured the text (Cabin, or Tinos for sequence diagrams) is inlined
+into the SVG and used for drawing, so output is self-consistent everywhere
+instead of depending on the viewer's installed fonts.
+
 ### Sequence diagrams (sebastian extension)
 
 Hand-drawn support for **sequence diagrams** is a sebastian-specific extension

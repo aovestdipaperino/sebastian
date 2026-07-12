@@ -6,6 +6,20 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-12
+
+### Added
+- **Faux bold for single-weight faces.** Excalifont (and the embedded
+  Cabin fallback) ship no bold face, browsers synthesize one unreliably,
+  and resvg not at all — so bold text was silently regular in hand-drawn
+  PNGs and in class-diagram titles in the browser. Bold runs are now
+  thickened explicitly with a thin same-color stroke: `paint-order:stroke`
+  on bold SVG text (timeline/journey titles, treemap section labels,
+  state/C4/pyramid bold rules) and `-webkit-text-stroke` on bold HTML
+  labels (class titles, markdown `**bold**`). Renders identically in
+  browsers and resvg; classic output on real-font hosts is unchanged
+  byte for byte.
+
 ### Fixed
 - **Classic-look font-fallback mismatch.** On hosts without the real fonts
   (wasm without registered fonts, bare Linux), layout measures with the
@@ -16,6 +30,12 @@ project adheres to [Semantic Versioning](https://semver.org/).
   a `@font-face` data URI and point labels at it (Cabin generally, Tinos
   for sequence diagrams). Hosts with the real fonts are untouched and stay
   byte-exact.
+- **ER/class wrap thresholds on fallback hosts.** The ER attribute-grid and
+  class-box wrap widths replicate upstream's habit of measuring via
+  Chrome's default font (Times); without the real Times they measured with
+  Tinos, which matched neither upstream nor the Cabin face the labels draw
+  in. `SeqMeasurer::for_ink()` now measures those sites with the drawing
+  face when Times is absent; with Times present nothing changes.
 
 ## [0.4.0] — 2026-07-12
 
