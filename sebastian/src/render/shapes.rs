@@ -1260,7 +1260,7 @@ fn er_box(
     let node_border = v("nodeBorder");
     let row_even = v("rowEven");
     let row_odd = v("rowOdd");
-    let seq = crate::text::SeqMeasurer::new();
+    let seq = crate::text::SeqMeasurer::for_ink();
 
     // Root config.htmlLabels is undefined upstream, so the attribute-grid
     // paddings get the !htmlLabels 1.25 scaling even though the labels are
@@ -1860,7 +1860,7 @@ fn class_box(
 ) -> Element {
     const PADDING: f64 = 12.0;
     const GAP: f64 = 12.0;
-    let seq = crate::text::SeqMeasurer::new();
+    let seq = crate::text::SeqMeasurer::for_ink();
     let n = node.borrow();
 
     let shape_svg = append(parent, "g");

@@ -531,6 +531,26 @@ impl SeqMeasurer {
         Self { data }
     }
 
+    /// Measurer for the ER/class box metrics, where upstream mermaid
+    /// measures via Chrome's *default* font (Times) while the labels draw
+    /// in the theme font. With the real Times present that mismatch is
+    /// replicated for byte-exactness. On fallback hosts the drawn face is
+    /// Cabin (see `render::css::fallback_font_css`) — measuring there with
+    /// Tinos would track neither font, so measure with the drawing face
+    /// instead (Cabin, or Excalifont in hand-drawn mode).
+    #[must_use]
+    pub fn for_ink() -> Self {
+        let data = if is_hand_drawn() {
+            hand_drawn_font()
+        } else {
+            TIMES_CANDIDATES
+                .iter()
+                .find_map(|p| read_font(p))
+                .unwrap_or_else(|| CABIN_FALLBACK.to_vec())
+        };
+        Self { data }
+    }
+
     fn face(&self) -> Face<'_> {
         Face::parse(&self.data, 0).expect("valid font")
     }
