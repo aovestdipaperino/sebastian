@@ -4,26 +4,193 @@
   <meta charset="utf-8">
   <title>sebastian — WASM demo</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 60rem; }
-    textarea { width: 100%; height: 12rem; font-family: monospace; font-size: 14px; }
+    body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 60rem; padding: 0 1rem; }
+    h1 { font-size: 1.5rem; }
+    .sub { color: #666; margin-top: -0.5rem; }
+    .sub a { color: inherit; }
+    textarea { width: 100%; height: 12rem; font-family: monospace; font-size: 14px; box-sizing: border-box; }
     #out { border: 1px solid #ccc; margin-top: 1rem; padding: 1rem; overflow-x: auto; }
     #err { color: #b00; white-space: pre-wrap; }
-    button { margin-top: .5rem; padding: .4rem 1rem; }
+    .bar { display: flex; gap: .75rem; align-items: center; margin: .5rem 0; flex-wrap: wrap; }
+    button, select { padding: .4rem 1rem; font-size: 14px; }
+    .hint { color: #888; font-size: 13px; }
   </style>
 </head>
 <body>
   <h1>sebastian — mermaid in the browser, no browser engine</h1>
-  <textarea id="src">flowchart TD
-    A[Start] --> B{Is it WASM?}
-    B -- Yes --> C[Render natively]
-    B -- No --> D[Ship a binary per platform]</textarea>
-  <br>
-  <button id="go">Render</button>
+  <p class="sub">A Rust port of the mermaid.js renderers compiled to WASM —
+    byte-identical to mermaid-cli when the real fonts are registered.
+    <a href="https://github.com/aovestdipaperino/sebastian">GitHub</a> ·
+    <a href="https://crates.io/crates/sebastian">crates.io</a></p>
+  <div class="bar">
+    <label for="example">Example:</label>
+    <select id="example"></select>
+    <button id="go">Render</button>
+    <span class="hint">edits render live on the button</span>
+  </div>
+  <textarea id="src" spellcheck="false"></textarea>
   <div id="err"></div>
   <div id="out"></div>
 
   <script type="module">
     import init, { register_font, render } from "../pkg/sebastian_wasm.js";
+
+    const EXAMPLES = {
+      "flowchart": `flowchart TD
+    A[Start] --> B{Is it WASM?}
+    B -- Yes --> C[Render natively]
+    B -- No --> D[Ship a binary per platform]
+    C --> E([Done])`,
+      "sequence": `sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant W as sebastian (WASM)
+    B->>W: render(source)
+    activate W
+    W-->>B: SVG string
+    deactivate W
+    Note over B,W: no server round-trip`,
+      "state": `stateDiagram-v2
+    [*] --> Idle
+    Idle --> Rendering : render()
+    Rendering --> Done : ok
+    Rendering --> Error : parse error
+    Error --> Idle : fix source
+    Done --> [*]`,
+      "class": `classDiagram
+    class Renderer {
+        +render(source) String
+        -measure(text) BBox
+    }
+    class Flowchart
+    class Sequence
+    Renderer <|-- Flowchart
+    Renderer <|-- Sequence`,
+      "er": `erDiagram
+    DIAGRAM ||--o{ NODE : contains
+    DIAGRAM ||--o{ EDGE : contains
+    EDGE }o--|| NODE : from
+    EDGE }o--|| NODE : to`,
+      "gantt": `gantt
+    dateFormat YYYY-MM-DD
+    title Port timeline
+    section Engine
+        dagre port      :done, a1, 2026-05-01, 20d
+        text metrics    :done, a2, after a1, 10d
+    section Diagrams
+        flowchart       :done, b1, after a2, 7d
+        the other 20    :active, b2, after b1, 30d`,
+      "pie": `pie showData
+    title Rendering time
+    "Layout" : 42
+    "Text measurement" : 31
+    "SVG serialization" : 17
+    "Parsing" : 10`,
+      "gitGraph": `gitGraph
+    commit id: "init"
+    branch feature
+    commit id: "wasm"
+    commit id: "fonts"
+    checkout main
+    commit id: "fix"
+    merge feature
+    commit id: "release"`,
+      "timeline": `timeline
+    title sebastian milestones
+    2026-05 : dagre port : text metrics
+    2026-06 : flowchart byte-exact : 553-diagram corpus
+    2026-07 : 20+ diagram types : WASM + this demo`,
+      "journey": `journey
+    title Rendering a diagram
+    section Author
+      Write mermaid: 5: Author
+      Paste source: 4: Author
+    section sebastian
+      Parse: 5: sebastian
+      Layout + render: 5: sebastian`,
+      "quadrant": `quadrantChart
+    title Renderer landscape
+    x-axis Slow --> Fast
+    y-axis Approximate --> Exact
+    quadrant-1 Ideal
+    quadrant-2 Faithful
+    quadrant-3 Avoid
+    quadrant-4 Quick look
+    mermaid-cli: [0.25, 0.9]
+    sebastian: [0.9, 0.9]`,
+      "xychart": `xychart-beta
+    title "Render time (ms)"
+    x-axis [mmdc, sebastian]
+    y-axis "ms" 0 --> 700
+    bar [670, 22]`,
+      "sankey": `sankey-beta
+source,layout,120
+source,text,80
+layout,svg,120
+text,svg,80`,
+      "block": `block-beta
+    columns 3
+    a["parse"] b["layout"] c["render"]
+    space d(("SVG")) space
+    a --> b
+    b --> c
+    c --> d`,
+      "packet": `packet-beta
+    title TCP header
+    0-15: "Source port"
+    16-31: "Destination port"
+    32-63: "Sequence number"
+    64-95: "Acknowledgment number"`,
+      "radar": `radar-beta
+    title Renderer scorecard
+    axis s["Speed"], f["Fidelity"], p["Portability"]
+    axis d["Determinism"], z["Size"]
+    curve seb["sebastian"]{5, 5, 5, 5, 4}
+    curve mmdc["mermaid-cli"]{2, 5, 2, 3, 1}`,
+      "treemap": `treemap-beta
+"Engine"
+    "dagre": 40
+    "text": 25
+"Diagrams"
+    "flowchart": 20
+    "others": 15`,
+      "kanban": `kanban
+  todo[Todo]
+    t1[Announce release]
+  doing[In progress]
+    t2[Polish demo page]
+  done[Done]
+    t3[Byte-exact corpus]
+    t4[WASM build]`,
+      "mindmap (approximate)": `mindmap
+  root((sebastian))
+    Engine
+      dagre
+      text metrics
+    Targets
+      native
+      wasm`,
+      "architecture (approximate)": `architecture-beta
+    group api[Rendering]
+    service parser(server)[Parser] in api
+    service layout(server)[Layout] in api
+    service svg(disk)[SVG] in api
+    parser:R -- L:layout
+    layout:R -- L:svg`,
+      "pyramid (extension)": `pyramid
+    title Test pyramid
+    "E2E": 1
+    "Integration": 3
+    "Unit": 8`,
+    };
+
+    const sel = document.getElementById("example");
+    for (const name of Object.keys(EXAMPLES)) {
+      const o = document.createElement("option");
+      o.value = name;
+      o.textContent = name;
+      sel.appendChild(o);
+    }
 
     await init();
 
@@ -41,18 +208,24 @@
       }
     }
 
-    document.getElementById("go").onclick = () => {
-      const err = document.getElementById("err");
-      const out = document.getElementById("out");
+    const src = document.getElementById("src");
+    const err = document.getElementById("err");
+    const out = document.getElementById("out");
+
+    function renderNow() {
       err.textContent = "";
       try {
-        out.innerHTML = render(document.getElementById("src").value, "mermaid-0");
+        out.innerHTML = render(src.value, "mermaid-0");
       } catch (e) {
         out.innerHTML = "";
         err.textContent = String(e);
       }
-    };
-    document.getElementById("go").click();
+    }
+
+    sel.onchange = () => { src.value = EXAMPLES[sel.value]; renderNow(); };
+    document.getElementById("go").onclick = renderNow;
+    src.value = EXAMPLES[sel.value];
+    renderNow();
   </script>
 </body>
 </html>
