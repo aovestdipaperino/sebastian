@@ -96,15 +96,57 @@ fn hsl_to_rgb(value: &str) -> Option<String> {
 /// don't need to opt in.
 #[must_use]
 pub fn hand_drawn_font_css(id: &str) -> String {
-    let font = "\"Excalifont\", \"Comic Sans MS\", \"Chalkboard SE\", \"Bradley Hand\", cursive";
-    let data = super::edges::base64_encode(crate::text::EXCALIFONT);
-    // The doubled id out-specifies every id+class theme rule (e.g. pie's
-    // `#id .slice`) in usvg's CSS engine, which ignores `!important`;
-    // browsers resolve it identically.
+    font_override_css(
+        id,
+        "Excalifont",
+        crate::text::EXCALIFONT,
+        "\"Excalifont\", \"Comic Sans MS\", \"Chalkboard SE\", \"Bradley Hand\", cursive",
+    )
+}
+
+/// A `@font-face` for `family` (TTF inlined as a data URI) plus a label-wide
+/// `font-family` override scoped to the diagram. The doubled id
+/// out-specifies every id+class theme rule (e.g. pie's `#id .slice`) in
+/// usvg's CSS engine, which ignores `!important`; browsers resolve it
+/// identically.
+fn font_override_css(id: &str, family: &str, ttf: &[u8], stack: &str) -> String {
+    let data = super::edges::base64_encode(ttf);
     let i = format!("#{id}#{id}");
     format!(
-        "@font-face{{font-family:\"Excalifont\";src:url(data:font/ttf;base64,{data}) format(\"truetype\");}}\
-         {i} .nodeLabel,{i} .edgeLabel,{i} .label text,{i} span,{i} p,{i} text,{i} tspan{{font-family:{font}!important;}}"
+        "@font-face{{font-family:\"{family}\";src:url(data:font/ttf;base64,{data}) format(\"truetype\");}}\
+         {i} .nodeLabel,{i} .edgeLabel,{i} .label text,{i} span,{i} p,{i} text,{i} tspan{{font-family:{stack}!important;}}"
+    )
+}
+
+/// Font override for classic-look renders measured with the embedded Cabin
+/// fallback (no Trebuchet MS on the host — bare Linux, wasm without
+/// registered fonts). The theme CSS asks for `"trebuchet ms"`, which the
+/// *viewer's* machine may well have, so without this the boxes are sized
+/// for Cabin while the glyphs render in the wider Trebuchet and overflow.
+/// Inlining Cabin and pointing every label at it makes drawing match
+/// measurement everywhere. Not emitted when the real fonts are present —
+/// byte-exact output is unchanged there.
+#[must_use]
+pub fn fallback_font_css(id: &str) -> String {
+    font_override_css(
+        id,
+        "Cabin",
+        crate::text::CABIN_FALLBACK,
+        "\"Cabin\", \"trebuchet ms\", verdana, arial, sans-serif",
+    )
+}
+
+/// Sequence-diagram variant of [`fallback_font_css`]: sequence text is
+/// measured with Times New Roman metrics (`SeqMeasurer`), so on hosts
+/// where the embedded Tinos fallback measured instead, labels draw in
+/// Tinos too.
+#[must_use]
+pub fn fallback_seq_font_css(id: &str) -> String {
+    font_override_css(
+        id,
+        "Tinos",
+        crate::text::TINOS_FALLBACK,
+        "\"Tinos\", \"Times New Roman\", times, serif",
     )
 }
 

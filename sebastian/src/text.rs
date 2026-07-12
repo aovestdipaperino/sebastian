@@ -55,6 +55,22 @@ fn hand_drawn_font() -> Vec<u8> {
     read_font("Excalifont-Regular.ttf").unwrap_or_else(|| EXCALIFONT.to_vec())
 }
 
+/// Whether classic-look measurement uses the real Trebuchet MS face. When
+/// false, [`TextMeasurer`] measures with the embedded Cabin fallback, and
+/// the rendered SVG must draw with Cabin too (see
+/// `render::css::fallback_font_css`) or labels overflow their boxes.
+#[must_use]
+pub fn trebuchet_available() -> bool {
+    FONT_CANDIDATES.iter().any(|p| read_font(p).is_some())
+}
+
+/// Whether sequence-diagram measurement uses the real Times New Roman face;
+/// when false, [`SeqMeasurer`] measures with the embedded Tinos fallback.
+#[must_use]
+pub fn times_available() -> bool {
+    TIMES_CANDIDATES.iter().any(|p| read_font(p).is_some())
+}
+
 thread_local! {
     static HAND_DRAWN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
@@ -82,8 +98,8 @@ const TIMES_CANDIDATES: &[&str] = &[
 /// (bare Linux, wasm): Cabin (SIL OFL) stands in for Trebuchet MS and
 /// Tinos (SIL OFL, Times-metric-compatible) for Times New Roman. With a
 /// fallback in play, output is well-proportioned but NOT byte-exact vs mmdc.
-const CABIN_FALLBACK: &[u8] = include_bytes!("../fonts/Cabin.ttf");
-const TINOS_FALLBACK: &[u8] = include_bytes!("../fonts/Tinos-Regular.ttf");
+pub(crate) const CABIN_FALLBACK: &[u8] = include_bytes!("../fonts/Cabin.ttf");
+pub(crate) const TINOS_FALLBACK: &[u8] = include_bytes!("../fonts/Tinos-Regular.ttf");
 
 thread_local! {
     /// Host-registered font bytes, keyed by file name (e.g. "Trebuchet MS.ttf").

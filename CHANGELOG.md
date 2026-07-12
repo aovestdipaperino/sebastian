@@ -6,6 +6,17 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **Classic-look font-fallback mismatch.** On hosts without the real fonts
+  (wasm without registered fonts, bare Linux), layout measures with the
+  embedded Cabin/Tinos faces but the theme CSS asked for
+  `"trebuchet ms"` / Times — viewers that *do* have those fonts drew wider
+  glyphs than the measured boxes, truncating labels (visible in the hosted
+  demo). Classic renders on fallback hosts now inline the measuring face as
+  a `@font-face` data URI and point labels at it (Cabin generally, Tinos
+  for sequence diagrams). Hosts with the real fonts are untouched and stay
+  byte-exact.
+
 ## [0.4.0] — 2026-07-12
 
 ### Added

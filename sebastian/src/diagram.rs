@@ -164,6 +164,24 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
         if !svg.contains(&css) {
             return Ok(svg.replacen("</style>", &format!("{css}</style>"), 1));
         }
+    } else {
+        // Classic look measured with an embedded fallback face (no real
+        // fonts on the host): draw with that same face, or viewers that do
+        // have the real fonts render differently-sized glyphs than the
+        // boxes were measured for. No-op on hosts with the real fonts —
+        // byte-exact output is unchanged there. Sequence diagrams measure
+        // with Times metrics, everything else with Trebuchet.
+        let seq = detect_diagram_type(source) == "sequence";
+        let css = if seq && !crate::text::times_available() {
+            Some(render::css::fallback_seq_font_css(id))
+        } else if !seq && !crate::text::trebuchet_available() {
+            Some(render::css::fallback_font_css(id))
+        } else {
+            None
+        };
+        if let Some(css) = css {
+            return Ok(svg.replacen("</style>", &format!("{css}</style>"), 1));
+        }
     }
     Ok(svg)
 }
