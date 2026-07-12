@@ -33,8 +33,9 @@ Try it in the browser (WASM, no server round-trip):
 ## Install
 
 ```sh
-cargo install seb            # build from crates.io
-cargo binstall seb           # or grab a prebuilt binary
+brew install aovestdipaperino/tap/seb   # Homebrew (macOS/Linux)
+cargo install seb                       # build from crates.io
+cargo binstall seb                      # or grab a prebuilt binary
 ```
 
 Prebuilt binaries for macOS (arm64/x86_64), Linux (x86_64/aarch64) and
