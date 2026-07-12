@@ -696,7 +696,7 @@ dependencies = [
 
 [[package]]
 name = "seb"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "logo-art",
  "sebastian",
@@ -704,7 +704,7 @@ dependencies = [
 
 [[package]]
 name = "sebastian"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "core-math",
  "elkrs",
@@ -719,7 +719,7 @@ dependencies = [
 
 [[package]]
 name = "sebastian-wasm"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "sebastian",
  "wasm-bindgen",

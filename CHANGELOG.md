@@ -6,6 +6,36 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-07-12
+
+### Added
+- **Prebuilt binaries + `cargo binstall seb`.** Release workflow attaches
+  `seb` binaries for macOS (arm64/x86_64), Linux (x86_64/aarch64) and Windows
+  (x86_64-gnu) to every version tag's GitHub release; `seb` carries binstall
+  metadata pointing at them.
+- **Hosted WASM demo.** The browser demo deploys to GitHub Pages on every
+  push to `main`: <https://aovestdipaperino.github.io/sebastian/>.
+- **Windows builds.** `sebastian`/`seb` now compile for Windows (GNU
+  toolchain; MSVC cannot compile core-math's vendored C). Gantt calendar
+  arithmetic runs in UTC there — the CRT lacks `localtime_r`/`mktime` — the
+  same documented caveat as wasm; `libc` is now a unix-only dependency.
+- **README.** Install (crates.io / binstall / releases) and Performance
+  sections — `seb` renders byte-identical SVG ~30× faster than mmdc
+  (22.5 ms vs 670 ms per diagram; 553-diagram corpus in 14.3 s vs ~6 min).
+
+### Fixed
+- **Hostile-input hardening.** `render_diagram` no longer panics or runs
+  away on malformed input; it renders or returns an error. Found by a
+  300k-iteration mutation fuzz over the test corpora and fixed at the root:
+  a flowchart-lexer zero-progress loop that allocated until the process was
+  OOM-killed (`subgraph D= …`), state transitions with empty state ids,
+  a UTF-8 boundary slice and activation-of-undeclared-participant in the
+  sequence parser, a graphlib parent-cycle panic on self-nested subgraphs,
+  infinities in JS number formatting, and empty graphs in the dagre order
+  pass. Any residual internal panic is caught at the `render_diagram`
+  boundary and reported as an error. `tests/hostile_input.rs` pins every
+  previously-crashing input and re-fuzzes on each run.
+
 ## [0.2.0] — 2026-07-09
 
 ### Added

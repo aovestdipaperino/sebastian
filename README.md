@@ -289,7 +289,7 @@ headless Chrome; sebastian is a native binary. Measured with
 
 | | mean per diagram | vs mmdc |
 |---|---:|---:|
-| `seb` 0.2.0 | 22.5 ms ± 1.2 ms | **~30× faster** |
+| `seb` 0.3.0 | 22.5 ms ± 1.2 ms | **~30× faster** |
 | `mmdc` (mermaid-cli 11.12, mermaid 11.15) | 670.1 ms ± 3.2 ms | 1× |
 
 Most of seb's 22 ms is process startup (font loading); the render itself is
