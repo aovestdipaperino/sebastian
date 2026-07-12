@@ -1,5 +1,6 @@
 //! ELK layered-layout backend for `layout: elk` flowcharts, via the native-Rust
-//! [`elkrs`] crate (a port of the Eclipse Layout Kernel).
+//! [elkrs](https://crates.io/crates/elkrs) crate (a port of the Eclipse
+//! Layout Kernel).
 //!
 //! This module builds the ELK graph exactly as mermaid's `@mermaid-js/layout-elk`
 //! does — same `layoutOptions`, same per-node dimensions (which sebastian already

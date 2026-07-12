@@ -276,7 +276,7 @@ impl<'a> Lexer<'a> {
     ///
     /// Each `%x` state from the jison grammar has a dedicated `lex_*` helper;
     /// the default `Initial` state is split into ordered `try_*` matchers (see
-    /// [`Self::lex_initial`]). All helpers share the longest-match, earlier-rule-
+    /// `lex_initial`). All helpers share the longest-match, earlier-rule-
     /// wins semantics of the original grammar.
     pub fn next_token(&mut self) -> Tok {
         if self.pos >= self.src.len() {

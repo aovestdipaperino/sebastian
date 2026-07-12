@@ -1,9 +1,41 @@
-//! Pixel-perfect Rust port of the mermaid.js flowchart renderer.
+//! Pixel-perfect Rust port of the [mermaid.js](https://mermaid.js.org)
+//! diagram renderers (mermaid 11.15.0) — no browser, no JavaScript.
 //!
-//! The crate ports the rendering pipeline used by mermaid v11 for
-//! flowcharts: the flowchart DSL parser, the dagre layout engine (as bundled
-//! in dagre-d3-es 7.0.14), and the SVG generation with mermaid's default
-//! theme.
+//! For the byte-exact diagram types (flowchart, sequence, state, class,
+//! gantt, pie, ER, gitGraph, timeline, journey, quadrant, xychart, packet,
+//! radar, sankey, block, treemap, kanban) the output SVG is **byte-for-byte
+//! identical** to mermaid-cli's, at native speed (roughly 30× faster than
+//! `mmdc`, which launches a headless Chrome per render). Mindmap,
+//! architecture, requirement and C4 render as approximate (non-byte-exact)
+//! diagrams. See the [repository README](https://github.com/aovestdipaperino/sebastian)
+//! for the full status table.
+//!
+//! # Quick start
+//!
+//! ```
+//! let svg = sebastian::render_diagram(
+//!     "flowchart TD\n    A[Start] --> B{Ready?}\n    B -- yes --> C[Go]",
+//!     "my-svg", // the SVG element id
+//! ).expect("valid diagram");
+//! assert!(svg.starts_with("<svg"));
+//! ```
+//!
+//! [`render_diagram`] auto-detects the diagram type ([`detect_diagram_type`])
+//! and never panics: malformed input yields an `Err`. With the `raster`
+//! feature, `render_png` rasterizes without a browser.
+//!
+//! # Fonts and byte-exactness
+//!
+//! Layout depends on text metrics. With the real fonts available —
+//! Trebuchet MS everywhere, Times New Roman for sequence diagrams
+//! (preinstalled on macOS/Windows) — output is byte-exact vs mermaid-cli.
+//! Without them (bare Linux, wasm) sebastian falls back to embedded
+//! SIL-OFL faces and output is well-proportioned but not byte-exact; hosts
+//! can supply real font bytes at runtime via [`text::register_font`].
+//!
+//! The crate also compiles for `wasm32-unknown-unknown` (see the
+//! `sebastian-wasm` workspace crate and the
+//! [live demo](https://aovestdipaperino.github.io/sebastian/)).
 
 pub mod architecture;
 pub mod block;
