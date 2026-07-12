@@ -224,7 +224,7 @@ impl Parser<'_> {
                 continue;
             }
             // idStatement [DESCR] ['-->' idStatement [DESCR]]
-            doc.push(Self::parse_id_line(line));
+            doc.push(Self::parse_id_line(line)?);
         }
         if in_struct {
             return Err(StateParseError {
@@ -382,7 +382,7 @@ impl Parser<'_> {
     }
 
     /// `idStatement [DESCR]` / `idStatement --> idStatement [DESCR]`.
-    fn parse_id_line(line: &str) -> Stmt {
+    fn parse_id_line(line: &str) -> Result<Stmt, StateParseError> {
         // Split off the first description colon (`:::` is the class
         // separator, not a description).
         let mut descr_idx = None;
@@ -404,19 +404,29 @@ impl Parser<'_> {
             None => (line, None),
         };
         if let Some((left, right)) = head.split_once("-->") {
+            if left.trim().is_empty() || right.trim().is_empty() {
+                return Err(StateParseError {
+                    message: format!("incomplete transition: {line:?}"),
+                });
+            }
             let state1 = parse_id_statement(left.trim());
             let state2 = parse_id_statement(right.trim());
-            Stmt::Relation {
+            if state1.id.is_empty() || state2.id.is_empty() {
+                return Err(StateParseError {
+                    message: format!("transition with empty state id: {line:?}"),
+                });
+            }
+            Ok(Stmt::Relation {
                 state1,
                 state2,
                 description: descr,
-            }
+            })
         } else if let Some(d) = descr {
             let mut s = parse_id_statement(head.trim());
             s.description = vec![d];
-            Stmt::State(s)
+            Ok(Stmt::State(s))
         } else {
-            Stmt::State(parse_id_statement(head.trim()))
+            Ok(Stmt::State(parse_id_statement(head.trim())))
         }
     }
 }

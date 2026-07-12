@@ -284,9 +284,15 @@ impl<G, N: Clone, E: Clone> Graph<G, N, E> {
         let parent = match parent {
             None => GRAPH_NODE.to_owned(),
             Some(p) => {
+                // JS graphlib throws here; that only happens on malformed
+                // input (a subgraph nested inside itself), so instead of
+                // aborting the render we ignore the assignment and leave the
+                // node where it is.
                 let mut ancestor = Some(p.to_owned());
                 while let Some(a) = ancestor {
-                    assert!(a != v, "setting {p} as parent of {v} would create a cycle");
+                    if a == v {
+                        return;
+                    }
                     ancestor = self.parent(&a);
                 }
                 self.set_node(p);

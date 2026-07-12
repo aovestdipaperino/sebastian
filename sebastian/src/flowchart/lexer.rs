@@ -1158,12 +1158,27 @@ impl<'a> Lexer<'a> {
     #[must_use]
     pub fn tokenize(mut self) -> Vec<Tok> {
         let mut tokens = Vec::new();
+        let mut stalled = 0u32;
         loop {
+            let before = self.pos;
             let tok = self.next_token();
             let done = tok == Tok::Eof;
             tokens.push(tok);
             if done {
                 break;
+            }
+            // A token that consumes no input is only ever a state-stack
+            // transition; a run of them means malformed input has wedged the
+            // lexer (it would loop, and allocate, forever). Cut the stream —
+            // the parser reports the malformed remainder as an error.
+            if self.pos == before {
+                stalled += 1;
+                if stalled > 8 {
+                    tokens.push(Tok::Eof);
+                    break;
+                }
+            } else {
+                stalled = 0;
             }
         }
         tokens

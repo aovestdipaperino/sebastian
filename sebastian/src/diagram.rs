@@ -105,8 +105,43 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
 /// Renders any supported mermaid diagram to a complete SVG document string.
 ///
 /// # Errors
-/// Returns an error when the source cannot be parsed.
+/// Returns an error when the source cannot be parsed or rendered. Malformed
+/// input that trips an internal invariant deep in the pipeline is caught at
+/// this boundary and reported as an error rather than a panic.
 pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::error::Error>> {
+    // The render pipeline is panic-free for every valid diagram in the test
+    // corpora, but hostile input can still reach internal `panic!`/`expect`
+    // invariants. Contain those here so library users and the CLI always get
+    // a Result. (The pipeline holds no cross-call state, so unwinding is
+    // safe; the hook is restored around the call to keep panics quiet.)
+    use std::cell::Cell;
+    use std::sync::Once;
+    thread_local! {
+        static SILENCE_PANICS: Cell<bool> = const { Cell::new(false) };
+    }
+    static HOOK: Once = Once::new();
+    HOOK.call_once(|| {
+        let prev = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            if !SILENCE_PANICS.with(Cell::get) {
+                prev(info);
+            }
+        }));
+    });
+    SILENCE_PANICS.with(|s| s.set(true));
+    let result = std::panic::catch_unwind(|| render_diagram_inner(source, id));
+    SILENCE_PANICS.with(|s| s.set(false));
+    result.unwrap_or_else(|payload| {
+        let msg = payload
+            .downcast_ref::<&str>()
+            .map(|s| (*s).to_owned())
+            .or_else(|| payload.downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "unknown panic".to_owned());
+        Err(format!("invalid diagram: {msg}").into())
+    })
+}
+
+fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::error::Error>> {
     match detect_diagram_type(source) {
         "state" => render_state(source, id).map_err(Into::into),
         "pie" => crate::pie::render_pie(source, id).map_err(Into::into),

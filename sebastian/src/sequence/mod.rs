@@ -723,13 +723,24 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
             message: "missing sequenceDiagram header".to_owned(),
         });
     }
+    // Activations must reference a participant that exists somewhere in the
+    // diagram (mermaid throws during render otherwise).
+    for msg in &db.messages {
+        if (msg.ty == ACTIVE_START || msg.ty == ACTIVE_END) && !db.actors.contains_key(&msg.from) {
+            return Err(SeqParseError {
+                message: format!("activation of undeclared participant {:?}", msg.from),
+            });
+        }
+    }
     Ok(db)
 }
 
 /// Strips a leading keyword (case-insensitive) followed by whitespace.
 fn strip_keyword<'a>(line: &'a str, kw: &str) -> Option<&'a str> {
     if line.len() > kw.len()
-        && line[..kw.len()].eq_ignore_ascii_case(kw)
+        && line
+            .get(..kw.len())
+            .is_some_and(|p| p.eq_ignore_ascii_case(kw))
         && line.as_bytes()[kw.len()].is_ascii_whitespace()
     {
         Some(&line[kw.len() + 1..])

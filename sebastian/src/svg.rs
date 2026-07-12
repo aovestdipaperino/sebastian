@@ -10,6 +10,9 @@ pub fn js_num(n: f64) -> String {
     if n.is_nan() {
         return "NaN".to_owned();
     }
+    if n.is_infinite() {
+        return if n > 0.0 { "Infinity" } else { "-Infinity" }.to_owned();
+    }
     if n == 0.0 {
         // JS prints -0 as "0".
         return "0".to_owned();
@@ -38,8 +41,12 @@ pub fn js_num(n: f64) -> String {
 /// Expands `1.234e2`-style scientific notation to plain decimal (JS keeps
 /// plain notation for exponents in (-7, 21)).
 fn sci_to_plain(s: &str) -> String {
-    let (mantissa, exp) = s.split_once('e').expect("scientific notation");
-    let exp: i32 = exp.parse().expect("exponent");
+    let Some((mantissa, exp)) = s.split_once('e') else {
+        return s.to_owned();
+    };
+    let Ok(exp) = exp.parse::<i32>() else {
+        return s.to_owned();
+    };
     if !(-7..21).contains(&exp) {
         return s.to_owned();
     }

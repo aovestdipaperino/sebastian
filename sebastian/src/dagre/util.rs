@@ -120,7 +120,10 @@ pub fn intersect_rect(rect: &NodeLabel, point: Point) -> Point {
 /// porting bug.
 #[must_use]
 pub fn build_layer_matrix(g: &LayoutGraph) -> Vec<Vec<String>> {
-    let max_rank = max_rank(g).expect("graph has ranked nodes");
+    // An empty graph has no ranked nodes and an empty layering.
+    let Some(max_rank) = max_rank(g) else {
+        return Vec::new();
+    };
     let len = usize::try_from(max_rank as i64 + 1).expect("non-negative max rank");
     let mut layering: Vec<Vec<Option<String>>> = vec![Vec::new(); len];
     for v in g.nodes() {

@@ -43,7 +43,11 @@ enum Relationship {
 
 /// Applies crossing-minimization and assigns an `order` to every node.
 pub fn order(g: &LayoutGraph, ids: &UniqueId) {
-    let max_rank = util::max_rank(g).expect("ranked graph") as i64;
+    // An empty diagram has no ranked nodes; nothing to order.
+    let Some(max_rank) = util::max_rank(g) else {
+        return;
+    };
+    let max_rank = max_rank as i64;
     let down_layer_graphs: Vec<LayerGraph> = (1..=max_rank)
         .map(|rank| build_layer_graph(g, rank, Relationship::InEdges, ids))
         .collect();
