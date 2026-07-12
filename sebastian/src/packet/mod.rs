@@ -226,7 +226,7 @@ fn parse(source: &str) -> Result<Db, PacketParseError> {
     Ok(Db { title, words })
 }
 
-fn draw_word(group: &crate::svg::Element, word: &[Block], row_number: usize) {
+fn draw_word(group: &crate::svg::Element, word: &[Block], row_number: usize, hand_drawn: bool) {
     let word_y = row_number as f64 * (ROW_HEIGHT + PADDING_Y) + PADDING_Y;
     for block in word {
         let block_x = (block.start % BITS_PER_ROW) as f64 * BIT_WIDTH + 1.0;
@@ -238,6 +238,18 @@ fn draw_word(group: &crate::svg::Element, word: &[Block], row_number: usize) {
         set_attr(&rect, "width", js_num(width));
         set_attr(&rect, "height", js_num(ROW_HEIGHT));
         set_attr(&rect, "class", "packetBlock");
+        if hand_drawn {
+            set_attr(&rect, "style", "stroke:none");
+            crate::render::handdrawn::hd_overlay_rect(
+                group,
+                block_x,
+                word_y,
+                width,
+                ROW_HEIGHT,
+                "",
+                "packetBlock",
+            );
+        }
 
         let label = append(group, "text");
         set_attr(&label, "x", js_num(block_x + width / 2.0));
@@ -284,6 +296,7 @@ fn draw_word(group: &crate::svg::Element, word: &[Block], row_number: usize) {
 /// Returns a [`PacketParseError`] when the source is not a valid packet diagram.
 pub fn render_packet(source: &str, id: &str) -> Result<String, PacketParseError> {
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
 
@@ -323,7 +336,7 @@ pub fn render_packet(source: &str, id: &str) -> Result<String, PacketParseError>
 
     for (row_number, word) in db.words.iter().enumerate() {
         let group = append(&svg, "g");
-        draw_word(&group, word, row_number);
+        draw_word(&group, word, row_number, hand_drawn);
     }
 
     let title = append(&svg, "text");

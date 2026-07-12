@@ -159,6 +159,14 @@ fn item_label(
 pub fn render_kanban(source: &str, id: &str) -> Result<String, KanbanParseError> {
     let config = crate::render::config::detect_init(source);
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
+    let hand_drawn = config.is_hand_drawn();
+    let tv = |k: &str, dflt: &str| -> String {
+        theme_vars
+            .get(k)
+            .and_then(|v| v.as_str())
+            .unwrap_or(dflt)
+            .to_owned()
+    };
     let measurer = TextMeasurer::new();
     let sections = parse(source)?;
 
@@ -196,12 +204,14 @@ pub fn render_kanban(source: &str, id: &str) -> Result<String, KanbanParseError>
     // Pass 1: draw section clusters (rect height is a placeholder for now).
     let mut section_x: Vec<f64> = Vec::new();
     let mut section_rects: Vec<Element> = Vec::new();
+    let mut section_gs: Vec<Element> = Vec::new();
     let mut max_label_height = 25.0f64;
     for (idx, section) in sections.iter().enumerate() {
         let cnt = (idx + 1) as f64;
         let x = WIDTH * cnt + (cnt - 1.0) * PADDING / 2.0;
         section_x.push(x);
         let g = append(&sections_g, "g");
+        section_gs.push(g.clone());
         set_attr(
             &g,
             "class",
@@ -310,6 +320,18 @@ pub fn render_kanban(source: &str, id: &str) -> Result<String, KanbanParseError>
             set_attr(&rect, "y", js_num(-total_height / 2.0));
             set_attr(&rect, "width", js_num(total_width));
             set_attr(&rect, "height", js_num(total_height));
+            if hand_drawn {
+                set_attr(&rect, "style", "stroke:none");
+                crate::render::handdrawn::hd_overlay_rect(
+                    &item_g,
+                    -total_width / 2.0,
+                    -total_height / 2.0,
+                    total_width,
+                    total_height,
+                    &tv("nodeBorder", "#9370DB"),
+                    "",
+                );
+            }
             // position
             let item_y = y + total_height / 2.0;
             set_attr(
@@ -328,6 +350,18 @@ pub fn render_kanban(source: &str, id: &str) -> Result<String, KanbanParseError>
         // finalize section rect height
         let height = (y - top + 3.0 * PADDING).max(50.0) + (max_label_height - 25.0);
         set_attr(&section_rects[idx], "height", js_num(height));
+        if hand_drawn {
+            set_attr(&section_rects[idx], "style", "stroke:none");
+            crate::render::handdrawn::hd_overlay_rect(
+                &section_gs[idx],
+                x - WIDTH / 2.0,
+                -WIDTH * 3.0 / 2.0,
+                WIDTH,
+                height,
+                &tv(&format!("cScale{}", idx % 12), "#9370DB"),
+                "",
+            );
+        }
         acc(x - WIDTH / 2.0, -WIDTH * 3.0 / 2.0, WIDTH, height);
     }
 

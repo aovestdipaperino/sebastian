@@ -451,6 +451,7 @@ fn value_format(value: f64) -> String {
 /// Returns [`TreemapParseError`] when the source is not a valid treemap.
 pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseError> {
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let tv = |k: &str| crate::render::themes::get(&theme_vars, k);
 
@@ -569,6 +570,20 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
         set_attr(&sr, "stroke", color_peer.get(&name));
         set_attr(&sr, "stroke-width", "2");
         set_attr(&sr, "stroke-opacity", "0.4");
+        if hand_drawn && !is_root {
+            set_attr(&sr, "style", "stroke:none");
+            let ol = crate::render::handdrawn::hd_overlay_rect(
+                &sec,
+                0.0,
+                0.0,
+                nw,
+                nh,
+                &color_peer.get(&name),
+                "",
+            );
+            set_attr(&ol, "stroke-width", "2");
+            set_attr(&ol, "stroke-opacity", "0.4");
+        }
         set_attr(
             &sr,
             "style",
@@ -653,6 +668,10 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
         set_attr(&rect, "style", "");
         set_attr(&rect, "fill-opacity", "0.3");
         set_attr(&rect, "stroke", &fill);
+        if hand_drawn {
+            set_attr(&rect, "style", "stroke:none");
+            crate::render::handdrawn::hd_overlay_rect(&cell, 0.0, 0.0, nw, nh, &fill, "");
+        }
         set_attr(&rect, "stroke-width", "3");
         let cp = append(&cell, "clipPath");
         set_attr(&cp, "id", format!("clip-{id}-{i}"));

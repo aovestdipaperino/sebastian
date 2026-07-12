@@ -191,11 +191,22 @@ Select it with an init directive — `%%{init: {'htmlLabels': false,
 
 ## Hand-drawn look (`look: handDrawn`)
 
-`%%{init: {'look': 'handDrawn'}}%%` turns on an Excalidraw-style look:
-flowchart node shapes (rectangles, rounded rectangles, diamonds, circles)
-and edges are drawn with sketchy, double-stroked outlines, and labels switch
-to a handwritten font stack (`"Comic Sans MS", "Chalkboard SE", "Bradley
-Hand", cursive`).
+`%%{init: {'look': 'handDrawn'}}%%` turns on an Excalidraw-style look.
+The handwritten font stack (`"Comic Sans MS", "Chalkboard SE", "Bradley
+Hand", cursive`) applies to labels in **every** diagram type — it is
+injected once at the `render_diagram` boundary, covering both HTML and raw
+SVG text labels. Sketchy, double-stroked outlines are drawn for:
+
+- **flowchart, stateDiagram, classDiagram** — node shapes and edges (the
+  shared unified pipeline);
+- **sequenceDiagram** — actor/note/loop boxes and message lines;
+- **timeline, journey, gantt, kanban, packet, quadrant, xychart, treemap,
+  gitGraph** — their primary boxes, bars, cards and commit bullets get a
+  wobbly outline over the crisp CSS-styled fill.
+
+Types whose classic look is already rough (erDiagram, requirement) or that
+are dominated by curves (pie, sankey, radar) keep their shapes and get the
+handwritten font only.
 
 Unlike the classic look, this is an **opt-in stylization, not byte-exact**.
 Upstream mermaid draws hand-drawn shapes with rough.js seeded from

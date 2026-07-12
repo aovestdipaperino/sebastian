@@ -200,6 +200,7 @@ fn draw_node(
     node_count: &mut usize,
     diagram_id: &str,
     measurer: &TextMeasurer,
+    hand_drawn: bool,
 ) -> NodeOut {
     let section = (full_section % 12) - 1;
     let node_elem = append(wrapper, "g");
@@ -258,12 +259,49 @@ fn draw_node(
             js_num(height - rd)
         ),
     );
-    let line = append(&bkg_elem, "line");
-    set_attr(&line, "class", format!("node-line-{section}"));
-    set_attr(&line, "x1", "0");
-    set_attr(&line, "y1", js_num(height));
-    set_attr(&line, "x2", js_num(width));
-    set_attr(&line, "y2", js_num(height));
+    // HAND-DRAWN EXTENSION: crisp fill stays (CSS-styled), a wobbly outline
+    // goes on top and the box's own stroke is silenced.
+    if hand_drawn {
+        set_attr(&path, "style", "stroke:none");
+        let outline = append(&bkg_elem, "path");
+        set_attr(
+            &outline,
+            "d",
+            crate::render::handdrawn::hd_rect_outline_d(0.0, 0.0, width, height),
+        );
+        // The node-bkg class has fill but no stroke, so the sketchy border
+        // needs an explicit one.
+        set_attr(&outline, "stroke", "#666");
+        set_attr(&outline, "style", "fill:none");
+    }
+    if hand_drawn {
+        use crate::dagre::types::Point;
+        let pts = [
+            Point { x: 0.0, y: height },
+            Point {
+                x: width,
+                y: height,
+            },
+        ];
+        let rough_line = append(&bkg_elem, "path");
+        set_attr(&rough_line, "class", format!("node-line-{section}"));
+        set_attr(
+            &rough_line,
+            "d",
+            crate::render::handdrawn::hd_edge_d(
+                &pts,
+                crate::render::handdrawn::seed_from(width, height),
+            ),
+        );
+        set_attr(&rough_line, "style", "fill:none");
+    } else {
+        let line = append(&bkg_elem, "line");
+        set_attr(&line, "class", format!("node-line-{section}"));
+        set_attr(&line, "x1", "0");
+        set_attr(&line, "y1", js_num(height));
+        set_attr(&line, "x2", js_num(width));
+        set_attr(&line, "y2", js_num(height));
+    }
 
     NodeOut { height }
 }
@@ -283,6 +321,7 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
     let db = parse(source)?;
     let measurer = TextMeasurer::new();
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
 
     let svg = new_element("svg");
@@ -363,6 +402,7 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
                 &mut node_count,
                 id,
                 &measurer,
+                hand_drawn,
             );
             let _ = node;
             set_attr(
@@ -384,6 +424,7 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
                     id,
                     &measurer,
                     &mut node_count,
+                    hand_drawn,
                 );
             }
             #[allow(clippy::cast_precision_loss)]
@@ -406,6 +447,7 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
             id,
             &measurer,
             &mut node_count,
+            hand_drawn,
         );
     }
 
@@ -497,6 +539,7 @@ fn draw_tasks(
     diagram_id: &str,
     measurer: &TextMeasurer,
     node_count: &mut usize,
+    hand_drawn: bool,
 ) {
     let mut master_x = master_x_start;
     let mut section_color = section_color_start;
@@ -512,6 +555,7 @@ fn draw_tasks(
             node_count,
             diagram_id,
             measurer,
+            hand_drawn,
         );
         set_attr(
             &task_wrapper,
@@ -533,6 +577,7 @@ fn draw_tasks(
                 diagram_id,
                 measurer,
                 node_count,
+                hand_drawn,
             );
             let line = append(&line_wrapper, "line");
             set_attr(&line, "x1", js_num(master_x + 190.0 / 2.0));
@@ -567,6 +612,7 @@ fn draw_events(
     diagram_id: &str,
     measurer: &TextMeasurer,
     node_count: &mut usize,
+    hand_drawn: bool,
 ) -> f64 {
     let mut master_y = master_y_in + 100.0;
     let mut max_event_height = 0.0;
@@ -582,6 +628,7 @@ fn draw_events(
             node_count,
             diagram_id,
             measurer,
+            hand_drawn,
         );
         max_event_height += node.height;
         set_attr(

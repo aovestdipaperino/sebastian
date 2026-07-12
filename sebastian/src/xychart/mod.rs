@@ -666,6 +666,7 @@ impl Axis {
 #[allow(clippy::too_many_lines)]
 pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
     let measurer = XyMeasurer::new();
@@ -867,6 +868,17 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
                     set_attr(&rect, "fill", plot.color.clone());
                     set_attr(&rect, "stroke", plot.color.clone());
                     set_attr(&rect, "stroke-width", "0");
+                    if hand_drawn {
+                        crate::render::handdrawn::hd_overlay_rect(
+                            &g,
+                            x - half,
+                            y,
+                            bar_width,
+                            plot_y + chart_height - y,
+                            &plot.color,
+                            "",
+                        );
+                    }
                 }
             }
             PlotKind::Line => {

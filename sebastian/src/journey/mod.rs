@@ -170,6 +170,7 @@ impl Bounds {
 #[allow(clippy::too_many_lines)]
 pub fn render_journey(source: &str, id: &str) -> Result<String, JourneyParseError> {
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
     let measurer = crate::text::TextMeasurer::new();
@@ -343,6 +344,10 @@ pub fn render_journey(source: &str, id: &str) -> Result<String, JourneyParseErro
                     "class",
                     format!("journey-section section-type-{num}"),
                 );
+                if hand_drawn {
+                    set_attr(&rect, "style", "stroke:none");
+                    crate::render::handdrawn::hd_overlay_rect(&g, sx, 50.0, sw, HEIGHT, "#666", "");
+                }
                 draw_label(
                     &g,
                     &task.section,
@@ -442,6 +447,10 @@ pub fn render_journey(source: &str, id: &str) -> Result<String, JourneyParseErro
             set_attr(&rect, "rx", "3");
             set_attr(&rect, "ry", "3");
             set_attr(&rect, "class", format!("task task-type-{num}"));
+            if hand_drawn {
+                set_attr(&rect, "style", "stroke:none");
+                crate::render::handdrawn::hd_overlay_rect(&g, x, y, WIDTH, HEIGHT, "#666", "");
+            }
 
             let mut x_pos = x + 14.0;
             for person in &task.people {

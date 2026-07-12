@@ -159,6 +159,7 @@ struct TextItem {
 #[allow(clippy::too_many_lines)]
 pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseError> {
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
     let v = |k: &str| crate::render::themes::get(&theme_vars, k);
@@ -386,6 +387,9 @@ pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseEr
         set_attr(&rect, "width", js_num(q_half_w));
         set_attr(&rect, "height", js_num(q_half_h));
         set_attr(&rect, "fill", v(fill));
+        if hand_drawn {
+            crate::render::handdrawn::hd_overlay_rect(&g, qx, qy, q_half_w, q_half_h, &v(fill), "");
+        }
         let tx = qx + q_half_w / 2.0;
         let (ty, hanging) = if has_points {
             (qy + QUADRANT_TEXT_TOP_PADDING, true)

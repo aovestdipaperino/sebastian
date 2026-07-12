@@ -933,6 +933,7 @@ fn collapse_ws(s: &str) -> String {
 #[allow(clippy::too_many_lines)]
 pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
     let measurer = crate::text::TextMeasurer::new();
@@ -1227,6 +1228,20 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
                 task_class = format!(" milestone {task_class}");
             }
             set_attr(&rect, "class", format!("task{task_class}{sn} "));
+            if hand_drawn && !t.milestone {
+                set_attr(&rect, "style", "stroke:none");
+                let ol = crate::render::handdrawn::hd_overlay_rect(
+                    &g,
+                    x,
+                    y,
+                    rex - sx,
+                    BAR_HEIGHT,
+                    "",
+                    "",
+                );
+                set_attr(&ol, "class", format!("task{task_class}{sn} "));
+                set_attr(&ol, "style", "fill:none");
+            }
         }
 
         for t in &sorted {

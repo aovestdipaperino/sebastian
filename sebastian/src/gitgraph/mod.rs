@@ -393,6 +393,7 @@ impl Acc {
 #[allow(clippy::too_many_lines)]
 pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> {
     let config = crate::render::config::detect_init(source);
+    let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
     let measurer = crate::text::TextMeasurer::new();
@@ -1004,6 +1005,17 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                     "class",
                     format!("commit {} commit{color_idx}", c.id),
                 );
+                if hand_drawn {
+                    set_attr(&circle, "style", "stroke:none");
+                    let ol = append(&g_bullets, "path");
+                    set_attr(
+                        &ol,
+                        "d",
+                        crate::render::handdrawn::hd_circle_outline_d(x, y, 10.0),
+                    );
+                    set_attr(&ol, "class", format!("commit {} commit{color_idx}", c.id));
+                    set_attr(&ol, "style", "fill:none");
+                }
                 if symbol == MERGE {
                     let c2 = append(&g_bullets, "circle");
                     set_attr(&c2, "cx", js_num(x));

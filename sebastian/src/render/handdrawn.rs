@@ -154,6 +154,102 @@ pub fn hd_polygon(
     g
 }
 
+/// [`hd_polygon`] with normal append order (for renderers that rely on
+/// document draw order rather than prepending under labels).
+#[allow(clippy::too_many_arguments)]
+pub fn hd_polygon_append(
+    parent: &Element,
+    points: &[Point],
+    fill: &str,
+    stroke: &str,
+    stroke_width: &str,
+    style: &str,
+    seed: u32,
+) -> Element {
+    let g = append(parent, "g");
+    let fill_el = append(&g, "path");
+    set_attr(&fill_el, "d", fill_path_d(points));
+    set_attr(&fill_el, "stroke", "none");
+    set_attr(&fill_el, "fill", fill);
+    if !style.is_empty() {
+        set_attr(&fill_el, "style", style);
+    }
+    let stroke_el = append(&g, "path");
+    set_attr(&stroke_el, "d", stroke_path_d(points, true, 2, seed));
+    set_attr(&stroke_el, "stroke", stroke);
+    set_attr(&stroke_el, "stroke-width", stroke_width);
+    set_attr(&stroke_el, "fill", "none");
+    if !style.is_empty() {
+        set_attr(&stroke_el, "style", style);
+    }
+    g
+}
+
+/// Sketchy axis-aligned rectangle at absolute coordinates, appended in draw
+/// order. The workhorse for hand-drawn boxes in the self-contained renderers
+/// (timeline, journey, gantt, kanban, …).
+#[allow(clippy::too_many_arguments)]
+pub fn hd_rect(
+    parent: &Element,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    fill: &str,
+    stroke: &str,
+    stroke_width: &str,
+    style: &str,
+) -> Element {
+    let pts = [
+        Point { x, y },
+        Point { x: x + w, y },
+        Point { x: x + w, y: y + h },
+        Point { x, y: y + h },
+    ];
+    hd_polygon_append(
+        parent,
+        &pts,
+        fill,
+        stroke,
+        stroke_width,
+        style,
+        seed_from(x, y),
+    )
+}
+
+/// Sketchy circle at absolute coordinates, appended in draw order.
+#[allow(clippy::too_many_arguments)]
+pub fn hd_circle(
+    parent: &Element,
+    cx: f64,
+    cy: f64,
+    r: f64,
+    fill: &str,
+    stroke: &str,
+    stroke_width: &str,
+    style: &str,
+) -> Element {
+    let steps = 24;
+    let mut points = Vec::with_capacity(steps);
+    for i in 0..steps {
+        #[allow(clippy::cast_precision_loss)]
+        let angle = std::f64::consts::TAU * (i as f64) / (steps as f64);
+        points.push(Point {
+            x: cx + r * crate::mathx::cos(angle),
+            y: cy + r * crate::mathx::sin(angle),
+        });
+    }
+    hd_polygon_append(
+        parent,
+        &points,
+        fill,
+        stroke,
+        stroke_width,
+        style,
+        seed_from(cx, cy),
+    )
+}
+
 /// Ellipse approximated by a wobbly polygon through sampled boundary points.
 #[allow(clippy::too_many_arguments)]
 pub fn hd_ellipse(
@@ -183,4 +279,61 @@ pub fn hd_ellipse(
 #[must_use]
 pub fn hd_edge_d(points: &[Point], seed: u32) -> String {
     stroke_path_d(points, false, 1, seed)
+}
+
+/// Path data for a sketchy rectangle outline (double-stroked, closed). Used
+/// to overlay a wobbly border on an existing crisp CSS-styled shape: keep the
+/// original element for its fill, silence its own stroke with an inline
+/// `stroke:none`, and give the overlay `fill:none`.
+#[must_use]
+pub fn hd_rect_outline_d(x: f64, y: f64, w: f64, h: f64) -> String {
+    let pts = [
+        Point { x, y },
+        Point { x: x + w, y },
+        Point { x: x + w, y: y + h },
+        Point { x, y: y + h },
+    ];
+    stroke_path_d(&pts, true, 2, seed_from(x, y))
+}
+
+/// Appends a sketchy rectangle-outline `<path>` over an existing crisp shape.
+/// `stroke` is set as an attribute when non-empty; `class` likewise. The
+/// overlay always carries `fill:none` inline so a class-provided fill can't
+/// paint the wobble strokes. Callers should silence the underlying shape's
+/// own stroke (inline `stroke:none`).
+pub fn hd_overlay_rect(
+    parent: &Element,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    stroke: &str,
+    class: &str,
+) -> Element {
+    let p = append(parent, "path");
+    set_attr(&p, "d", hd_rect_outline_d(x, y, w, h));
+    if !class.is_empty() {
+        set_attr(&p, "class", class);
+    }
+    if !stroke.is_empty() {
+        set_attr(&p, "stroke", stroke);
+    }
+    set_attr(&p, "style", "fill:none");
+    p
+}
+
+/// Path data for a sketchy circle outline (see [`hd_rect_outline_d`]).
+#[must_use]
+pub fn hd_circle_outline_d(cx: f64, cy: f64, r: f64) -> String {
+    let steps = 24;
+    let mut points = Vec::with_capacity(steps);
+    for i in 0..steps {
+        #[allow(clippy::cast_precision_loss)]
+        let angle = std::f64::consts::TAU * (i as f64) / (steps as f64);
+        points.push(Point {
+            x: cx + r * crate::mathx::cos(angle),
+            y: cy + r * crate::mathx::sin(angle),
+        });
+    }
+    stroke_path_d(&points, true, 2, seed_from(cx, cy))
 }

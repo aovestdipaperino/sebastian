@@ -142,6 +142,20 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
 }
 
 fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let svg = render_by_type(source, id)?;
+    // HAND-DRAWN EXTENSION: the handwritten label font applies to every
+    // diagram type, so it is injected once here instead of in each renderer.
+    if render::config::detect_init(source).is_hand_drawn() {
+        let css = render::css::hand_drawn_font_css(id);
+        // Flowchart injects the override in its own stylesheet already.
+        if !svg.contains(&css) {
+            return Ok(svg.replacen("</style>", &format!("{css}</style>"), 1));
+        }
+    }
+    Ok(svg)
+}
+
+fn render_by_type(source: &str, id: &str) -> Result<String, Box<dyn std::error::Error>> {
     match detect_diagram_type(source) {
         "state" => render_state(source, id).map_err(Into::into),
         "pie" => crate::pie::render_pie(source, id).map_err(Into::into),
