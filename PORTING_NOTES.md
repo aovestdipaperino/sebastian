@@ -5,11 +5,13 @@ Working notes for the pixel-perfect port.
 ## Reference toolchain (rebuild on demand)
 
 The reference SVGs are produced by mermaid-cli (`mmdc`) driving **mermaid
-11.15.0**. The harness lives under a scratch dir (historically
-`/tmp/mermaid-ref/`) and is wiped between machines/reboots — rebuild it with:
+11.15.0**. The whole toolchain is rebuilt by `scripts/setup-harness.sh`
+(pinned mmdc, sparse mermaid source clone, Chrome probe template, optional
+ELK bundle) — see **docs/HARNESS.md**. References are regenerated with
+`scripts/regen-refs.sh`. The manual equivalent of the mmdc install:
 
 ```
-mkdir -p <scratch>/mermaid-ref/harness && cd $_
+mkdir -p harness/node && cd $_
 npm init -y && npm install @mermaid-js/mermaid-cli@11.12.0 mermaid@11.15.0
 ```
 
