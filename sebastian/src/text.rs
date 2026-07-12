@@ -42,6 +42,36 @@ const BOLD_CANDIDATES: &[&str] = &[
     "C:/Windows/Fonts/trebucbd.ttf",
 ];
 
+/// Excalifont (SIL OFL, from the Excalidraw project): the `look: handDrawn`
+/// label font, embedded so hand-drawn output is identical on every host.
+/// It is both inlined as a `@font-face` in the SVG (see
+/// `hand_drawn_font_css`) and used here for layout metrics, so node sizes
+/// match the rendered glyphs exactly. Excalifont has no bold face; bold
+/// runs measure with the same face (renderers synthesize bold).
+pub(crate) const EXCALIFONT: &[u8] = include_bytes!("../fonts/Excalifont-Regular.ttf");
+
+/// Excalifont bytes, honoring a host-registered override.
+fn hand_drawn_font() -> Vec<u8> {
+    read_font("Excalifont-Regular.ttf").unwrap_or_else(|| EXCALIFONT.to_vec())
+}
+
+thread_local! {
+    static HAND_DRAWN: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Switches text measurement to the hand-drawn (`look: handDrawn`) label
+/// font for measurers constructed afterwards on this thread. Set at the
+/// `render_diagram` boundary; individual renderers don't need to opt in.
+pub fn set_hand_drawn(on: bool) {
+    HAND_DRAWN.with(|h| h.set(on));
+}
+
+/// Whether hand-drawn measurement is active on this thread.
+#[must_use]
+pub fn is_hand_drawn() -> bool {
+    HAND_DRAWN.with(std::cell::Cell::get)
+}
+
 const TIMES_CANDIDATES: &[&str] = &[
     "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
     "/Library/Fonts/Times New Roman.ttf",
@@ -179,10 +209,15 @@ impl TextMeasurer {
     /// the embedded Cabin face (output then stops being byte-exact vs mmdc).
     #[must_use]
     pub fn new() -> Self {
-        let data = FONT_CANDIDATES
-            .iter()
-            .find_map(|p| read_font(p))
-            .unwrap_or_else(|| CABIN_FALLBACK.to_vec());
+        let hand_drawn = is_hand_drawn();
+        let data = if hand_drawn {
+            hand_drawn_font()
+        } else {
+            FONT_CANDIDATES
+                .iter()
+                .find_map(|p| read_font(p))
+                .unwrap_or_else(|| CABIN_FALLBACK.to_vec())
+        };
         let face = Face::parse(&data, 0).expect("valid font");
         let units_per_em = f64::from(face.units_per_em());
         let fallbacks = FALLBACK_FONTS
@@ -192,10 +227,14 @@ impl TextMeasurer {
         let emoji_font = read_font(APPLE_COLOR_EMOJI);
         let helvetica = read_font(HELVETICA);
         let apple_symbols = read_font(APPLE_SYMBOLS);
-        let bold_data = BOLD_CANDIDATES
-            .iter()
-            .find_map(|p| read_font(p))
-            .unwrap_or_default();
+        let bold_data = if hand_drawn {
+            data.clone()
+        } else {
+            BOLD_CANDIDATES
+                .iter()
+                .find_map(|p| read_font(p))
+                .unwrap_or_default()
+        };
         Self {
             inner: Rc::new(MeasurerInner {
                 data,
@@ -272,8 +311,19 @@ impl TextMeasurer {
     pub fn ink_height(&self, text: &str, font_size: f64) -> f64 {
         let face = self.face();
         let upem = self.inner.units_per_em;
-        let asc = (1923.0 * font_size / 2048.0).round();
-        let desc = (455.0 * font_size / 2048.0).round();
+        // Trebuchet's hhea ascent/descent; in hand-drawn mode the face's own
+        // metrics apply instead (the constants are Trebuchet-specific).
+        let (asc, desc) = if is_hand_drawn() {
+            (
+                (f64::from(face.ascender()) * font_size / upem).round(),
+                (f64::from(-i32::from(face.descender())) * font_size / upem).round(),
+            )
+        } else {
+            (
+                (1923.0 * font_size / 2048.0).round(),
+                (455.0 * font_size / 2048.0).round(),
+            )
+        };
         let mut top = -asc;
         let mut bottom = desc;
         for ch in text.chars() {
@@ -454,10 +504,14 @@ impl SeqMeasurer {
     /// to the embedded Tinos face (Times-metric-compatible, not byte-exact).
     #[must_use]
     pub fn new() -> Self {
-        let data = TIMES_CANDIDATES
-            .iter()
-            .find_map(|p| read_font(p))
-            .unwrap_or_else(|| TINOS_FALLBACK.to_vec());
+        let data = if is_hand_drawn() {
+            hand_drawn_font()
+        } else {
+            TIMES_CANDIDATES
+                .iter()
+                .find_map(|p| read_font(p))
+                .unwrap_or_else(|| TINOS_FALLBACK.to_vec())
+        };
         Self { data }
     }
 
@@ -627,10 +681,14 @@ impl TextMeasurer {
     /// Trebuchet MS Bold is unavailable.
     #[must_use]
     pub fn bold_metrics(&self, text: &str, font_size: f64) -> (f64, f64, f64) {
-        let data = BOLD_CANDIDATES
-            .iter()
-            .find_map(|p| read_font(p))
-            .unwrap_or_else(|| CABIN_FALLBACK.to_vec());
+        let data = if is_hand_drawn() {
+            hand_drawn_font()
+        } else {
+            BOLD_CANDIDATES
+                .iter()
+                .find_map(|p| read_font(p))
+                .unwrap_or_else(|| CABIN_FALLBACK.to_vec())
+        };
         let face = Face::parse(&data, 0).expect("valid font");
         let upem = f64::from(face.units_per_em());
         let asc = (f64::from(face.ascender()) * font_size / upem).round();

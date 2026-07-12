@@ -192,10 +192,15 @@ Select it with an init directive — `%%{init: {'htmlLabels': false,
 ## Hand-drawn look (`look: handDrawn`)
 
 `%%{init: {'look': 'handDrawn'}}%%` turns on an Excalidraw-style look.
-The handwritten font stack (`"Comic Sans MS", "Chalkboard SE", "Bradley
-Hand", cursive`) applies to labels in **every** diagram type — it is
-injected once at the `render_diagram` boundary, covering both HTML and raw
-SVG text labels. Sketchy, double-stroked outlines are drawn for:
+Labels in **every** diagram type render in
+[Excalifont](https://plus.excalidraw.com/excalifont) — Excalidraw's own
+handwriting font (SIL OFL, successor to Virgil) — which is embedded in the
+crate and inlined into the SVG as a `@font-face` data URI (~256 KB), so the
+output looks the same on every machine with no font installed. The stack
+falls back to `"Comic Sans MS", "Chalkboard SE", "Bradley Hand", cursive`.
+The override is injected once at the `render_diagram` boundary, covering
+both HTML and raw SVG text labels. Sketchy, double-stroked outlines are
+drawn for:
 
 - **flowchart, stateDiagram, classDiagram** — node shapes and edges (the
   shared unified pipeline);
@@ -212,10 +217,11 @@ Unlike the classic look, this is an **opt-in stylization, not byte-exact**.
 Upstream mermaid draws hand-drawn shapes with rough.js seeded from
 `Math.random`, so two `mmdc` runs of the same diagram differ. sebastian
 instead uses a deterministic seeded PRNG (a port of rough.js's `mulberry32`),
-so its hand-drawn output is stable run to run. Layout still uses the
-Trebuchet metrics, so node sizes match the classic look while the rendered
-font is handwritten (sizes are therefore approximate). Pairs naturally with
-`htmlLabels: false` for offline rasterization.
+so its hand-drawn output is stable run to run. Text is measured with the
+Excalifont metrics themselves, so node and label boxes fit the handwritten
+glyphs exactly (classic-look renders are untouched and stay byte-exact).
+Pairs naturally with `htmlLabels: false` for offline rasterization — the
+rasterizer registers the embedded face, so PNGs come out in Excalifont too.
 
 ### Sequence diagrams (sebastian extension)
 

@@ -85,8 +85,10 @@ fn hsl_to_rgb(value: &str) -> Option<String> {
 }
 
 /// Font-family override applied to every label in `look: handDrawn` mode, for
-/// the handwritten/Excalidraw appearance. Uses a handwritten system-font stack
-/// (Trebuchet metrics still drive layout, so node sizes are approximate).
+/// the handwritten/Excalidraw appearance. Inlines the embedded Excalifont face
+/// as a `@font-face` data URI so the SVG renders identically everywhere, with
+/// handwritten system fonts as fallback; layout metrics come from the same
+/// font via `text::set_hand_drawn`, so node sizes match the rendered glyphs.
 ///
 /// Covers both HTML labels (`span`/`p` inside foreignObjects) and raw SVG
 /// `<text>`/`<tspan>` labels (sequence, timeline, gantt, pie, …). Injected
@@ -94,9 +96,15 @@ fn hsl_to_rgb(value: &str) -> Option<String> {
 /// don't need to opt in.
 #[must_use]
 pub fn hand_drawn_font_css(id: &str) -> String {
-    let font = "\"Comic Sans MS\", \"Chalkboard SE\", \"Bradley Hand\", cursive";
+    let font = "\"Excalifont\", \"Comic Sans MS\", \"Chalkboard SE\", \"Bradley Hand\", cursive";
+    let data = super::edges::base64_encode(crate::text::EXCALIFONT);
+    // The doubled id out-specifies every id+class theme rule (e.g. pie's
+    // `#id .slice`) in usvg's CSS engine, which ignores `!important`;
+    // browsers resolve it identically.
+    let i = format!("#{id}#{id}");
     format!(
-        "#{id} .nodeLabel,#{id} .edgeLabel,#{id} .label text,#{id} span,#{id} p,#{id} text,#{id} tspan{{font-family:{font}!important;}}"
+        "@font-face{{font-family:\"Excalifont\";src:url(data:font/ttf;base64,{data}) format(\"truetype\");}}\
+         {i} .nodeLabel,{i} .edgeLabel,{i} .label text,{i} span,{i} p,{i} text,{i} tspan{{font-family:{font}!important;}}"
     )
 }
 

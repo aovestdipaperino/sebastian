@@ -86,12 +86,17 @@ impl Default for RasterOptions {
 /// would — the basis for pixel-perfect comparison.
 fn font_options(fonts: FontSource) -> usvg::Options<'static> {
     let mut fontdb = usvg::fontdb::Database::new();
+    // usvg does not process @font-face rules, so the Excalifont face inlined
+    // in hand-drawn SVGs must be registered here to rasterize.
+    fontdb.load_font_data(crate::text::EXCALIFONT.to_vec());
     match fonts {
         FontSource::Embedded => {
             fontdb.load_font_data(CABIN_FONT.to_vec());
+            // The generic families map to Cabin, not the Excalifont face
+            // registered above (which is only reached by name).
             let family = fontdb
                 .faces()
-                .next()
+                .find(|f| f.families.iter().any(|(name, _)| name.contains("Cabin")))
                 .and_then(|f| f.families.first().map(|(name, _)| name.clone()))
                 .unwrap_or_else(|| "Cabin".to_string());
             fontdb.set_sans_serif_family(&family);

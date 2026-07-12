@@ -142,10 +142,23 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
 }
 
 fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let svg = render_by_type(source, id)?;
     // HAND-DRAWN EXTENSION: the handwritten label font applies to every
     // diagram type, so it is injected once here instead of in each renderer.
-    if render::config::detect_init(source).is_hand_drawn() {
+    // Text metrics must come from the same font, so measurement is switched
+    // for the whole render (reset even on error/panic-unwind paths).
+    let hand_drawn = render::config::detect_init(source).is_hand_drawn();
+    struct ResetHandDrawn;
+    impl Drop for ResetHandDrawn {
+        fn drop(&mut self) {
+            crate::text::set_hand_drawn(false);
+        }
+    }
+    let _reset = hand_drawn.then(|| {
+        crate::text::set_hand_drawn(true);
+        ResetHandDrawn
+    });
+    let svg = render_by_type(source, id)?;
+    if hand_drawn {
         let css = render::css::hand_drawn_font_css(id);
         // Flowchart injects the override in its own stylesheet already.
         if !svg.contains(&css) {

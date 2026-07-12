@@ -6,6 +6,31 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-12
+
+### Added
+- **Excalifont for the hand-drawn look.** `look: handDrawn` labels now
+  render in [Excalifont](https://plus.excalidraw.com/excalifont),
+  Excalidraw's own handwriting font (SIL OFL, notice in
+  `sebastian/fonts/Excalifont-OFL.txt`), replacing the Comic Sans /
+  Chalkboard / Bradley Hand system stack (kept as fallback). The face is
+  embedded in the crate and inlined into hand-drawn SVGs as a `@font-face`
+  data URI (~256 KB), so output is identical on machines with no
+  handwriting fonts installed. The PNG rasterizer registers the embedded
+  face too (usvg ignores `@font-face`).
+
+### Fixed
+- **Hand-drawn text metrics.** In hand-drawn mode, layout now measures text
+  with the same Excalifont face the labels render in — previously metrics
+  came from Trebuchet, so node/label boxes were sized for the wrong font.
+  Applies to all measurers (`TextMeasurer`, `SeqMeasurer`, bold runs) and
+  is reset at the `render_diagram` boundary, so classic-look output stays
+  byte-exact vs mmdc.
+- **Hand-drawn font override vs themed rules in PNGs.** The injected
+  font-family rule uses a doubled-id selector so it also wins in usvg's
+  CSS engine (which ignores `!important`) — pie/legend text in rasterized
+  hand-drawn diagrams previously kept the theme font.
+
 ## [0.3.0] — 2026-07-12
 
 ### Added
