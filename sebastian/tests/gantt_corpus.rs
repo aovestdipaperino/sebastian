@@ -22,6 +22,12 @@ fn mask_today(svg: &str) -> String {
 
 #[test]
 fn gantt_corpus() {
+    // The references were generated in America/Los_Angeles (CI pins TZ too);
+    // pin it here so local runs in any timezone compare equal. mktime behaves
+    // as if it calls tzset(), so setting the var before the first render is
+    // enough. SAFETY: nothing else reads the environment concurrently — this
+    // is the only test in the binary.
+    unsafe { std::env::set_var("TZ", "America/Los_Angeles") };
     let dir = format!("{}/tests/gantt_cases", env!("CARGO_MANIFEST_DIR"));
     let mut cases: Vec<String> = std::fs::read_dir(&dir)
         .expect("gantt_cases dir")

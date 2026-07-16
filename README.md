@@ -344,9 +344,7 @@ starting with `%%` or `#` are comments.
 
 ### Symbols
 
-Each symbol has its own accent colour and icon — see `SUPPORTED-SYMBOLS.png`
-(and `SUPPORTED-SYMBOLS-HANDDRAWN.png` for the hand-drawn look) for a
-rendering of all of them:
+Each symbol has its own accent colour and icon:
 
 | symbol | use for | symbol | use for |
 |--------|---------|--------|---------|
@@ -366,7 +364,13 @@ rendering of all of them:
 | `server` | server / host | `cache` | cache / fast path |
 | `file` | single file | `files` | set of files |
 
-`box` is also the fallback for unknown symbol names.
+`box` is also the fallback for unknown symbol names. One chart exercising
+every symbol and all four connection types (`SUPPORTED-SYMBOLS.png`;
+`SUPPORTED-SYMBOLS-HANDDRAWN.png` is the same chart in the hand-drawn look):
+
+<p align="center">
+  <img src="SUPPORTED-SYMBOLS.png" alt="all system_chart symbols and connection types" width="900">
+</p>
 
 ### Layout and looks
 
