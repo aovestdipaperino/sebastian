@@ -319,6 +319,9 @@ starting with `%%` or `#` are comments.
 
 1. **Header** — the first non-comment line must be `system_chart`.
 2. **Title** (optional) — `title My system` draws a centred heading.
+   A `legend` line (optional, off by default) draws a key of the connection
+   types the chart actually uses, placed in a free corner (the canvas grows
+   below the chart when every corner is occupied).
 3. **Nodes** — one per line, declared before any edge that uses them:
 
    ```
@@ -365,11 +368,12 @@ Each symbol has its own accent colour and icon:
 | `file` | single file | `files` | set of files |
 
 `box` is also the fallback for unknown symbol names. One chart exercising
-every symbol and all four connection types (`SUPPORTED-SYMBOLS.png`;
-`SUPPORTED-SYMBOLS-HANDDRAWN.png` is the same chart in the hand-drawn look):
+every symbol, all four connection types, and the `legend` option, in the
+hand-drawn look (`SUPPORTED-SYMBOLS-HANDDRAWN.png`; `SUPPORTED-SYMBOLS.png`
+is the same chart in the classic look):
 
 <p align="center">
-  <img src="SUPPORTED-SYMBOLS.png" alt="all system_chart symbols and connection types" width="900">
+  <img src="SUPPORTED-SYMBOLS-HANDDRAWN.png" alt="all system_chart symbols and connection types, hand-drawn" width="900">
 </p>
 
 ### Layout and looks

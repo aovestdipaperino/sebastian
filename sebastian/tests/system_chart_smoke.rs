@@ -71,6 +71,20 @@ fn system_chart_hand_drawn_sketches_boxes_and_edges() {
 }
 
 #[test]
+fn system_chart_legend_lists_only_used_connection_types() {
+    // Off by default.
+    let svg = render_diagram(SAMPLE, "my-svg").expect("renders");
+    assert!(!svg.contains("class=\"system-chart-legend\""));
+    // On: SAMPLE uses only --> edges, so one row ("call"), no "event" row.
+    let with_legend = SAMPLE.replacen("title", "legend\n  title", 1);
+    let svg = render_diagram(&with_legend, "my-svg").expect("renders");
+    assert!(svg.contains("class=\"system-chart-legend\""));
+    assert!(svg.contains(">call</text>"));
+    assert!(!svg.contains(">event</text>"));
+    assert!(!svg.contains(">association</text>"));
+}
+
+#[test]
 fn system_chart_rejects_undeclared_edge_endpoint() {
     let src = "system_chart\n  a: user \"Alice\"\n  a --> ghost\n";
     let err = render_diagram(src, "my-svg").expect_err("undeclared node");

@@ -6,6 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`system_chart` legend option.** A `legend` line (off by default) draws
+  a key of the connection types the chart actually uses, placed in a free
+  corner of the canvas (or below the chart when every corner is occupied).
+
+### Changed
+- `system_chart` node icons are 50% larger (26px → 39px) for prominence.
+
 ## [0.6.0] — 2026-07-16
 
 ### Added

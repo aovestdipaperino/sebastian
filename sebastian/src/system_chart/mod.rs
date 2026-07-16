@@ -47,10 +47,15 @@ const CHART_TITLE_H: f64 = 40.0;
 const PAD: f64 = 28.0;
 const NODE_GAP_X: f64 = 56.0;
 const RANK_GAP: f64 = 76.0;
-const ICON_AREA: f64 = 48.0;
-const ICON_SIZE: f64 = 26.0;
+const ICON_AREA: f64 = 66.0;
+const ICON_SIZE: f64 = 39.0;
 const MIN_NODE_W: f64 = 150.0;
 const EDGE_LABEL_FS: f64 = 13.0;
+const LEGEND_INK: &str = "#64748B";
+const LEGEND_FS: f64 = 12.0;
+const LEGEND_ROW_H: f64 = 22.0;
+const LEGEND_PAD: f64 = 12.0;
+const LEGEND_SAMPLE_W: f64 = 36.0;
 
 /// Every symbol kind: name, accent (stroke/icon) colour, box fill tint.
 const SYMBOLS: [(&str, &str, &str); 30] = [
@@ -137,6 +142,8 @@ struct Db {
     title: String,
     nodes: Vec<Node>,
     edges: Vec<EdgeDef>,
+    /// `legend` line present: draw a key of the connection types used.
+    legend: bool,
 }
 
 /// Pulls a leading double-quoted string off `s`, returning it and the rest.
@@ -166,6 +173,10 @@ fn parse(source: &str) -> Result<Db, SystemChartParseError> {
         }
         if let Some(rest) = line.strip_prefix("title ") {
             rest.trim().clone_into(&mut db.title);
+            continue;
+        }
+        if line == "legend" {
+            db.legend = true;
             continue;
         }
         let edge_op = [
@@ -374,6 +385,32 @@ pub fn render_system_chart(source: &str, id: &str) -> Result<String, SystemChart
             marker_colors.push(accent);
         }
     }
+    let legend_kinds: Vec<EdgeKind> = if db.legend {
+        [
+            EdgeKind::Call,
+            EdgeKind::Event,
+            EdgeKind::Message,
+            EdgeKind::Assoc,
+        ]
+        .into_iter()
+        .filter(|k| db.edges.iter().any(|e| e.kind == *k))
+        .collect()
+    } else {
+        Vec::new()
+    };
+    if legend_kinds.iter().any(|k| *k != EdgeKind::Assoc) {
+        let m = append(&defs, "marker");
+        set_attr(&m, "id", format!("{id}-arrow-legend"));
+        set_attr(&m, "viewBox", "0 0 10 10");
+        set_attr(&m, "refX", "9");
+        set_attr(&m, "refY", "5");
+        set_attr(&m, "markerWidth", "7");
+        set_attr(&m, "markerHeight", "7");
+        set_attr(&m, "orient", "auto-start-reverse");
+        let p = append(&m, "path");
+        set_attr(&p, "d", "M 0 0 L 10 5 L 0 10 z");
+        set_attr(&p, "fill", LEGEND_INK);
+    }
     for (k, color) in marker_colors.iter().enumerate() {
         let m = append(&defs, "marker");
         set_attr(&m, "id", format!("{id}-arrow-{k}"));
@@ -563,6 +600,21 @@ pub fn render_system_chart(source: &str, id: &str) -> Result<String, SystemChart
         }
     }
 
+    let mut total_h = total_h;
+    if !legend_kinds.is_empty() {
+        draw_legend(
+            &svg,
+            id,
+            &legend_kinds,
+            &placed,
+            total_w,
+            &mut total_h,
+            PAD + title_offset,
+            &measurer,
+            hand_drawn,
+        );
+    }
+
     set_attr(
         &svg,
         "viewBox",
@@ -582,6 +634,138 @@ pub fn render_system_chart(source: &str, id: &str) -> Result<String, SystemChart
     let mut out = String::new();
     serialize(&svg, &mut out);
     Ok(out)
+}
+
+fn legend_kind_label(kind: EdgeKind) -> &'static str {
+    match kind {
+        EdgeKind::Call => "call",
+        EdgeKind::Event => "event",
+        EdgeKind::Message => "message",
+        EdgeKind::Assoc => "association",
+    }
+}
+
+/// Draws a key of the connection types used, in a free corner of the chart
+/// (checked against the node boxes); when every corner is occupied the canvas
+/// grows and the legend goes below the last rank.
+#[allow(clippy::too_many_arguments)]
+fn draw_legend(
+    svg: &Element,
+    id: &str,
+    kinds: &[EdgeKind],
+    placed: &[Placed],
+    total_w: f64,
+    total_h: &mut f64,
+    content_top: f64,
+    measurer: &TextMeasurer,
+    hand_drawn: bool,
+) {
+    let label_w = kinds
+        .iter()
+        .map(|k| measurer.measure_width(legend_kind_label(*k), LEGEND_FS))
+        .fold(0.0, f64::max);
+    let w = LEGEND_PAD + LEGEND_SAMPLE_W + 10.0 + label_w + LEGEND_PAD;
+    let h = LEGEND_PAD * 2.0 + LEGEND_ROW_H * kinds.len() as f64 - 8.0;
+
+    let candidates = [
+        (PAD, content_top),
+        (total_w - PAD - w, content_top),
+        (PAD, *total_h - PAD - h),
+        (total_w - PAD - w, *total_h - PAD - h),
+    ];
+    let free = |x: f64, y: f64| {
+        placed.iter().all(|p| {
+            x + w + 12.0 < p.x || p.x + p.w + 12.0 < x || y + h + 12.0 < p.y || p.y + p.h + 12.0 < y
+        })
+    };
+    let (lx, ly) = candidates
+        .into_iter()
+        .find(|(x, y)| free(*x, *y))
+        .unwrap_or_else(|| {
+            // No free corner: grow the canvas and sit below the last rank.
+            let y = *total_h - PAD + 16.0;
+            *total_h = y + h + PAD;
+            (PAD, y)
+        });
+
+    let g = append(svg, "g");
+    set_attr(&g, "class", "system-chart-legend");
+    if hand_drawn {
+        crate::render::handdrawn::hd_rect(&g, lx, ly, w, h, "#FFFFFF", LEGEND_INK, "1", "");
+    } else {
+        let rect = append(&g, "rect");
+        set_attr(&rect, "x", js_num(lx));
+        set_attr(&rect, "y", js_num(ly));
+        set_attr(&rect, "width", js_num(w));
+        set_attr(&rect, "height", js_num(h));
+        set_attr(&rect, "rx", "8");
+        set_attr(&rect, "ry", "8");
+        set_attr(&rect, "class", "system-chart-legend-box");
+    }
+    for (i, kind) in kinds.iter().enumerate() {
+        let cy = ly + LEGEND_PAD + LEGEND_ROW_H * (i as f64 + 0.5) - 4.0;
+        let (x1, x2) = (lx + LEGEND_PAD, lx + LEGEND_PAD + LEGEND_SAMPLE_W);
+        let line = append(&g, "path");
+        let d = if hand_drawn {
+            use crate::dagre::types::Point;
+            crate::render::handdrawn::hd_edge_d(
+                &[Point { x: x1, y: cy }, Point { x: x2, y: cy }],
+                crate::render::handdrawn::seed_from(x1, cy),
+            )
+        } else {
+            format!(
+                "M{},{} L{},{}",
+                js_num(x1),
+                js_num(cy),
+                js_num(x2),
+                js_num(cy)
+            )
+        };
+        set_attr(&line, "d", d);
+        let kind_class = match kind {
+            EdgeKind::Call => "",
+            EdgeKind::Event => " system-chart-edge-event",
+            EdgeKind::Message => " system-chart-edge-message",
+            EdgeKind::Assoc => " system-chart-edge-assoc",
+        };
+        set_attr(&line, "class", format!("system-chart-edge{kind_class}"));
+        set_attr(&line, "style", format!("stroke:{LEGEND_INK};"));
+        if *kind != EdgeKind::Assoc {
+            set_attr(&line, "marker-end", format!("url(#{id}-arrow-legend)"));
+        }
+        if *kind == EdgeKind::Message {
+            let mx = (x1 + x2) / 2.0;
+            let env = append(&g, "g");
+            set_attr(&env, "class", "system-chart-envelope");
+            set_attr(&env, "style", format!("stroke:{LEGEND_INK};"));
+            let r = append(&env, "rect");
+            set_attr(&r, "x", js_num(mx - 6.0));
+            set_attr(&r, "y", js_num(cy - 4.0));
+            set_attr(&r, "width", "12");
+            set_attr(&r, "height", "8");
+            set_attr(&r, "rx", "1");
+            let flap = append(&env, "path");
+            set_attr(
+                &flap,
+                "d",
+                format!(
+                    "M{},{} L{},{} L{},{}",
+                    js_num(mx - 6.0),
+                    js_num(cy - 3.2),
+                    js_num(mx),
+                    js_num(cy + 1.0),
+                    js_num(mx + 6.0),
+                    js_num(cy - 3.2)
+                ),
+            );
+        }
+        let t = append(&g, "text");
+        set_attr(&t, "x", js_num(x2 + 10.0));
+        set_attr(&t, "y", js_num(cy));
+        set_attr(&t, "dominant-baseline", "central");
+        set_attr(&t, "class", "system-chart-legend-label");
+        set_text(&t, legend_kind_label(*kind));
+    }
 }
 
 /// Appends a `path` with the given data to `g`, stroked (not filled).
@@ -835,6 +1019,8 @@ fn system_chart_css(id: &str, tv: &dyn Fn(&str) -> String) -> String {
          #{id} .system-chart-envelope path{{fill:none;}}\
          #{id} .system-chart-edge-label{{font-size:{EDGE_LABEL_FS}px;font-weight:bold;\
            paint-order:stroke;stroke:white;stroke-width:4px;stroke-linejoin:round;}}\
+         #{id} .system-chart-legend-box{{fill:#FFFFFF;stroke:{LEGEND_INK};stroke-width:1px;}}\
+         #{id} .system-chart-legend-label{{font-size:{LEGEND_FS}px;fill:#3F3F46;}}\
          #{id} .system-chart-icon-stroke{{fill:none;stroke-width:1.7px;\
            stroke-linecap:round;stroke-linejoin:round;}}\
          #{id} .system-chart-icon-fill{{stroke:none;}}"
