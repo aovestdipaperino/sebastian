@@ -67,6 +67,10 @@ pub mod sankey;
 pub mod sequence;
 pub mod state;
 pub mod svg;
+/// sebastian-original `system_chart` diagram type (see the
+/// `mermaid-extensions` feature, on by default).
+#[cfg(feature = "mermaid-extensions")]
+pub mod system_chart;
 pub mod text;
 pub mod timeline;
 pub mod treemap;

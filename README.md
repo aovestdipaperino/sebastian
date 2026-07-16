@@ -281,7 +281,108 @@ pyramid
 
 Layout is deterministic and band colours come from the theme `cScale` palette;
 it renders in pure-SVG rasterizers (native `<text>`, no `foreignObject`).
+Prefixing the chart with `%%{init: {"look": "handDrawn"}}%%` sketches the
+bands and component boxes with wobbly hand-drawn outlines, matching the
+flowchart look:
+
+<p align="center">
+  <img src="docs/pyramid-handdrawn.png" alt="hand-drawn pyramid of components" width="640">
+</p>
+
 Validated by `sebastian/tests/pyramid_smoke.rs`.
+
+## System charts (sebastian extension)
+
+`system_chart` is a second **sebastian-only** diagram type behind the same
+**`mermaid-extensions`** feature: boxes with typical system-component icons,
+connected by labelled arrows, expressing a system architecture.
+
+```
+system_chart
+  title Query pipeline
+  query: chat "AI Agent Query" "What is our churn rate?"
+  rt: router "Router" "(Classify)"
+  okf: wiki "OKF" "(Wiki)"
+  rag: db "RAG" "(Vector DB)"
+  ai: llm "LLM" "(Synthesize)"
+  query --> rt
+  rt --> okf : Canonical?
+  rt --> rag : Exploratory?
+  okf --> ai
+  rag --> ai
+```
+
+### Writing a system chart
+
+A chart is a sequence of lines; leading whitespace is ignored and lines
+starting with `%%` or `#` are comments.
+
+1. **Header** — the first non-comment line must be `system_chart`.
+2. **Title** (optional) — `title My system` draws a centred heading.
+3. **Nodes** — one per line, declared before any edge that uses them:
+
+   ```
+   id: symbol "Title" "Optional subtitle"
+   ```
+
+   `id` is the name edges refer to, `symbol` picks the icon and colour
+   scheme (table below), the quoted `"Title"` is required, and a second
+   quoted string adds a smaller grey subtitle.
+4. **Edges** — `from OP to`, optionally followed by `: label`. The operator
+   encodes the connection type in the line style:
+
+   | operator | meaning | style |
+   |----------|---------|-------|
+   | `a --> b` | synchronous call / request | solid arrow |
+   | `a ..> b` | event trigger / async notification | dashed arrow |
+   | `a ==> b` | message via queue or bus | thick arrow, envelope at midpoint |
+   | `a --- b` | undirected association | thin line, no arrowhead |
+
+   Every operator accepts a label: `rt ==> jobs : task`. Edges take the
+   accent colour of their **source** node. Referencing an undeclared node is
+   a parse error.
+
+### Symbols
+
+Each symbol has its own accent colour and icon — see `SUPPORTED-SYMBOLS.png`
+(and `SUPPORTED-SYMBOLS-HANDDRAWN.png` for the hand-drawn look) for a
+rendering of all of them:
+
+| symbol | use for | symbol | use for |
+|--------|---------|--------|---------|
+| `user` | end user | `api` | API gateway / endpoint |
+| `users` | user group | `fn` | serverless function |
+| `chat` | message / query | `stream` | event stream (Kafka-style) |
+| `queue` | message queue | `scheduler` | cron / timed jobs |
+| `folder` | file storage | `browser` | web frontend |
+| `db` | database | `mobile` | mobile app |
+| `wiki` | knowledge base | `metrics` | monitoring / observability |
+| `router` | router / load balancer | `mail` | email / notification |
+| `llm` | LLM / AI model | `bucket` | object storage |
+| `doc` | document | `key` | secrets store |
+| `cloud` | cloud service | `robot` | agent / bot / automation |
+| `service` | service / worker | `search` | search index |
+| `lock` | auth / security boundary | `box` | generic component |
+| `server` | server / host | `cache` | cache / fast path |
+
+`box` is also the fallback for unknown symbol names.
+
+### Layout and looks
+
+Nodes are ranked top-to-bottom by longest path from the sources; within a
+rank they keep declaration order, so declare nodes left-to-right in the order
+you want them to appear. Layout is deterministic and renders in pure-SVG
+rasterizers (native `<text>`, no `foreignObject`). Prefixing the chart with
+`%%{init: {"look": "handDrawn"}}%%` switches to the hand-drawn look: sketchy
+double-stroked boxes, wobbly edges, and the handwritten font (arrowheads,
+envelope glyphs, and icons stay crisp by design). The example above renders
+as:
+
+<p align="center">
+  <img src="docs/system-chart-handdrawn.png" alt="hand-drawn system chart" width="420">
+</p>
+
+Validated by `sebastian/tests/system_chart_smoke.rs`.
 
 ## Rasterization (PNG) — `raster` feature
 

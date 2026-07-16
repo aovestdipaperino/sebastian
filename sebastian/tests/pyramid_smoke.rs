@@ -7,6 +7,21 @@
 use sebastian::render_diagram;
 
 #[test]
+fn pyramid_hand_drawn_sketches_bands_and_component_boxes() {
+    let src = "%%{init: {\"look\": \"handDrawn\"}}%%\npyramid\n  title Arch\n\
+               Presentation: Web, Mobile\n  Data\n";
+    let svg = render_diagram(src, "my-svg").expect("renders");
+    // Bands and component boxes become rough paths: no crisp <polygon>
+    // bands and no crisp component <rect>s.
+    assert!(!svg.contains("class=\"pyramid-band\""));
+    assert!(!svg.contains("class=\"pyramid-component-rect\""));
+    assert!(svg.contains("class=\"pyramid-component\""));
+    // Deterministic wobble.
+    let svg2 = render_diagram(src, "my-svg").expect("again");
+    assert_eq!(svg, svg2);
+}
+
+#[test]
 fn pyramid_chart_renders_stacked_bands() {
     let src = "pyramid\n  title Company Hierarchy\n  CEO\n  Directors\n  Managers\n  Staff\n";
     let svg = render_diagram(src, "my-svg").expect("pyramid renders");

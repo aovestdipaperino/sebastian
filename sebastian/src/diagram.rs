@@ -36,6 +36,10 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         if t == "pyramid" || t.starts_with("pyramid ") {
             return "pyramid";
         }
+        #[cfg(feature = "mermaid-extensions")]
+        if t == "system_chart" || t.starts_with("system_chart ") {
+            return "system_chart";
+        }
         if t.starts_with("erDiagram") {
             return "er";
         }
@@ -192,6 +196,8 @@ fn render_by_type(source: &str, id: &str) -> Result<String, Box<dyn std::error::
         "pie" => crate::pie::render_pie(source, id).map_err(Into::into),
         #[cfg(feature = "mermaid-extensions")]
         "pyramid" => crate::pyramid::render_pyramid(source, id).map_err(Into::into),
+        #[cfg(feature = "mermaid-extensions")]
+        "system_chart" => crate::system_chart::render_system_chart(source, id).map_err(Into::into),
         "er" => render_er(source, id).map_err(Into::into),
         "requirement" => render_requirement(source, id).map_err(Into::into),
         "c4" => crate::c4::render_c4(source, id).map_err(Into::into),

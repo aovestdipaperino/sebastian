@@ -6,6 +6,23 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`system_chart` diagram type (sebastian extension).** Boxes with typical
+  system-component icons connected by labelled arrows, expressing a system
+  architecture. 28 symbols (`user`, `queue`, `db`, `wiki`, `router`, `llm`,
+  `api`, `stream`, …), each with its own accent colour and icon, and four
+  edge operators encoding the connection type in the line style: `-->`
+  sync call, `..>` event trigger (dashed), `==>` message via queue/bus
+  (thick, envelope at midpoint), `---` undirected association (no
+  arrowhead). Behind the `mermaid-extensions` feature (on by default);
+  see `SUPPORTED-SYMBOLS.png` and the README section for the syntax.
+- **Hand-drawn look for the extensions.** `%%{init: {"look": "handDrawn"}}%%`
+  now sketches `system_chart` boxes/edges and `pyramid` bands/component
+  boxes with the same rough double-stroked primitives the flowchart uses
+  (arrowheads, envelope glyphs, and icons stay crisp by design).
+- `sebastian/examples/to_png.rs`: small `.mmd` → PNG helper
+  (`cargo run --features raster --example to_png -- in.mmd out.png`).
+
 ## [0.5.0] — 2026-07-12
 
 ### Added

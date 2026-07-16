@@ -183,6 +183,7 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
     let config = crate::render::config::detect_init(source);
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let tv = |k: &str| crate::render::themes::get(&theme_vars, k);
+    let hand_drawn = config.is_hand_drawn();
     let measurer = TextMeasurer::new();
     let db = parse(source)?;
     if db.levels.is_empty() {
@@ -236,23 +237,57 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
         let g = append(&bands, "g");
         set_attr(&g, "class", format!("pyramid-level section-{sect}"));
 
-        let poly = append(&g, "polygon");
-        set_attr(&poly, "class", "pyramid-band");
-        set_attr(
-            &poly,
-            "points",
-            format!(
-                "{},{} {},{} {},{} {},{}",
-                js_num(cx - top_w / 2.0),
-                js_num(top_y),
-                js_num(cx + top_w / 2.0),
-                js_num(top_y),
-                js_num(cx + bot_w / 2.0),
-                js_num(bot_y),
-                js_num(cx - bot_w / 2.0),
-                js_num(bot_y),
-            ),
-        );
+        if hand_drawn {
+            // HAND-DRAWN EXTENSION: sketchy band — clean fill under a
+            // double-stroked wobbly outline, colours inline since the
+            // rough paths bypass the `.pyramid-band` CSS.
+            use crate::dagre::types::Point;
+            let pts = [
+                Point {
+                    x: cx - top_w / 2.0,
+                    y: top_y,
+                },
+                Point {
+                    x: cx + top_w / 2.0,
+                    y: top_y,
+                },
+                Point {
+                    x: cx + bot_w / 2.0,
+                    y: bot_y,
+                },
+                Point {
+                    x: cx - bot_w / 2.0,
+                    y: bot_y,
+                },
+            ];
+            crate::render::handdrawn::hd_polygon_append(
+                &g,
+                &pts,
+                PALETTE[sect],
+                &tv("lineColor"),
+                "1",
+                "",
+                crate::render::handdrawn::seed_from(top_w, top_y),
+            );
+        } else {
+            let poly = append(&g, "polygon");
+            set_attr(&poly, "class", "pyramid-band");
+            set_attr(
+                &poly,
+                "points",
+                format!(
+                    "{},{} {},{} {},{} {},{}",
+                    js_num(cx - top_w / 2.0),
+                    js_num(top_y),
+                    js_num(cx + top_w / 2.0),
+                    js_num(top_y),
+                    js_num(cx + bot_w / 2.0),
+                    js_num(bot_y),
+                    js_num(cx - bot_w / 2.0),
+                    js_num(bot_y),
+                ),
+            );
+        }
 
         let mid_y = (top_y + bot_y) / 2.0;
         if level.components.is_empty() {
@@ -290,7 +325,8 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
                 set_text(&ts, line);
             }
         } else {
-            draw_components(&g, level, cx, mid_y, &measurer);
+            let line = hand_drawn.then(|| tv("lineColor"));
+            draw_components(&g, level, cx, mid_y, &measurer, line.as_deref());
         }
     }
 
@@ -315,8 +351,17 @@ pub fn render_pyramid(source: &str, id: &str) -> Result<String, PyramidParseErro
     Ok(out)
 }
 
-/// Draws a level's component boxes in a centered row on the midline.
-fn draw_components(g: &crate::svg::Element, level: &Level, cx: f64, mid_y: f64, m: &TextMeasurer) {
+/// Draws a level's component boxes in a centered row on the midline. A
+/// `Some(line_color)` in `hand_drawn` switches the boxes to sketchy
+/// hand-drawn rectangles stroked in that colour.
+fn draw_components(
+    g: &crate::svg::Element,
+    level: &Level,
+    cx: f64,
+    mid_y: f64,
+    m: &TextMeasurer,
+    hand_drawn: Option<&str>,
+) {
     let widths: Vec<f64> = level
         .components
         .iter()
@@ -328,14 +373,28 @@ fn draw_components(g: &crate::svg::Element, level: &Level, cx: f64, mid_y: f64, 
     for (comp, w) in level.components.iter().zip(&widths) {
         let cg = append(g, "g");
         set_attr(&cg, "class", "pyramid-component");
-        let rect = append(&cg, "rect");
-        set_attr(&rect, "x", js_num(x));
-        set_attr(&rect, "y", js_num(top));
-        set_attr(&rect, "width", js_num(*w));
-        set_attr(&rect, "height", js_num(COMP_H));
-        set_attr(&rect, "rx", "4");
-        set_attr(&rect, "ry", "4");
-        set_attr(&rect, "class", "pyramid-component-rect");
+        if let Some(line) = &hand_drawn {
+            crate::render::handdrawn::hd_rect(
+                &cg,
+                x,
+                top,
+                *w,
+                COMP_H,
+                "rgba(255,255,255,0.92)",
+                line,
+                "1",
+                "",
+            );
+        } else {
+            let rect = append(&cg, "rect");
+            set_attr(&rect, "x", js_num(x));
+            set_attr(&rect, "y", js_num(top));
+            set_attr(&rect, "width", js_num(*w));
+            set_attr(&rect, "height", js_num(COMP_H));
+            set_attr(&rect, "rx", "4");
+            set_attr(&rect, "ry", "4");
+            set_attr(&rect, "class", "pyramid-component-rect");
+        }
         let text = append(&cg, "text");
         set_attr(&text, "x", js_num(x + w / 2.0));
         set_attr(&text, "y", js_num(mid_y));
