@@ -85,6 +85,35 @@ fn system_chart_legend_lists_only_used_connection_types() {
 }
 
 #[test]
+fn system_chart_boxless_nodes_drop_the_box_and_grow_the_icon() {
+    let src = "system_chart\n  a: (user) \"Alice\" \"(Admin)\"\n  b: db \"Store\"\n  a --> b\n";
+    let svg = render_diagram(src, "my-svg").expect("renders");
+    // Only the boxed node gets a rect; the bare node is icon + text.
+    assert_eq!(svg.matches("class=\"system-chart-node-rect\"").count(), 1);
+    assert_eq!(
+        svg.matches("class=\"system-chart-node system-chart-node-bare\"")
+            .count(),
+        1
+    );
+    // Bare icons are drawn larger: 60/24 = 2.5 vs boxed 39/24 = 1.625.
+    assert!(svg.contains("scale(2.5)"));
+    assert!(svg.contains("scale(1.625)"));
+    // Title and subtitle still render.
+    assert!(svg.contains("Alice"));
+    assert!(svg.contains("(Admin)"));
+}
+
+#[test]
+fn system_chart_boxless_hand_drawn_sketches_no_box() {
+    let src = "%%{init: {\"look\": \"handDrawn\"}}%%\nsystem_chart\n  a: (user) \"Alice\"\n";
+    let svg = render_diagram(src, "my-svg").expect("renders");
+    // Hand-drawn boxed nodes emit rough fill+outline paths carrying the
+    // symbol's fill tint; a bare node must emit only its icon and text.
+    assert!(svg.contains("system-chart-node-bare"));
+    assert!(!svg.contains("#F0F9FF"), "no box fill tint for a bare node");
+}
+
+#[test]
 fn system_chart_rejects_undeclared_edge_endpoint() {
     let src = "system_chart\n  a: user \"Alice\"\n  a --> ghost\n";
     let err = render_diagram(src, "my-svg").expect_err("undeclared node");

@@ -7,12 +7,26 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`seb --help` with extension-format topics.** `seb --help` (or `-h`)
+  prints usage and options; `seb --help system_chart` and
+  `seb --help pyramid` document the sebastian-only extension formats
+  (node/edge syntax, symbols, options, hand-drawn look) from the terminal.
+- **`system_chart` box-less nodes.** Wrapping a node's symbol in parentheses
+  (`id: (symbol) "Title"`) drops the enclosing box and renders a larger,
+  more prominent icon (60px vs 39px) with the title/subtitle centred
+  underneath. Boxed and box-less nodes mix freely in one chart, in both the
+  classic and hand-drawn looks.
 - **`system_chart` legend option.** A `legend` line (off by default) draws
   a key of the connection types the chart actually uses, placed in a free
   corner of the canvas (or below the chart when every corner is occupied).
 
 ### Changed
 - `system_chart` node icons are 50% larger (26px → 39px) for prominence.
+- **Comic Sans MS removed from the hand-drawn font stack.** When the
+  inlined Excalifont data URI cannot load, the fallbacks are now
+  `Chalkboard SE` / `Bradley Hand` (macOS) and `Segoe Print` (Windows,
+  named before the `cursive` generic so Windows never resolves to Comic
+  Sans).
 
 ## [0.6.0] — 2026-07-16
 

@@ -45,6 +45,8 @@ The library crate is [`sebastian`](https://crates.io/crates/sebastian).
 Run `seb` with no arguments (or `seb --logo`) to print the sebastian logo
 as true-color terminal art, rendered from `sebastian/resources/LOGO.png`
 via the [`logo-art`](https://crates.io/crates/logo-art) crate.
+`seb --help` shows usage; `seb --help system_chart` and `seb --help pyramid`
+document the sebastian-only extension formats from the terminal.
 
 The non-obvious Chrome/V8/mermaid behaviors this required are cataloged
 in [FINDINGS.md](FINDINGS.md).
@@ -197,7 +199,8 @@ Labels in **every** diagram type render in
 handwriting font (SIL OFL, successor to Virgil) — which is embedded in the
 crate and inlined into the SVG as a `@font-face` data URI (~256 KB), so the
 output looks the same on every machine with no font installed. The stack
-falls back to `"Comic Sans MS", "Chalkboard SE", "Bradley Hand", cursive`.
+falls back to `"Chalkboard SE", "Bradley Hand", "Segoe Print", cursive`
+(never Comic Sans).
 The override is injected once at the `render_diagram` boundary, covering
 both HTML and raw SVG text labels. Sketchy, double-stroked outlines are
 drawn for:
@@ -330,7 +333,10 @@ starting with `%%` or `#` are comments.
 
    `id` is the name edges refer to, `symbol` picks the icon and colour
    scheme (table below), the quoted `"Title"` is required, and a second
-   quoted string adds a smaller grey subtitle.
+   quoted string adds a smaller grey subtitle. Wrapping the symbol in
+   parentheses — `id: (symbol) "Title"` — drops the enclosing box: the node
+   renders as a larger, more prominent icon with the text centred
+   underneath. Boxed and box-less nodes mix freely in one chart.
 4. **Edges** — `from OP to`, optionally followed by `: label`. The operator
    encodes the connection type in the line style:
 

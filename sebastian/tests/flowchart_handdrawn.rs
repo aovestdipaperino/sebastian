@@ -20,10 +20,14 @@ fn nodes_are_rough_and_handwritten() {
         svg.contains("class=\"rough-node"),
         "expected rough-node class"
     );
-    // The handwritten font override is present.
+    // The handwritten font override is present — and never via Comic Sans.
     assert!(
-        svg.contains("Comic Sans MS"),
+        svg.contains("\"Excalifont\", \"Chalkboard SE\""),
         "expected handwritten font css"
+    );
+    assert!(
+        !svg.contains("Comic Sans"),
+        "Comic Sans must not appear in the fallback stack"
     );
     // Rect/diamond shapes render as sketchy <path> groups, not plain <rect>.
     assert!(
@@ -48,7 +52,7 @@ fn classic_look_is_unaffected() {
         "classic nodes must not use the rough-node class"
     );
     assert!(
-        !svg.contains("Comic Sans MS"),
+        !svg.contains("Excalifont"),
         "classic must not swap the font"
     );
     assert!(

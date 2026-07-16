@@ -20,8 +20,10 @@
 //!   rag --> ai
 //! ```
 //!
-//! Node lines are `id: symbol "Title"` with an optional quoted subtitle; edge
-//! lines are `a --> b`, optionally `: label`. Three more edge operators encode
+//! Node lines are `id: symbol "Title"` with an optional quoted subtitle;
+//! wrapping the symbol in parentheses — `id: (symbol) "Title"` — drops the
+//! enclosing box and renders a larger, more prominent icon with the text
+//! centred underneath. Edge lines are `a --> b`, optionally `: label`. Three more edge operators encode
 //! the connection type in the line style: `..>` (event trigger — dashed),
 //! `==>` (message via queue/bus — thick, envelope at the midpoint), and `---`
 //! (undirected association — thin, no arrowhead). Nodes are ranked top-to-bottom by
@@ -49,6 +51,9 @@ const NODE_GAP_X: f64 = 56.0;
 const RANK_GAP: f64 = 76.0;
 const ICON_AREA: f64 = 66.0;
 const ICON_SIZE: f64 = 39.0;
+/// Icon size for box-less (`(symbol)`) nodes: the icon carries the whole
+/// node, so it is drawn ~150% of the boxed size.
+const BARE_ICON_SIZE: f64 = 60.0;
 const MIN_NODE_W: f64 = 150.0;
 const EDGE_LABEL_FS: f64 = 13.0;
 const LEGEND_INK: &str = "#64748B";
@@ -128,6 +133,8 @@ struct Node {
     kind: String,
     title: String,
     subtitle: String,
+    /// `(symbol)` in the source: no enclosing box, prominent icon.
+    boxless: bool,
 }
 
 struct EdgeDef {
@@ -205,7 +212,7 @@ fn parse(source: &str) -> Result<Db, SystemChartParseError> {
             });
             continue;
         }
-        // `id: symbol "Title" ["Subtitle"]`
+        // `id: symbol "Title" ["Subtitle"]`; `(symbol)` renders box-less.
         let Some((id, rest)) = line.split_once(':') else {
             return Err(SystemChartParseError(format!(
                 "expected node or edge line, got {line:?}"
@@ -215,6 +222,10 @@ fn parse(source: &str) -> Result<Db, SystemChartParseError> {
         let (kind, rest) = match rest.find(char::is_whitespace) {
             Some(p) => (&rest[..p], &rest[p..]),
             None => (rest, ""),
+        };
+        let (kind, boxless) = match kind.strip_prefix('(').and_then(|k| k.strip_suffix(')')) {
+            Some(inner) => (inner, true),
+            None => (kind, false),
         };
         if kind.is_empty() {
             return Err(SystemChartParseError(format!(
@@ -229,6 +240,7 @@ fn parse(source: &str) -> Result<Db, SystemChartParseError> {
             kind: kind.to_owned(),
             title,
             subtitle,
+            boxless,
         });
     }
     if !found {
@@ -307,7 +319,8 @@ pub fn render_system_chart(source: &str, id: &str) -> Result<String, SystemChart
         rows[r].push(i);
     }
 
-    // Node sizes from text metrics; boxes are icon area + centred text block.
+    // Node sizes from text metrics; boxes are icon area + centred text block,
+    // box-less nodes are a large icon with the text block centred underneath.
     let sizes: Vec<(f64, f64)> = db
         .nodes
         .iter()
@@ -318,6 +331,17 @@ pub fn render_system_chart(source: &str, id: &str) -> Result<String, SystemChart
             } else {
                 measurer.measure_width(&node.subtitle, SUB_FS)
             };
+            if node.boxless {
+                let w = tw.max(sw).max(BARE_ICON_SIZE) + 12.0;
+                let h = BARE_ICON_SIZE
+                    + 25.0
+                    + if node.subtitle.is_empty() {
+                        0.0
+                    } else {
+                        SUB_FS + 4.0
+                    };
+                return (w, h);
+            }
             let w = (ICON_AREA + tw.max(sw) + 28.0).max(MIN_NODE_W);
             let h = if node.subtitle.is_empty() { 58.0 } else { 74.0 };
             (w, h)
@@ -555,6 +579,36 @@ pub fn render_system_chart(source: &str, id: &str) -> Result<String, SystemChart
         let p = &placed[i];
         let (accent, fill) = symbol_colors(&node.kind);
         let g = append(&nodes_g, "g");
+        if node.boxless {
+            // No enclosing box: the icon carries the node, drawn larger and
+            // centred, with the text block underneath.
+            set_attr(&g, "class", "system-chart-node system-chart-node-bare");
+            draw_icon(
+                &g,
+                &node.kind,
+                p.x + (p.w - BARE_ICON_SIZE) / 2.0,
+                p.y,
+                accent,
+                BARE_ICON_SIZE,
+            );
+            let tx = p.x + p.w / 2.0;
+            let title_y = p.y + BARE_ICON_SIZE + 21.0;
+            let title = append(&g, "text");
+            set_attr(&title, "x", js_num(tx));
+            set_attr(&title, "y", js_num(title_y));
+            set_attr(&title, "text-anchor", "middle");
+            set_attr(&title, "class", "system-chart-node-title");
+            set_text(&title, &node.title);
+            if !node.subtitle.is_empty() {
+                let sub = append(&g, "text");
+                set_attr(&sub, "x", js_num(tx));
+                set_attr(&sub, "y", js_num(title_y + SUB_FS + 4.0));
+                set_attr(&sub, "text-anchor", "middle");
+                set_attr(&sub, "class", "system-chart-node-sub");
+                set_text(&sub, &node.subtitle);
+            }
+            continue;
+        }
         set_attr(&g, "class", "system-chart-node");
         if hand_drawn {
             crate::render::handdrawn::hd_rect(&g, p.x, p.y, p.w, p.h, fill, accent, "1.5", "");
@@ -576,6 +630,7 @@ pub fn render_system_chart(source: &str, id: &str) -> Result<String, SystemChart
             p.x + 12.0,
             p.y + (p.h - ICON_SIZE) / 2.0,
             accent,
+            ICON_SIZE,
         );
 
         let tx = p.x + ICON_AREA + (p.w - ICON_AREA) / 2.0 - 6.0;
@@ -776,8 +831,9 @@ fn stroke_path(g: &Element, d: &str) {
 }
 
 /// Draws the icon for `kind` in a 24x24 grid, translated to (`x`, `y`) and
-/// scaled to [`ICON_SIZE`], in the accent colour.
-fn draw_icon(parent: &Element, kind: &str, x: f64, y: f64, accent: &str) {
+/// scaled to `size` ([`ICON_SIZE`] boxed, [`BARE_ICON_SIZE`] box-less), in
+/// the accent colour.
+fn draw_icon(parent: &Element, kind: &str, x: f64, y: f64, accent: &str, size: f64) {
     let g = append(parent, "g");
     set_attr(&g, "class", "system-chart-icon");
     set_attr(
@@ -787,7 +843,7 @@ fn draw_icon(parent: &Element, kind: &str, x: f64, y: f64, accent: &str) {
             "translate({},{}) scale({})",
             js_num(x),
             js_num(y),
-            js_num(ICON_SIZE / 24.0)
+            js_num(size / 24.0)
         ),
     );
     set_attr(&g, "style", format!("stroke:{accent};fill:{accent};"));

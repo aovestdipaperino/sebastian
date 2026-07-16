@@ -100,7 +100,11 @@ pub fn hand_drawn_font_css(id: &str) -> String {
         id,
         "Excalifont",
         crate::text::EXCALIFONT,
-        "\"Excalifont\", \"Comic Sans MS\", \"Chalkboard SE\", \"Bradley Hand\", cursive",
+        // Handwritten fallbacks per platform when the data-URI face fails
+        // to load (Chalkboard SE / Bradley Hand on macOS, Segoe Print on
+        // Windows). Segoe Print must be named before the `cursive` generic,
+        // which maps to Comic Sans on Windows.
+        "\"Excalifont\", \"Chalkboard SE\", \"Bradley Hand\", \"Segoe Print\", cursive",
     )
 }
 

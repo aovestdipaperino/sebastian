@@ -1,5 +1,7 @@
 //! `seb`: renders a mermaid diagram (.mmd) to SVG, mmdc-style.
 
+mod help;
+
 use std::process::ExitCode;
 
 /// The sebastian logo, printed as terminal ANSI art via `logo-art`.
@@ -37,6 +39,14 @@ fn main() -> ExitCode {
                 print_logo();
                 return ExitCode::SUCCESS;
             }
+            "-h" | "--help" => {
+                let topic = args.get(i + 1).map(String::as_str);
+                return if help::print(topic) {
+                    ExitCode::SUCCESS
+                } else {
+                    ExitCode::FAILURE
+                };
+            }
             other => {
                 eprintln!("unknown argument: {other}");
                 return ExitCode::FAILURE;
@@ -50,6 +60,7 @@ fn main() -> ExitCode {
         print_logo();
         eprintln!("usage: seb -i input.mmd [-o output.svg] [--id svg-id]");
         eprintln!("       seb --logo");
+        eprintln!("       seb --help [system_chart | pyramid]");
         return ExitCode::FAILURE;
     };
 
