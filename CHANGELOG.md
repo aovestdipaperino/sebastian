@@ -6,11 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-07-16
+
 ### Added
 - **`system_chart` diagram type (sebastian extension).** Boxes with typical
   system-component icons connected by labelled arrows, expressing a system
-  architecture. 28 symbols (`user`, `queue`, `db`, `wiki`, `router`, `llm`,
-  `api`, `stream`, …), each with its own accent colour and icon, and four
+  architecture. 30 symbols (`user`, `queue`, `db`, `wiki`, `router`, `llm`,
+  `api`, `stream`, `file`, `files`, …), each with its own accent colour and
+  icon, and four
   edge operators encoding the connection type in the line style: `-->`
   sync call, `..>` event trigger (dashed), `==>` message via queue/bus
   (thick, envelope at midpoint), `---` undirected association (no

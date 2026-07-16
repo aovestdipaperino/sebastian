@@ -53,7 +53,7 @@ const MIN_NODE_W: f64 = 150.0;
 const EDGE_LABEL_FS: f64 = 13.0;
 
 /// Every symbol kind: name, accent (stroke/icon) colour, box fill tint.
-const SYMBOLS: [(&str, &str, &str); 28] = [
+const SYMBOLS: [(&str, &str, &str); 30] = [
     ("user", "#0284C7", "#F0F9FF"),
     ("users", "#6366F1", "#EEF2FF"),
     ("chat", "#3B82F6", "#EFF6FF"),
@@ -81,6 +81,8 @@ const SYMBOLS: [(&str, &str, &str); 28] = [
     ("key", "#A16207", "#FEFCE8"),
     ("robot", "#C026D3", "#FDF4FF"),
     ("search", "#0369A1", "#F0F9FF"),
+    ("file", "#78716C", "#FAFAF9"),
+    ("files", "#4D7C0F", "#F7FEE7"),
     ("box", "#64748B", "#FFFFFF"),
 ];
 
@@ -783,6 +785,17 @@ fn draw_icon(parent: &Element, kind: &str, x: f64, y: f64, accent: &str) {
             set_attr(&ant, "cy", "4");
             set_attr(&ant, "r", "1.1");
             set_attr(&ant, "class", "system-chart-icon-fill");
+        }
+        "file" => {
+            // A single blank page with a folded corner (`doc` adds text lines).
+            stroke_path(&g, "M6,3 H14 L18,7 V21 H6 Z");
+            stroke_path(&g, "M14,3 V7 H18");
+        }
+        "files" => {
+            // Two overlapping pages: a back page peeking out behind the front.
+            stroke_path(&g, "M9,3 H16 L19.5,6.5 V16");
+            stroke_path(&g, "M4.5,7 H12 L15.5,10.5 V21 H4.5 Z");
+            stroke_path(&g, "M12,7 V10.5 H15.5");
         }
         "search" => {
             stroke_path(&g, "M10,4 a6,6 0 1 1 -0.01,0 Z");

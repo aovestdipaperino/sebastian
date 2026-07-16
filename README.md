@@ -364,6 +364,7 @@ rendering of all of them:
 | `service` | service / worker | `search` | search index |
 | `lock` | auth / security boundary | `box` | generic component |
 | `server` | server / host | `cache` | cache / fast path |
+| `file` | single file | `files` | set of files |
 
 `box` is also the fallback for unknown symbol names.
 
