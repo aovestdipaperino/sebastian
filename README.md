@@ -1,6 +1,11 @@
 # sebastian
 
 <p align="center">
+  <a href="https://ai.enzolombardi.net/"><img src="https://img.shields.io/badge/built%20with-AI-D97757?style=flat-square&labelColor=101010&logo=anthropic&logoColor=white" alt="Built with AI — part of Enzo Lombardi's AI portfolio"></a>
+</p>
+
+
+<p align="center">
   <img src="sebastian/resources/LOGO.png" alt="sebastian logo" width="256">
 </p>
 
