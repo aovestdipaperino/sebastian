@@ -779,7 +779,7 @@ impl FlowDb {
                     .clone()
                     .or_else(|| config.curve.clone())
                     .unwrap_or_else(|| "basis".to_owned()),
-                look: config.look.clone(),
+                look: config.edge_look(),
                 ..Default::default()
             });
         }

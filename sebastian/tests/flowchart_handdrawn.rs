@@ -60,3 +60,29 @@ fn classic_look_is_unaffected() {
         "classic keeps node class"
     );
 }
+
+#[test]
+fn straight_edges_keep_rough_nodes_but_clean_edges() {
+    let init = "%%{init: {'look':'handDrawn', 'handDrawnStraightEdges': true, 'htmlLabels': false, 'flowchart': {'htmlLabels': false}}}%%\n";
+    let svg = render_flowchart(&format!("{init}{SRC}"), "my-svg").expect("render");
+    assert!(
+        svg.contains("class=\"rough-node"),
+        "nodes must stay sketchy"
+    );
+    assert!(svg.contains("Excalifont"), "handwritten font must stay");
+    // Edges are tagged with the classic look and drawn with the plain d3 path
+    // (no wobbly per-segment cubic passes).
+    assert!(
+        svg.contains("data-look=\"classic\""),
+        "edges should carry the classic look"
+    );
+    let sketchy = hand_drawn();
+    assert_ne!(svg, sketchy, "straight edges must change the edge paths");
+}
+
+#[test]
+fn straight_edges_flag_is_ignored_in_classic_look() {
+    let init = "%%{init: {'handDrawnStraightEdges': true}}%%\n";
+    let svg = render_flowchart(&format!("{init}{SRC}"), "my-svg").expect("render");
+    assert_eq!(svg, render_flowchart(SRC, "my-svg").expect("render"));
+}

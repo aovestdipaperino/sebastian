@@ -7,6 +7,12 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`handDrawnStraightEdges` init option.** With `look: handDrawn`, setting
+  `%%{init: {'handDrawnStraightEdges': true}}%%` keeps the sketchy node
+  shapes and handwritten font but draws flowchart edges as clean lines
+  instead of rough.js wobbly strokes (`RenderConfig::edge_look`). Meant for
+  print, where sketchy edges read as jagged or misaligned. Ignored in the
+  classic look.
 - **`seb --help` with extension-format topics.** `seb --help` (or `-h`)
   prints usage and options; `seb --help system_chart` and
   `seb --help pyramid` document the sebastian-only extension formats

@@ -10,6 +10,11 @@ pub struct RenderConfig {
     /// handwritten font). handDrawn is an opt-in stylization and is not
     /// byte-exact against mmdc (rough.js output is randomized upstream).
     pub look: String,
+    /// `handDrawnStraightEdges` (sebastian extension): with `look: handDrawn`,
+    /// keep the sketchy node shapes and handwritten font but draw edges as
+    /// clean straight/curved lines instead of rough.js wobbly strokes. Useful
+    /// for print, where sketchy edges read as jagged or misaligned.
+    pub hand_drawn_straight_edges: bool,
     /// Raw themeVariables overrides from the directive.
     pub theme_variables: Map<String, Value>,
     /// `flowchart.htmlLabels` (edge/cluster labels via getEffectiveHtmlLabels).
@@ -40,6 +45,7 @@ impl Default for RenderConfig {
         Self {
             theme: "default".to_owned(),
             look: "classic".to_owned(),
+            hand_drawn_straight_edges: false,
             theme_variables: Map::new(),
             flowchart_html_labels: None,
             top_html_labels: None,
@@ -76,6 +82,18 @@ impl RenderConfig {
     #[must_use]
     pub fn is_hand_drawn(&self) -> bool {
         self.look == "handDrawn"
+    }
+
+    /// The `look` edges should be drawn with: `classic` when
+    /// `handDrawnStraightEdges` asks for clean edges under a hand-drawn look,
+    /// otherwise the diagram's own look.
+    #[must_use]
+    pub fn edge_look(&self) -> String {
+        if self.is_hand_drawn() && self.hand_drawn_straight_edges {
+            "classic".to_owned()
+        } else {
+            self.look.clone()
+        }
     }
 
     /// Label font size in px from themeVariables (default 16).
@@ -128,6 +146,9 @@ fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
     }
     if let Some(look) = map.get("look").and_then(Value::as_str) {
         look.clone_into(&mut config.look);
+    }
+    if let Some(b) = map.get("handDrawnStraightEdges").and_then(Value::as_bool) {
+        config.hand_drawn_straight_edges = b;
     }
     // Top-level `layout` selects the layout engine ("elk" / "dagre").
     if let Some(layout) = map.get("layout").and_then(Value::as_str) {

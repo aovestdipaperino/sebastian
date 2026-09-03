@@ -693,9 +693,8 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
         let avail_w = nw - 8.0;
         let avail_h = nh - 8.0;
         let mut font = 38.0f64;
-        let label_hidden;
-        if avail_w < 10.0 || avail_h < 10.0 {
-            label_hidden = true;
+        let label_hidden = if avail_w < 10.0 || avail_h < 10.0 {
+            true
         } else {
             while measurer.measure_advance_svg(&name, font) > avail_w && font > 8.0 {
                 font -= 1.0;
@@ -709,9 +708,8 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
                 }
                 comb = font + 2.0 + pv(font);
             }
-            label_hidden =
-                measurer.measure_advance_svg(&name, font) > avail_w || font < 8.0 || avail_h < font;
-        }
+            measurer.measure_advance_svg(&name, font) > avail_w || font < 8.0 || avail_h < font
+        };
         let shrunk = (font - 38.0).abs() > f64::EPSILON;
         if label_hidden {
             // display:none via a later .style() call → CSSOM-canonical.
