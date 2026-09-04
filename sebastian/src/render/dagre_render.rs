@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::dagre;
-use crate::dagre::types::{EdgeLabel, GraphLabel, NodeLabel, edge_ref, node_ref};
+use crate::dagre::types::{EdgeLabel, GraphLabel, NodeLabel, Point, edge_ref, node_ref};
 use crate::graphlib::{Graph, GraphOptions};
 use crate::svg::{Element, append, js_num, set_attr};
 use crate::text::TextMeasurer;
@@ -346,6 +346,13 @@ pub fn recursive_render(
         }
         let start_node = graph.node(&e.v).expect("start node");
         let end_node = graph.node(&e.w).expect("end node");
+        // A straight centre-to-centre segment that would cut through another
+        // node is drawn along dagre's routed points instead (clean, classic).
+        if edge.borrow().look == "straight"
+            && straight_segment_hits_other_node(graph, &e.v, &e.w, &start_node, &end_node)
+        {
+            "classic".clone_into(&mut edge.borrow_mut().look);
+        }
         let paths = insert_edge(
             &edge_paths,
             &edge,
@@ -394,6 +401,72 @@ fn position_node(node: &NodeRef, ctx: &RenderCtx) {
             format!("translate({}, {})", js_num(n.x), js_num(n.y)),
         );
     }
+}
+
+/// True when the segment between the centres of `start` and `end` crosses
+/// the bounding box of any other (non-cluster) node in `graph`.
+fn straight_segment_hits_other_node(
+    graph: &RenderGraph,
+    v: &str,
+    w: &str,
+    start: &NodeRef,
+    end: &NodeRef,
+) -> bool {
+    let (a, b) = {
+        let s = start.borrow();
+        let t = end.borrow();
+        (Point { x: s.x, y: s.y }, Point { x: t.x, y: t.y })
+    };
+    graph.nodes().into_iter().any(|id| {
+        if id == v || id == w {
+            return false;
+        }
+        let Some(node) = graph.node(&id) else {
+            return false;
+        };
+        let n = node.borrow();
+        if n.is_group || n.width <= 0.0 || n.height <= 0.0 {
+            return false;
+        }
+        segment_hits_rect(a, b, n.x, n.y, n.width / 2.0, n.height / 2.0)
+    })
+}
+
+/// Liang–Barsky style slab test: does segment `a`-`b` overlap the axis-aligned
+/// box centred at (`cx`, `cy`) with half extents `hw`/`hh`?
+fn segment_hits_rect(a: Point, b: Point, cx: f64, cy: f64, hw: f64, hh: f64) -> bool {
+    let mut t0 = 0.0_f64;
+    let mut t1 = 1.0_f64;
+    let dx = b.x - a.x;
+    let dy = b.y - a.y;
+    let clip = |p: f64, q: f64, t0: &mut f64, t1: &mut f64| -> bool {
+        // p * t <= q must hold for the point to be inside this half-plane.
+        if p.abs() < f64::EPSILON {
+            return q >= 0.0;
+        }
+        let r = q / p;
+        if p < 0.0 {
+            if r > *t1 {
+                return false;
+            }
+            if r > *t0 {
+                *t0 = r;
+            }
+        } else {
+            if r < *t0 {
+                return false;
+            }
+            if r < *t1 {
+                *t1 = r;
+            }
+        }
+        true
+    };
+    clip(-dx, a.x - (cx - hw), &mut t0, &mut t1)
+        && clip(dx, (cx + hw) - a.x, &mut t0, &mut t1)
+        && clip(-dy, a.y - (cy - hh), &mut t0, &mut t1)
+        && clip(dy, (cy + hh) - a.y, &mut t0, &mut t1)
+        && t0 <= t1
 }
 
 fn position_edge_label(edge: &EdgeRef, paths: &super::edges::InsertedEdge, ctx: &RenderCtx) {
@@ -595,5 +668,31 @@ fn layout_with_dagre(graph: &RenderGraph) {
             ed.x = l.x;
             ed.y = l.y;
         }
+    }
+}
+
+#[cfg(test)]
+mod straight_edge_tests {
+    use super::*;
+
+    #[test]
+    fn segment_through_box_hits() {
+        let a = Point { x: 0.0, y: 0.0 };
+        let b = Point { x: 100.0, y: 100.0 };
+        assert!(segment_hits_rect(a, b, 50.0, 50.0, 10.0, 10.0));
+    }
+
+    #[test]
+    fn segment_beside_box_misses() {
+        let a = Point { x: 0.0, y: 0.0 };
+        let b = Point { x: 100.0, y: 0.0 };
+        assert!(!segment_hits_rect(a, b, 50.0, 50.0, 10.0, 10.0));
+    }
+
+    #[test]
+    fn segment_stopping_short_of_box_misses() {
+        let a = Point { x: 0.0, y: 0.0 };
+        let b = Point { x: 30.0, y: 0.0 };
+        assert!(!segment_hits_rect(a, b, 50.0, 0.0, 10.0, 10.0));
     }
 }
