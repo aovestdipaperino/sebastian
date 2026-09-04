@@ -13,10 +13,10 @@ project adheres to [Semantic Versioning](https://semver.org/).
   straight segment between the two shape borders, dropping both rough.js
   wobble and dagre's intermediate bend points (`RenderConfig::edge_look`
   returns `straight`). Edge labels move to the segment midpoint. Meant for
-  print, where sketchy or kinked edges read as jagged. An edge whose straight
-  segment would cut through another node falls back to dagre's routed
-  points (drawn clean); cluster-bound edges and self-loops keep their routed
-  points too. Ignored in the classic look.
+  print, where sketchy or kinked edges read as jagged. Labelled edges, and edges
+  whose straight segment would cut through or graze another node, fall back
+  to dagre's routed points (drawn clean); cluster-bound edges and self-loops
+  keep their routed points too. Ignored in the classic look.
 - **`seb --help` with extension-format topics.** `seb --help` (or `-h`)
   prints usage and options; `seb --help system_chart` and
   `seb --help pyramid` document the sebastian-only extension formats

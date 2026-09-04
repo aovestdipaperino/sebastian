@@ -346,10 +346,12 @@ pub fn recursive_render(
         }
         let start_node = graph.node(&e.v).expect("start node");
         let end_node = graph.node(&e.w).expect("end node");
-        // A straight centre-to-centre segment that would cut through another
-        // node is drawn along dagre's routed points instead (clean, classic).
+        // Labelled edges keep dagre's routed points (which spread their labels
+        // apart); so does a straight centre-to-centre segment that would cut
+        // through or graze another node. Both are drawn clean (classic).
         if edge.borrow().look == "straight"
-            && straight_segment_hits_other_node(graph, &e.v, &e.w, &start_node, &end_node)
+            && (!edge.borrow().label.is_empty()
+                || straight_segment_hits_other_node(graph, &e.v, &e.w, &start_node, &end_node))
         {
             "classic".clone_into(&mut edge.borrow_mut().look);
         }
@@ -403,8 +405,12 @@ fn position_node(node: &NodeRef, ctx: &RenderCtx) {
     }
 }
 
+/// Clearance kept between a straight edge and the nodes it passes by.
+const STRAIGHT_EDGE_CLEARANCE: f64 = 12.0;
+
 /// True when the segment between the centres of `start` and `end` crosses
-/// the bounding box of any other (non-cluster) node in `graph`.
+/// (or comes within `STRAIGHT_EDGE_CLEARANCE` of) the bounding box of any
+/// other (non-cluster) node in `graph`.
 fn straight_segment_hits_other_node(
     graph: &RenderGraph,
     v: &str,
@@ -428,7 +434,14 @@ fn straight_segment_hits_other_node(
         if n.is_group || n.width <= 0.0 || n.height <= 0.0 {
             return false;
         }
-        segment_hits_rect(a, b, n.x, n.y, n.width / 2.0, n.height / 2.0)
+        segment_hits_rect(
+            a,
+            b,
+            n.x,
+            n.y,
+            n.width / 2.0 + STRAIGHT_EDGE_CLEARANCE,
+            n.height / 2.0 + STRAIGHT_EDGE_CLEARANCE,
+        )
     })
 }
 
