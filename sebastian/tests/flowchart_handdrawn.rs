@@ -96,3 +96,12 @@ fn labelled_edges_use_simplified_routed_look() {
         "the labelled edge should carry the routed look"
     );
 }
+
+#[test]
+fn edge_label_opaque_overrides_label_opacity() {
+    let init = "%%{init: {'edgeLabelOpaque': true}}%%\n";
+    let svg = render_flowchart(&format!("{init}{SRC}"), "my-svg").expect("render");
+    assert!(svg.contains("#my-svg .edgeLabel rect{opacity:1;}"));
+    let plain = render_flowchart(SRC, "my-svg").expect("render");
+    assert!(!plain.contains(".edgeLabel rect{opacity:1;}"));
+}

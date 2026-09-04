@@ -339,11 +339,16 @@ pub fn render_flowchart(source: &str, id: &str) -> Result<String, ParseError> {
         aria: "flowchart-v2",
         diagram_type: "flowchart-v2",
         css: format!(
-            "{}{}{}",
+            "{}{}{}{}",
             render::css::themed_flowchart_css(id, &theme_vars),
             render::css::class_defs_css(id, config.effective_html_labels(), &class_list),
             if config.is_hand_drawn() {
                 render::css::hand_drawn_font_css(id)
+            } else {
+                String::new()
+            },
+            if config.opaque_edge_labels {
+                render::css::opaque_edge_label_css(id)
             } else {
                 String::new()
             }

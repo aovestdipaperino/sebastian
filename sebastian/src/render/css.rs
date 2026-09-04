@@ -12,6 +12,13 @@ pub fn flowchart_css(id: &str) -> String {
     TEMPLATE.replace("{ID}", &format!("#{id}"))
 }
 
+/// Override appended when `edgeLabelOpaque` is set: edge-label backgrounds
+/// at full opacity instead of mermaid's 50%.
+#[must_use]
+pub fn opaque_edge_label_css(id: &str) -> String {
+    format!("#{id} .edgeLabel rect{{opacity:1;}}")
+}
+
 /// Converts a hex color to Chrome CSSOM's `rgb(r, g, b)` serialization.
 fn hex_to_rgb(value: &str) -> Option<String> {
     let hex = value.strip_prefix('#')?;
