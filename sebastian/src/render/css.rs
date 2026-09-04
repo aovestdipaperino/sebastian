@@ -12,11 +12,12 @@ pub fn flowchart_css(id: &str) -> String {
     TEMPLATE.replace("{ID}", &format!("#{id}"))
 }
 
-/// Override appended when `edgeLabelOpaque` is set: edge-label backgrounds
-/// at full opacity instead of mermaid's 50%.
+/// Override appended when `edgeLabelFill` is set: edge-label backgrounds
+/// painted with `color` at full opacity (any alpha lives in the color itself)
+/// instead of mermaid's 50%-transparent theme fill.
 #[must_use]
-pub fn opaque_edge_label_css(id: &str) -> String {
-    format!("#{id} .edgeLabel rect{{opacity:1;}}")
+pub fn edge_label_fill_css(id: &str, color: &str) -> String {
+    format!("#{id} .edgeLabel rect{{fill:{color};background-color:{color};opacity:1;}}")
 }
 
 /// Converts a hex color to Chrome CSSOM's `rgb(r, g, b)` serialization.

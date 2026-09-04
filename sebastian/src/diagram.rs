@@ -347,11 +347,10 @@ pub fn render_flowchart(source: &str, id: &str) -> Result<String, ParseError> {
             } else {
                 String::new()
             },
-            if config.opaque_edge_labels {
-                render::css::opaque_edge_label_css(id)
-            } else {
-                String::new()
-            }
+            config
+                .edge_label_fill
+                .as_deref()
+                .map_or_else(String::new, |c| render::css::edge_label_fill_css(id, c))
         ),
     };
     Ok(render_unified(&data, &config, &theme_vars, &chrome, id))

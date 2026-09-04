@@ -15,10 +15,11 @@ pub struct RenderConfig {
     /// clean straight/curved lines instead of rough.js wobbly strokes. Useful
     /// for print, where sketchy edges read as jagged or misaligned.
     pub hand_drawn_straight_edges: bool,
-    /// `edgeLabelOpaque` (sebastian extension): draw flowchart edge-label
-    /// backgrounds fully opaque instead of mermaid's 50% so the line never
-    /// shows through the label text. Useful for print.
-    pub opaque_edge_labels: bool,
+    /// `edgeLabelFill` (sebastian extension): a CSS color (e.g. `#FFFFFFFF`,
+    /// `rgba(255,255,255,1)`) painted behind flowchart edge labels at full
+    /// opacity, replacing mermaid's 50%-transparent theme background so the
+    /// line never shows through the label text. Useful for print.
+    pub edge_label_fill: Option<String>,
     /// Raw themeVariables overrides from the directive.
     pub theme_variables: Map<String, Value>,
     /// `flowchart.htmlLabels` (edge/cluster labels via getEffectiveHtmlLabels).
@@ -50,7 +51,7 @@ impl Default for RenderConfig {
             theme: "default".to_owned(),
             look: "classic".to_owned(),
             hand_drawn_straight_edges: false,
-            opaque_edge_labels: false,
+            edge_label_fill: None,
             theme_variables: Map::new(),
             flowchart_html_labels: None,
             top_html_labels: None,
@@ -156,8 +157,8 @@ fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
     if let Some(b) = map.get("handDrawnStraightEdges").and_then(Value::as_bool) {
         config.hand_drawn_straight_edges = b;
     }
-    if let Some(b) = map.get("edgeLabelOpaque").and_then(Value::as_bool) {
-        config.opaque_edge_labels = b;
+    if let Some(c) = map.get("edgeLabelFill").and_then(Value::as_str) {
+        config.edge_label_fill = Some(c.to_owned());
     }
     // Top-level `layout` selects the layout engine ("elk" / "dagre").
     if let Some(layout) = map.get("layout").and_then(Value::as_str) {

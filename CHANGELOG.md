@@ -7,9 +7,10 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **`edgeLabelOpaque` init option.** `%%{init: {'edgeLabelOpaque': true}}%%`
-  draws flowchart edge-label backgrounds at full opacity instead of
-  mermaid's 50%, so the edge never shows through the label text (print).
+- **`edgeLabelFill` init option.** `%%{init: {'edgeLabelFill': '#FFFFFFFF'}}%%`
+  paints flowchart edge-label backgrounds with the given CSS color (RGBA
+  hex or `rgba()`), replacing mermaid's 50%-transparent theme fill so the
+  edge never shows through the label text (print).
 - **`handDrawnStraightEdges` init option.** With `look: handDrawn`, setting
   `%%{init: {'handDrawnStraightEdges': true}}%%` keeps the sketchy node
   shapes and handwritten font but draws each flowchart edge as one clean
