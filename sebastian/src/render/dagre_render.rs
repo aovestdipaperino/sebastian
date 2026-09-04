@@ -348,12 +348,13 @@ pub fn recursive_render(
         let end_node = graph.node(&e.w).expect("end node");
         // Labelled edges keep dagre's routed points (which spread their labels
         // apart); so does a straight centre-to-centre segment that would cut
-        // through or graze another node. Both are drawn clean (classic).
+        // through or graze another node. Both are drawn as clean, simplified
+        // polylines (`look: routed`, see `insert_edge`).
         if edge.borrow().look == "straight"
             && (!edge.borrow().label.is_empty()
                 || straight_segment_hits_other_node(graph, &e.v, &e.w, &start_node, &end_node))
         {
-            "classic".clone_into(&mut edge.borrow_mut().look);
+            "routed".clone_into(&mut edge.borrow_mut().look);
         }
         let paths = insert_edge(
             &edge_paths,

@@ -86,3 +86,13 @@ fn straight_edges_flag_is_ignored_in_classic_look() {
     let svg = render_flowchart(&format!("{init}{SRC}"), "my-svg").expect("render");
     assert_eq!(svg, render_flowchart(SRC, "my-svg").expect("render"));
 }
+
+#[test]
+fn labelled_edges_use_simplified_routed_look() {
+    let init = "%%{init: {'look':'handDrawn', 'handDrawnStraightEdges': true, 'htmlLabels': false, 'flowchart': {'htmlLabels': false}}}%%\n";
+    let svg = render_flowchart(&format!("{init}{SRC}"), "my-svg").expect("render");
+    assert!(
+        svg.contains("data-look=\"routed\""),
+        "the labelled edge should carry the routed look"
+    );
+}

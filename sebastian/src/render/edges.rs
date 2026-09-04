@@ -707,6 +707,41 @@ pub(crate) fn basis_edge_path(points: &[Point], arrow_start: &str, arrow_end: &s
 
 /// `getLineFunctionsWithOffset` — x/y accessors with marker offsets.
 #[allow(clippy::similar_names)]
+/// Max deviation (px) a dropped point may have from the simplified polyline.
+const ROUTED_SIMPLIFY_TOLERANCE: f64 = 4.0;
+
+/// Ramer–Douglas–Peucker simplification; endpoints are always kept.
+fn simplify_polyline(points: &[Point], tolerance: f64) -> Vec<Point> {
+    if points.len() < 3 {
+        return points.to_vec();
+    }
+    let (a, b) = (points[0], points[points.len() - 1]);
+    let (dx, dy) = (b.x - a.x, b.y - a.y);
+    let len = dx.hypot(dy);
+    let dist = |p: Point| -> f64 {
+        if len < f64::EPSILON {
+            (p.x - a.x).hypot(p.y - a.y)
+        } else {
+            ((p.x - a.x) * dy - (p.y - a.y) * dx).abs() / len
+        }
+    };
+    let (idx, max) = points
+        .iter()
+        .enumerate()
+        .skip(1)
+        .take(points.len() - 2)
+        .map(|(i, &p)| (i, dist(p)))
+        .fold((0, 0.0), |acc, cur| if cur.1 > acc.1 { cur } else { acc });
+    if max <= tolerance {
+        return vec![a, b];
+    }
+    let mut left = simplify_polyline(&points[..=idx], tolerance);
+    let right = simplify_polyline(&points[idx..], tolerance);
+    left.pop();
+    left.extend(right);
+    left
+}
+
 fn offset_points(line_data: &[Point], arrow_start: &str, arrow_end: &str) -> Vec<(f64, f64)> {
     let n = line_data.len();
     let mut out = Vec::with_capacity(n);
@@ -920,8 +955,15 @@ pub fn insert_edge(
         points_has_changed = true;
     }
 
-    let line_data: Vec<Point> = points.iter().copied().filter(|p| !p.y.is_nan()).collect();
-    let curve_type = e.curve.as_str();
+    let mut line_data: Vec<Point> = points.iter().copied().filter(|p| !p.y.is_nan()).collect();
+    let mut curve_type = e.curve.as_str();
+    // `look: routed` (straight-edge mode fallback): dagre emits one point per
+    // rank crossed, which reads as a run of micro-kinks. Drop the nearly
+    // collinear points and draw the rest as straight runs.
+    if e.look == "routed" {
+        line_data = simplify_polyline(&line_data, ROUTED_SIMPLIFY_TOLERANCE);
+        curve_type = "linear";
+    }
     let line_data = if curve_type == "rounded" {
         line_data
     } else {
