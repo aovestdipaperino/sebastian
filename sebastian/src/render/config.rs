@@ -84,13 +84,14 @@ impl RenderConfig {
         self.look == "handDrawn"
     }
 
-    /// The `look` edges should be drawn with: `classic` when
-    /// `handDrawnStraightEdges` asks for clean edges under a hand-drawn look,
-    /// otherwise the diagram's own look.
+    /// The `look` edges should be drawn with: `straight` (one clean segment
+    /// from shape border to shape border) when `handDrawnStraightEdges` asks
+    /// for clean edges under a hand-drawn look, otherwise the diagram's own
+    /// look.
     #[must_use]
     pub fn edge_look(&self) -> String {
         if self.is_hand_drawn() && self.hand_drawn_straight_edges {
-            "classic".to_owned()
+            "straight".to_owned()
         } else {
             self.look.clone()
         }

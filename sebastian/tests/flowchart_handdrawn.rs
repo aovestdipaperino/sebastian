@@ -70,11 +70,11 @@ fn straight_edges_keep_rough_nodes_but_clean_edges() {
         "nodes must stay sketchy"
     );
     assert!(svg.contains("Excalifont"), "handwritten font must stay");
-    // Edges are tagged with the classic look and drawn with the plain d3 path
-    // (no wobbly per-segment cubic passes).
+    // Edges are tagged with the straight look and drawn as one clean segment
+    // (no wobbly per-segment cubic passes, no intermediate bends).
     assert!(
-        svg.contains("data-look=\"classic\""),
-        "edges should carry the classic look"
+        svg.contains("data-look=\"straight\""),
+        "edges should carry the straight look"
     );
     let sketchy = hand_drawn();
     assert_ne!(svg, sketchy, "straight edges must change the edge paths");

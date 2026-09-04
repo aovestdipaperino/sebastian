@@ -867,6 +867,36 @@ pub fn insert_edge(
         points = sliced;
     }
 
+    // `look: straight` (sebastian's handDrawnStraightEdges): drop dagre's
+    // intermediate bend points and draw one segment between the two shape
+    // borders, aimed centre to centre. Cluster-bound edges and self-loops
+    // keep their routed points.
+    if e.look == "straight"
+        && can_intersect
+        && e.to_cluster.is_none()
+        && e.from_cluster.is_none()
+        && start_node.borrow().id != end_node.borrow().id
+    {
+        let tail = start_node.borrow();
+        let head = end_node.borrow();
+        let start = node_intersect(
+            &tail,
+            Point {
+                x: head.x,
+                y: head.y,
+            },
+        );
+        let end = node_intersect(
+            &head,
+            Point {
+                x: tail.x,
+                y: tail.y,
+            },
+        );
+        points = vec![start, end];
+        points_has_changed = true;
+    }
+
     let points_str = base64(&points);
 
     if let Some(to_cluster) = &e.to_cluster {

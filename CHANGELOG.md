@@ -9,10 +9,12 @@ project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - **`handDrawnStraightEdges` init option.** With `look: handDrawn`, setting
   `%%{init: {'handDrawnStraightEdges': true}}%%` keeps the sketchy node
-  shapes and handwritten font but draws flowchart edges as clean lines
-  instead of rough.js wobbly strokes (`RenderConfig::edge_look`). Meant for
-  print, where sketchy edges read as jagged or misaligned. Ignored in the
-  classic look.
+  shapes and handwritten font but draws each flowchart edge as one clean
+  straight segment between the two shape borders, dropping both rough.js
+  wobble and dagre's intermediate bend points (`RenderConfig::edge_look`
+  returns `straight`). Edge labels move to the segment midpoint. Meant for
+  print, where sketchy or kinked edges read as jagged. Cluster-bound edges
+  and self-loops keep their routed points. Ignored in the classic look.
 - **`seb --help` with extension-format topics.** `seb --help` (or `-h`)
   prints usage and options; `seb --help system_chart` and
   `seb --help pyramid` document the sebastian-only extension formats
