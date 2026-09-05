@@ -121,6 +121,19 @@ pub fn new_xhtml_element(tag: &str) -> Element {
     el
 }
 
+/// Direct element children (text nodes skipped), in document order.
+#[must_use]
+pub fn child_elements(el: &Element) -> Vec<Element> {
+    el.borrow()
+        .children
+        .iter()
+        .filter_map(|n| match n {
+            Node::Element(e) => Some(e.clone()),
+            Node::Text(_) => None,
+        })
+        .collect()
+}
+
 pub fn set_attr(el: &Element, name: &str, value: impl Into<String>) {
     let value = value.into();
     let mut data = el.borrow_mut();

@@ -6,6 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-05
+
 ### Added
 - **`edgeLabelFill` init option.** `%%{init: {'edgeLabelFill': '#FFFFFFFF'}}%%`
   paints flowchart edge-label backgrounds with the given CSS color (RGBA
@@ -42,6 +44,13 @@ project adheres to [Semantic Versioning](https://semver.org/).
   `Chalkboard SE` / `Bradley Hand` (macOS) and `Segoe Print` (Windows,
   named before the `cursive` generic so Windows never resolves to Comic
   Sans).
+
+### Fixed
+- **Class diagrams honour `htmlLabels: false`.** The `classBox` shape always
+  emitted `<foreignObject>` HTML labels, so class names, annotations and
+  members vanished in rasterizers without an HTML engine (resvg). With
+  `htmlLabels: false` they now render as SVG `<text>`, measured and wrapped
+  at the themed font size, keeping bold titles and italic abstract members.
 
 ## [0.6.0] — 2026-07-16
 

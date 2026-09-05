@@ -1880,18 +1880,56 @@ fn class_box(
         let label_g = append(group, "g");
         set_attr(&label_g, "class", "label");
         set_attr(&label_g, "style", style);
-        let (times_w, _) = seq.text_dimensions(measure_text, 16.0);
-        let wrap_width = times_w + 50.0;
-        let bbox = measure_label_sized_styled(measurer, text, wrap_width, 16.0, bold);
-        build_html_label_classed(
-            &label_g,
-            text,
-            bbox,
-            "nodeLabel markdown-node-label",
-            false,
-            wrap_width,
-            "",
-        );
+        let bbox = if config.node_html_labels() {
+            let (times_w, _) = seq.text_dimensions(measure_text, 16.0);
+            let wrap_width = times_w + 50.0;
+            let bbox = measure_label_sized_styled(measurer, text, wrap_width, 16.0, bold);
+            build_html_label_classed(
+                &label_g,
+                text,
+                bbox,
+                "nodeLabel markdown-node-label",
+                false,
+                wrap_width,
+                "",
+            );
+            bbox
+        } else {
+            // createText with useHtmlLabels=false: an SVG <text> anchored at
+            // x=0 (spanning [0, width] like the HTML div), so the group
+            // transforms below apply unchanged. createFormattedText pins the
+            // inner tspans to `font-weight: normal`, so lift that for bold.
+            // Upstream reads the rendered `getBBox()`, which follows the
+            // themed font size; the HTML branch's 16px is the default only.
+            let font_size = config.font_size();
+            let (times_w, _) = seq.text_dimensions(measure_text, font_size);
+            let wrap_width = times_w + 50.0;
+            measurer.set_bold(bold);
+            let ft = super::svg_label::create_formatted_text(
+                &label_g, text, measurer, font_size, wrap_width, false, false,
+            );
+            measurer.set_bold(false);
+            // ...and to `font-style: normal`, which would hide the italic an
+            // abstract member's style puts on the group.
+            let italic = style.contains("italic");
+            if bold || italic {
+                for outer in crate::svg::child_elements(&ft.text_element) {
+                    for inner in crate::svg::child_elements(&outer) {
+                        if bold {
+                            set_attr(&inner, "font-weight", "bolder");
+                        }
+                        if italic {
+                            set_attr(&inner, "font-style", "italic");
+                        }
+                    }
+                }
+            }
+            BBox {
+                width: ft.text_bbox.width,
+                height: ft.text_bbox.height,
+                wrapped: false,
+            }
+        };
         #[allow(clippy::cast_precision_loss)]
         let lines = split_lines(text).len() as f64;
         set_attr(
