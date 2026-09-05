@@ -89,6 +89,15 @@ fn font_options(fonts: FontSource) -> usvg::Options<'static> {
     // usvg does not process @font-face rules, so the Excalifont face inlined
     // in hand-drawn SVGs must be registered here to rasterize.
     fontdb.load_font_data(crate::text::EXCALIFONT.to_vec());
+    // Likewise the Comic Neue faces used by hand-drawn class diagrams.
+    for face in [
+        crate::text::COMIC_NEUE_REGULAR,
+        crate::text::COMIC_NEUE_BOLD,
+        crate::text::COMIC_NEUE_ITALIC,
+        crate::text::COMIC_NEUE_BOLD_ITALIC,
+    ] {
+        fontdb.load_font_data(face.to_vec());
+    }
     match fonts {
         FontSource::Embedded => {
             fontdb.load_font_data(CABIN_FONT.to_vec());

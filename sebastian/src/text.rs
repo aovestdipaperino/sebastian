@@ -50,9 +50,64 @@ const BOLD_CANDIDATES: &[&str] = &[
 /// runs measure with the same face (renderers synthesize bold).
 pub(crate) const EXCALIFONT: &[u8] = include_bytes!("../fonts/Excalifont-Regular.ttf");
 
-/// Excalifont bytes, honoring a host-registered override.
+/// Comic Neue (SIL OFL, see `fonts/ComicNeue-OFL.txt`): the hand-drawn
+/// label font for class diagrams, whose members need real italic (abstract)
+/// and bold (titles) faces that Excalifont lacks. All four faces are
+/// embedded and inlined as `@font-face` rules (see `hand_drawn_font_css`).
+pub(crate) const COMIC_NEUE_REGULAR: &[u8] = include_bytes!("../fonts/ComicNeue-Regular.ttf");
+pub(crate) const COMIC_NEUE_BOLD: &[u8] = include_bytes!("../fonts/ComicNeue-Bold.ttf");
+pub(crate) const COMIC_NEUE_ITALIC: &[u8] = include_bytes!("../fonts/ComicNeue-Italic.ttf");
+pub(crate) const COMIC_NEUE_BOLD_ITALIC: &[u8] =
+    include_bytes!("../fonts/ComicNeue-BoldItalic.ttf");
+
+/// Which handwritten family `look: handDrawn` draws and measures with.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum HandDrawnFamily {
+    /// Excalifont: single weight, used by every diagram type but class.
+    #[default]
+    Excalifont,
+    /// Comic Neue: regular/bold/italic/bold-italic, used by class diagrams.
+    ComicNeue,
+}
+
+thread_local! {
+    static HAND_DRAWN_FAMILY: std::cell::Cell<HandDrawnFamily> =
+        const { std::cell::Cell::new(HandDrawnFamily::Excalifont) };
+}
+
+/// Selects the hand-drawn family for measurers constructed afterwards on
+/// this thread. Set at the `render_diagram` boundary from the diagram type.
+pub fn set_hand_drawn_family(family: HandDrawnFamily) {
+    HAND_DRAWN_FAMILY.with(|f| f.set(family));
+}
+
+/// The hand-drawn family active on this thread.
+#[must_use]
+pub fn hand_drawn_family() -> HandDrawnFamily {
+    HAND_DRAWN_FAMILY.with(std::cell::Cell::get)
+}
+
+/// Regular hand-drawn face bytes, honoring a host-registered override.
 fn hand_drawn_font() -> Vec<u8> {
-    read_font("Excalifont-Regular.ttf").unwrap_or_else(|| EXCALIFONT.to_vec())
+    match hand_drawn_family() {
+        HandDrawnFamily::Excalifont => {
+            read_font("Excalifont-Regular.ttf").unwrap_or_else(|| EXCALIFONT.to_vec())
+        }
+        HandDrawnFamily::ComicNeue => {
+            read_font("ComicNeue-Regular.ttf").unwrap_or_else(|| COMIC_NEUE_REGULAR.to_vec())
+        }
+    }
+}
+
+/// Bold hand-drawn face bytes. Excalifont has no bold face, so bold runs
+/// measure with the regular one (renderers synthesize bold).
+fn hand_drawn_bold_font() -> Vec<u8> {
+    match hand_drawn_family() {
+        HandDrawnFamily::Excalifont => hand_drawn_font(),
+        HandDrawnFamily::ComicNeue => {
+            read_font("ComicNeue-Bold.ttf").unwrap_or_else(|| COMIC_NEUE_BOLD.to_vec())
+        }
+    }
 }
 
 /// Whether classic-look measurement uses the real Trebuchet MS face. When
@@ -244,7 +299,7 @@ impl TextMeasurer {
         let helvetica = read_font(HELVETICA);
         let apple_symbols = read_font(APPLE_SYMBOLS);
         let bold_data = if hand_drawn {
-            data.clone()
+            hand_drawn_bold_font()
         } else {
             BOLD_CANDIDATES
                 .iter()
@@ -718,7 +773,7 @@ impl TextMeasurer {
     #[must_use]
     pub fn bold_metrics(&self, text: &str, font_size: f64) -> (f64, f64, f64) {
         let data = if is_hand_drawn() {
-            hand_drawn_font()
+            hand_drawn_bold_font()
         } else {
             BOLD_CANDIDATES
                 .iter()

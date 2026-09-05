@@ -6,6 +6,16 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-09-05
+
+### Added
+- **Comic Neue for hand-drawn class diagrams.** With `look: handDrawn`,
+  class diagrams now draw and measure in Comic Neue (SIL OFL, four embedded
+  faces) so class titles get a real bold and abstract members a real italic;
+  Excalifont has neither. Every other diagram type keeps Excalifont. The
+  rasterizer registers all faces, and `text::HandDrawnFamily` /
+  `set_hand_drawn_family` expose the selection.
+
 ## [0.7.0] — 2026-09-05
 
 ### Added

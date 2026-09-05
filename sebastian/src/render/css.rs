@@ -104,15 +104,44 @@ fn hsl_to_rgb(value: &str) -> Option<String> {
 /// don't need to opt in.
 #[must_use]
 pub fn hand_drawn_font_css(id: &str) -> String {
-    font_override_css(
-        id,
-        "Excalifont",
-        crate::text::EXCALIFONT,
-        // Handwritten fallbacks per platform when the data-URI face fails
-        // to load (Chalkboard SE / Bradley Hand on macOS, Segoe Print on
-        // Windows). Segoe Print must be named before the `cursive` generic,
-        // which maps to Comic Sans on Windows.
-        "\"Excalifont\", \"Chalkboard SE\", \"Bradley Hand\", \"Segoe Print\", cursive",
+    match crate::text::hand_drawn_family() {
+        crate::text::HandDrawnFamily::Excalifont => font_override_css(
+            id,
+            "Excalifont",
+            crate::text::EXCALIFONT,
+            // Handwritten fallbacks per platform when the data-URI face fails
+            // to load (Chalkboard SE / Bradley Hand on macOS, Segoe Print on
+            // Windows). Segoe Print must be named before the `cursive` generic,
+            // which maps to Comic Sans on Windows.
+            "\"Excalifont\", \"Chalkboard SE\", \"Bradley Hand\", \"Segoe Print\", cursive",
+        ),
+        crate::text::HandDrawnFamily::ComicNeue => comic_neue_font_css(id),
+    }
+}
+
+/// Comic Neue override for hand-drawn class diagrams: four `@font-face`
+/// rules (regular, bold, italic, bold italic) so titles and abstract members
+/// pick real faces, and no synthetic text-stroke bold.
+fn comic_neue_font_css(id: &str) -> String {
+    use crate::text::{
+        COMIC_NEUE_BOLD, COMIC_NEUE_BOLD_ITALIC, COMIC_NEUE_ITALIC, COMIC_NEUE_REGULAR,
+    };
+    let face = |ttf: &[u8], weight: &str, style: &str| {
+        let data = super::edges::base64_encode(ttf);
+        format!(
+            "@font-face{{font-family:\"Comic Neue\";font-weight:{weight};font-style:{style};\
+             src:url(data:font/ttf;base64,{data}) format(\"truetype\");}}"
+        )
+    };
+    let i = format!("#{id}#{id}");
+    format!(
+        "{}{}{}{}\
+         {i} .nodeLabel,{i} .edgeLabel,{i} .label text,{i} span,{i} p,{i} text,{i} tspan\
+         {{font-family:\"Comic Neue\", \"Chalkboard SE\", \"Segoe Print\", cursive!important;}}",
+        face(COMIC_NEUE_REGULAR, "normal", "normal"),
+        face(COMIC_NEUE_BOLD, "bold", "normal"),
+        face(COMIC_NEUE_ITALIC, "normal", "italic"),
+        face(COMIC_NEUE_BOLD_ITALIC, "bold", "italic"),
     )
 }
 

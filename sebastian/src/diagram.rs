@@ -155,10 +155,19 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
     impl Drop for ResetHandDrawn {
         fn drop(&mut self) {
             crate::text::set_hand_drawn(false);
+            crate::text::set_hand_drawn_family(crate::text::HandDrawnFamily::default());
         }
     }
     let _reset = hand_drawn.then(|| {
         crate::text::set_hand_drawn(true);
+        // Class diagrams need real bold (titles) and italic (abstract
+        // members) faces; Excalifont has neither, so they draw in Comic Neue.
+        let family = if detect_diagram_type(source) == "class" {
+            crate::text::HandDrawnFamily::ComicNeue
+        } else {
+            crate::text::HandDrawnFamily::Excalifont
+        };
+        crate::text::set_hand_drawn_family(family);
         ResetHandDrawn
     });
     let svg = render_by_type(source, id)?;
