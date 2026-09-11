@@ -119,3 +119,37 @@ fn html_label_path_is_unaffected() {
         assert!(x < 0.0, "html labels centre via -width/2 too, got {x}");
     }
 }
+
+/// A self-loop is split into three edges, and only the middle one keeps the
+/// label. The two helper edges must have `label_raw` cleared as well as
+/// `label`: the `htmlLabels: false` path renders `label_raw`, and
+/// `position_edge_label` skips an edge whose `label` is empty, so a stray
+/// copy would be drawn unpositioned at the container origin.
+#[test]
+fn self_loop_label_is_not_duplicated() {
+    let source = "\
+stateDiagram-v2
+    Unauthenticated --> Authenticated : login() succeeds
+    Unauthenticated --> Unauthenticated : login() fails
+";
+    let svg = render_diagram(&format!("{INIT}{source}"), "my-svg").expect("render");
+
+    let fails = svg.matches("fails").count();
+    assert_eq!(
+        fails, 1,
+        "the self-loop label should be rendered once, found {fails}"
+    );
+
+    // Every label group carrying text must be positioned; an unset transform
+    // leaves it at the origin.
+    for part in svg.split("<g class=\"edgeLabel\"").skip(1) {
+        let head = &part[..part.find('>').expect("tag end")];
+        let body = &part[..part.find("</g></g>").unwrap_or(part.len())];
+        if body.contains("text-inner-tspan") {
+            assert!(
+                head.contains("transform=\"translate("),
+                "a labelled edge was left unpositioned: {head:?}"
+            );
+        }
+    }
+}

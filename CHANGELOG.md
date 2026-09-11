@@ -6,6 +6,17 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-09-11
+
+### Fixed
+- **Self-loop labels duplicated at the container origin.** A self-transition
+  is split into three edges and only the middle one keeps the label, but the
+  two helper edges had only `label` cleared, not `label_raw`. The
+  `htmlLabels: false` path renders `label_raw`, so the text was drawn twice
+  more, and `position_edge_label` skips an edge whose `label` is empty, so
+  those copies were never given a transform and piled up in the corner of the
+  diagram. Invisible with html labels on, which read `label`.
+
 ## [0.9.0] — 2026-09-11
 
 ### Fixed

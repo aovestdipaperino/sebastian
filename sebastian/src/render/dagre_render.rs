@@ -110,13 +110,21 @@ pub fn render(data: &LayoutData, svg_root_g: &Element, ctx: &mut RenderCtx) {
             let mut edge1 = e.clone();
             let mut edge_mid = e.clone();
             let mut edge2 = e.clone();
+            // Both label fields: the html path reads `label`, the
+            // `htmlLabels: false` path reads `label_raw`. Clearing only
+            // `label` left the two helper edges rendering the self-loop's
+            // text a second and third time, and `position_edge_label` skips
+            // them (their `label` is empty), so those copies stayed at the
+            // container origin in the corner of the diagram.
             edge1.label = String::new();
+            edge1.label_raw = String::new();
             "none".clone_into(&mut edge1.arrow_type_end);
             edge1.id = format!("{node_id}-cyclic-special-1");
             "none".clone_into(&mut edge_mid.arrow_type_start);
             "none".clone_into(&mut edge_mid.arrow_type_end);
             edge_mid.id = format!("{node_id}-cyclic-special-mid");
             edge2.label = String::new();
+            edge2.label_raw = String::new();
             "none".clone_into(&mut edge2.arrow_type_start);
             edge2.id = format!("{node_id}-cyclic-special-2");
             let is_group = node.borrow().is_group;
