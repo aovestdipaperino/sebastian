@@ -20,6 +20,23 @@ pub struct RenderConfig {
     /// opacity, replacing mermaid's 50%-transparent theme background so the
     /// line never shows through the label text. Useful for print.
     pub edge_label_fill: Option<String>,
+    /// `edgeLabelOnPath` (sebastian extension): place each edge label at the
+    /// arc-length midpoint of the drawn path instead of at dagre's label-dummy
+    /// coordinate.
+    ///
+    /// Mermaid takes the label position from `edge.x`/`edge.y`, which dagre
+    /// shifts sideways by `width / 2 + labeloffset` in `fixupEdgeLabelCoords`
+    /// so the label clears the line. On a straight edge that reads fine,
+    /// because the routing point it was shifted from is the visual middle. On
+    /// a curved or diagonal edge it does not: the label lands beside the point
+    /// where the edge *crossed the label rank*, which on a fan of diverging
+    /// edges (state diagrams especially) drifts far from the line it names and
+    /// collides with its neighbours.
+    ///
+    /// This is deliberately off by default: on it, output is no longer
+    /// byte-exact against mmdc. Turn it on for diagrams a reader has to
+    /// follow rather than diff.
+    pub edge_label_on_path: bool,
     /// Raw themeVariables overrides from the directive.
     pub theme_variables: Map<String, Value>,
     /// `flowchart.htmlLabels` (edge/cluster labels via getEffectiveHtmlLabels).
@@ -52,6 +69,7 @@ impl Default for RenderConfig {
             look: "classic".to_owned(),
             hand_drawn_straight_edges: false,
             edge_label_fill: None,
+            edge_label_on_path: false,
             theme_variables: Map::new(),
             flowchart_html_labels: None,
             top_html_labels: None,
@@ -159,6 +177,9 @@ fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
     }
     if let Some(c) = map.get("edgeLabelFill").and_then(Value::as_str) {
         config.edge_label_fill = Some(c.to_owned());
+    }
+    if let Some(b) = map.get("edgeLabelOnPath").and_then(Value::as_bool) {
+        config.edge_label_on_path = b;
     }
     // Top-level `layout` selects the layout engine ("elk" / "dagre").
     if let Some(layout) = map.get("layout").and_then(Value::as_str) {

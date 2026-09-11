@@ -917,6 +917,9 @@ impl DataFetcher<'_> {
                 padding: 8.0,
                 look: "classic".to_owned(),
                 label_type: "markdown".to_owned(),
+                // stateDb.getData: `nodeData.centerLabel = true` for every
+                // state node.
+                center_label: true,
                 ..RenderNode::default()
             };
             if node_data.shape == "divider" {

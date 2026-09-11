@@ -438,12 +438,22 @@ pub fn label_helper(
             height: ft.text_bbox.height,
             wrapped: false,
         };
-        // labelEl.attr('transform', translate(0, -bbox.height/2)).
-        set_attr(
-            &label_el,
-            "transform",
-            format!("translate(0, {})", js_num(-bbox.height / 2.0)),
-        );
+        // labelHelper: `translate(0, -h/2)` on the SVG-text path, then
+        // `if (node.centerLabel)` overrides it with `translate(-w/2, -h/2)`.
+        // Without the override the text starts at the shape's centre and runs
+        // off its right edge, because the diagrams that set `centerLabel`
+        // (state diagrams, and notes with html labels off) emit no
+        // `text-anchor: middle` rule for node labels.
+        let transform = if n.center_label {
+            format!(
+                "translate({}, {})",
+                js_num(-bbox.width / 2.0),
+                js_num(-bbox.height / 2.0)
+            )
+        } else {
+            format!("translate(0, {})", js_num(-bbox.height / 2.0))
+        };
+        set_attr(&label_el, "transform", transform);
         bbox
     };
 
@@ -1142,6 +1152,10 @@ pub fn insert_node_shape(
             let theme = &config.computed_theme;
             let note_bkg = super::themes::get(theme, "noteBkgColor");
             let note_border = super::themes::get(theme, "noteBorderColor");
+            // note.js: `if (!useHtmlLabels) { node.centerLabel = true; }`.
+            if !config.effective_html_labels() {
+                node.borrow_mut().center_label = true;
+            }
             let result = label_helper(
                 parent,
                 node,

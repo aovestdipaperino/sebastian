@@ -494,6 +494,15 @@ fn position_edge_label(edge: &EdgeRef, paths: &super::edges::InsertedEdge, ctx: 
             let pos = calc_label_position(updated);
             x = pos.x;
             y = pos.y;
+        } else if ctx.config.edge_label_on_path && !e.points.is_empty() {
+            // `edgeLabelOnPath` extension: mermaid keeps dagre's `edge.x`/
+            // `edge.y` here, which sits beside the point where the edge
+            // crossed the label rank rather than beside the middle of the
+            // drawn edge. Ride the path instead, the same way the
+            // `updated_points` branch and the cardinality labels below do.
+            let pos = calc_label_position(&e.points);
+            x = pos.x;
+            y = pos.y;
         }
         set_attr(
             el,

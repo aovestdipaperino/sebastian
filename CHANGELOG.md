@@ -6,6 +6,34 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-09-11
+
+### Fixed
+- **`node.centerLabel` on the SVG-text label path.** `labelHelper` ends with
+  three branches, not two: `useHtmlLabels` centres with
+  `translate(-w/2, -h/2)`, the SVG-text path uses `translate(0, -h/2)`, and
+  then `if (node.centerLabel)` overrides that with `translate(-w/2, -h/2)`.
+  The third was missing. Mermaid's stateDb sets `centerLabel` on every state
+  node, and `note` shapes set it whenever html labels are off, so with
+  `htmlLabels: false` every state and note label was positioned at the
+  shape's centre with a left anchor and ran off its right edge. State
+  diagrams, unlike flowcharts, emit no `text-anchor: middle` rule for node
+  labels to fall back on. Invisible with html labels on, where the first
+  branch already centres, which is why the byte-exact `state_corpus` never
+  caught it. New `state_nohtml_rendering` tests pin the transforms against
+  mermaid-cli references.
+
+### Added
+- **`edgeLabelOnPath` init option.** `%%{init: {'edgeLabelOnPath': true}}%%`
+  places each edge label at the arc-length midpoint of the drawn path rather
+  than at dagre's label-dummy coordinate. Mermaid takes the position from
+  `edge.x`/`edge.y`, which `fixupEdgeLabelCoords` shifts sideways by
+  `width / 2 + labeloffset`; on a straight edge that point is the visual
+  middle, but on a curved or diagonal one it is wherever the edge crossed the
+  label rank, so on a fan of diverging edges (state diagrams especially) the
+  label drifts away from the line it names and collides with its neighbours.
+  Off by default: with it on, output is no longer byte-exact against mmdc.
+
 ## [0.8.0] — 2026-09-05
 
 ### Added

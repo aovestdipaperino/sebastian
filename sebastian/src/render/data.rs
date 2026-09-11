@@ -28,6 +28,12 @@ pub struct RenderNode {
     pub link_target: Option<String>,
     pub tooltip: Option<String>,
     pub is_group: bool,
+    /// `node.centerLabel`: forces the label group's transform to
+    /// `translate(-w/2, -h/2)` even on the SVG-text path, where `labelHelper`
+    /// otherwise uses `translate(0, -h/2)` and lets a CSS `text-anchor` rule
+    /// centre the text. The state-diagram data builder sets it on every node,
+    /// and `note` shapes set it whenever html labels are off.
+    pub center_label: bool,
 
     // Set during rendering:
     pub width: f64,
