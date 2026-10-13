@@ -209,7 +209,7 @@ fn sort_children(arena: &mut Vec<HNode>) {
 // treemap layout (d3-hierarchy treemap + squarify + round)
 // ---------------------------------------------------------------------------
 
-const PHI: f64 = 1.618_033_988_749_895; // (1 + sqrt(5)) / 2
+const PHI: f64 = std::f64::consts::GOLDEN_RATIO;
 
 fn pad_top(arena: &[HNode], idx: usize) -> f64 {
     if arena[idx].children.is_empty() {
