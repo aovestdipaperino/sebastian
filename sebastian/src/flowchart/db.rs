@@ -631,7 +631,30 @@ impl FlowDb {
         match vertex.vertex_type.as_deref() {
             None | Some("square") => "squareRect".to_owned(),
             Some("round") => "roundedRect".to_owned(),
-            Some(other) => other.to_owned(),
+            Some(other) => Self::shape_alias(other).to_owned(),
+        }
+    }
+
+    /// Resolves the `@{ shape: ... }` names and aliases of mermaid's
+    /// `shapesDefs` (shortName, aliases, semantic handler names) to the shape
+    /// handler sebastian implements. Names without an implemented handler are
+    /// returned unchanged.
+    fn shape_alias(name: &str) -> &str {
+        match name {
+            "rounded" | "event" => "roundedRect",
+            "terminal" | "pill" => "stadium",
+            "fr-rect" | "subprocess" | "subproc" | "framed-rectangle" => "subroutine",
+            "cyl" | "db" | "database" => "cylinder",
+            "circ" => "circle",
+            "diam" | "decision" | "question" => "diamond",
+            "hex" | "prepare" => "hexagon",
+            "lean-r" | "lean-right" | "in-out" => "lean_right",
+            "lean-l" | "lean-left" | "out-in" => "lean_left",
+            "trap-b" | "priority" | "trapezoid-bottom" => "trapezoid",
+            "trap-t" | "manual" | "trapezoid-top" | "inv-trapezoid" => "inv_trapezoid",
+            "dbl-circ" | "double-circle" => "doublecircle",
+            "proc" | "process" | "rectangle" => "squareRect",
+            other => other,
         }
     }
 

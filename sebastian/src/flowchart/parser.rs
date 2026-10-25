@@ -491,8 +491,12 @@ impl Parser {
         data
     }
 
-    /// Minimal `@{...}` metadata support: shape and label keys.
+    /// `@{...}` metadata: shape, label and labelType keys. A label set here
+    /// is a markdown label unless `labelType` says `text` or `string`
+    /// (`flowDb.sanitizeNodeLabelType`).
     fn apply_shape_data(&mut self, id: &str, data: &str) {
+        let mut label: Option<String> = None;
+        let mut label_type: Option<String> = None;
         for part in data.split(',') {
             let mut kv = part.splitn(2, ':');
             let key = kv.next().unwrap_or("").trim();
@@ -503,13 +507,19 @@ impl Parser {
                         v.vertex_type = Some(value.to_owned());
                     }
                 }
-                "label" => {
-                    if let Some(v) = self.db.vertices.get_mut(id) {
-                        v.text = Some(value.to_owned());
-                    }
-                }
+                "label" => label = Some(value.to_owned()),
+                "labelType" => label_type = Some(value.to_owned()),
                 _ => {}
             }
+        }
+        if let Some(text) = label.filter(|t| !t.is_empty())
+            && let Some(v) = self.db.vertices.get_mut(id)
+        {
+            v.text = Some(text);
+            v.label_type = match label_type.as_deref() {
+                Some(t @ ("text" | "string")) => t.to_owned(),
+                _ => "markdown".to_owned(),
+            };
         }
     }
 
