@@ -412,26 +412,41 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
         let participant = participant.or_else(|| strip_keyword(line, "actor").map(|r| (r, true)));
         if let Some((rest, is_actor_man)) = participant {
             // participant X [as Alias] [@{ "type": "..." }]
-            let mut rest = rest.trim();
+            let mut rest_owned = rest.trim().to_owned();
             let mut meta_type = String::new();
-            if let Some(at) = rest.find("@{") {
-                let meta = rest[at + 2..].trim_end_matches('}');
-                // Minimal JSON: "type" : "database"
-                if let Some(tpos) = meta.find("\"type\"") {
-                    let after = &meta[tpos + 6..];
-                    if let Some(c) = after.find(':') {
-                        let val = after[c + 1..].trim();
-                        let val = val.trim_matches(|ch| ch == '"' || ch == ',' || ch == ' ');
-                        val.clone_into(&mut meta_type);
+            let mut meta_alias: Option<String> = None;
+            if let Some(at) = rest_owned.find("@{") {
+                let close = rest_owned[at..]
+                    .find('}')
+                    .map_or(rest_owned.len(), |c| at + c);
+                let meta = rest_owned[at + 2..close].to_owned();
+                // Flat JSON object of string values: "key": "value", ...
+                let mut strings: Vec<String> = Vec::new();
+                let mut cur: Option<String> = None;
+                for c in meta.chars() {
+                    match (&mut cur, c) {
+                        (None, '"') => cur = Some(String::new()),
+                        (Some(_), '"') => strings.extend(cur.take()),
+                        (Some(buf), ch) => buf.push(ch),
+                        _ => {}
                     }
                 }
-                rest = rest[..at].trim();
+                for pair in strings.as_chunks::<2>().0 {
+                    match pair[0].as_str() {
+                        "type" => meta_type.clone_from(&pair[1]),
+                        "alias" => meta_alias = Some(pair[1].clone()),
+                        _ => {}
+                    }
+                }
+                let tail = rest_owned.get(close + 1..).unwrap_or("").to_owned();
+                rest_owned = format!("{}{}", rest_owned[..at].trim(), tail);
             }
+            let rest = rest_owned.trim();
             let id = if let Some((id, alias)) = split_as(rest) {
                 db.add_actor(id.trim(), Some(alias.trim().to_owned()));
                 id.trim().to_owned()
             } else {
-                db.add_actor(rest, None);
+                db.add_actor(rest, meta_alias);
                 rest.to_owned()
             };
             if let Some(a) = db.actors.get_mut(&id) {
@@ -449,6 +464,34 @@ pub fn parse(source: &str) -> Result<SequenceDb, SeqParseError> {
             continue;
         }
 
+        // `links Actor: {"label": "url", ...}` adds popup-menu links in order.
+        if let Some(rest) = strip_keyword(line, "links") {
+            if let Some((actor, json)) = rest.split_once(':') {
+                let mut strings: Vec<String> = Vec::new();
+                let mut cur: Option<String> = None;
+                for c in json.chars() {
+                    match (&mut cur, c) {
+                        (None, '"') => cur = Some(String::new()),
+                        (Some(_), '"') => strings.extend(cur.take()),
+                        (Some(buf), ch) => buf.push(ch),
+                        _ => {}
+                    }
+                }
+                if let Some(a) = db.actors.get_mut(actor.trim()) {
+                    for pair in strings.as_chunks::<2>().0 {
+                        a.links.push((pair[0].clone(), pair[1].clone()));
+                    }
+                }
+            }
+            continue;
+        }
+        // Other JSON-valued actor menus draw nothing in a static render.
+        if ["properties", "details"]
+            .iter()
+            .any(|k| strip_keyword(line, k).is_some())
+        {
+            continue;
+        }
         if let Some(rest) = strip_keyword(line, "link") {
             // link Actor: Label @ URL
             if let Some(colon) = rest.find(':') {

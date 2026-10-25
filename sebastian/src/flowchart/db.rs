@@ -134,6 +134,19 @@ pub fn strip_html_tags(text: &str) -> String {
     out
 }
 
+/// Browser `URL.href` normalisation: a bare origin gains a trailing slash.
+#[must_use]
+pub fn normalize_url(link: &str) -> String {
+    let mut url = link.trim().to_owned();
+    if let Some((_, rest)) = url.split_once("://")
+        && !rest.is_empty()
+        && !rest.contains(['/', '?', '#'])
+    {
+        url.push('/');
+    }
+    url
+}
+
 /// Decodes HTML entities the way `span.html(...)` (innerHTML) does in the
 /// browser pipeline. Tags like `<br/>` pass through untouched.
 pub fn decode_html_entities(text: &str) -> String {
@@ -445,13 +458,7 @@ impl FlowDb {
     /// `URL.href` (a bare origin gains a trailing slash) and the node becomes
     /// clickable.
     pub fn set_link(&mut self, ids: &str, link: &str, target: Option<&str>) {
-        let mut url = link.trim().to_owned();
-        if let Some((_, rest)) = url.split_once("://")
-            && !rest.is_empty()
-            && !rest.contains(['/', '?', '#'])
-        {
-            url.push('/');
-        }
+        let url = normalize_url(link);
         for id in ids.split(',') {
             if let Some(v) = self.vertices.get_mut(id) {
                 v.link = Some(url.clone());

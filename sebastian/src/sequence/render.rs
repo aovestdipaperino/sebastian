@@ -399,13 +399,39 @@ fn wrap_label(label: &str, max_width: f64, measurer: &SeqMeasurer) -> String {
     lines.join("<br/>")
 }
 
+/// Mermaid encodes `#9829;` / `#infin;` as entities before parsing; they
+/// reach the label as the decoded character.
+fn decode_hash_entities(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(i) = rest.find('#') {
+        out.push_str(&rest[..i]);
+        let tail = &rest[i + 1..];
+        let n = tail.bytes().take_while(u8::is_ascii_alphanumeric).count();
+        if n > 0 && tail.as_bytes().get(n) == Some(&b';') {
+            let entity = format!("&{};", &tail[..n]);
+            let dec = crate::flowchart::db::decode_html_entities(&entity);
+            if dec != entity {
+                out.push_str(&dec);
+                rest = &tail[n + 1..];
+                continue;
+            }
+        }
+        out.push('#');
+        rest = tail;
+    }
+    out.push_str(rest);
+    out
+}
+
 /// Renders mermaid sequenceDiagram source to a complete SVG document.
 ///
 /// # Errors
 /// Returns [`SeqParseError`] when the source is not a valid sequence diagram.
 #[allow(clippy::too_many_lines)]
 pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> {
-    let mut db = super::parse(source)?;
+    let decoded = decode_hash_entities(source);
+    let mut db = super::parse(&decoded)?;
     let measurer = SeqMeasurer::new();
     let config = crate::render::config::detect_init(source);
     // HAND-DRAWN EXTENSION: sketchy shapes when `look: handDrawn` is set (see
@@ -1011,7 +1037,11 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
         let mut link_y = 20.0f64;
         for (label, url) in &a.links {
             let link_el = append(&g, "a");
-            set_attr(&link_el, "xlink:href", url.clone());
+            set_attr(
+                &link_el,
+                "xlink:href",
+                crate::flowchart::db::normalize_url(url),
+            );
             let text = append(&link_el, "text");
             set_attr(&text, "x", js_num(a.x + 10.0));
             set_attr(&text, "y", js_num(a.height + link_y + 10.0));
@@ -1508,11 +1538,15 @@ fn draw_message(
         }
         _ => {}
     }
-    if dotted {
-        // d3 .style('stroke-dasharray', '3, 3') + fill none, CSSOM last.
-        set_attr(&line, "style", "stroke-dasharray: 3, 3; fill: none;");
+    // d3 .style('stroke-dasharray', '3, 3') + fill none: the CSSOM-serialised
+    // style attribute lands after any attribute set later (autonumber x1).
+    let line_style = if dotted {
+        "stroke-dasharray: 3, 3; fill: none;"
     } else {
-        set_attr(&line, "style", "fill: none;");
+        "fill: none;"
+    };
+    if !sequence_visible {
+        set_attr(&line, "style", line_style);
     }
 
     // "add node number" — autonumber circle + index text.
@@ -1530,6 +1564,7 @@ fn draw_message(
             // Applied even to self-message paths, matching upstream.
             set_attr(&line, "x1", js_num(model.startx + radius));
         }
+        set_attr(&line, "style", line_style);
 
         let self_message = (model.startx - model.stopx).abs() < f64::EPSILON;
         let autonumber_x = if self_message || model.startx <= model.stopx {
