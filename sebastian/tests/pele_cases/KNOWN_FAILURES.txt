@@ -96,7 +96,6 @@ mindmap/mindmap-spec022
 mindmap/mindmap-spec023
 sankey/sankey-docs000
 sequence/sequence-docs017
-sequence/sequence-docs030
 sequence/sequence-docs034
 state/state-docs000
 timeline/timeline-docs005

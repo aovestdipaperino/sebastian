@@ -372,31 +372,57 @@ fn insert_icon(svg: &Element, id: &str, suffix: &str, wh: bool, fill_rule: bool,
 
 /// `utils.wrapLabel` (minimal: returns the label when it fits).
 fn wrap_label(label: &str, max_width: f64, measurer: &SeqMeasurer) -> String {
-    let (w, _) = measurer.text_dimensions(label, FONT_SIZE);
-    if w <= max_width {
+    // utils.wrapLabel: a label that already holds a line break is kept.
+    if label.is_empty() || crate::text::split_breaks(label).len() > 1 {
         return label.to_owned();
     }
-    // Greedy word wrap joined with <br/> (utils.wrapLabel).
-    let mut lines: Vec<String> = Vec::new();
-    let mut current = String::new();
-    for word in label.split(' ') {
-        let candidate = if current.is_empty() {
-            word.to_owned()
+    // SVG text drops leading/trailing blanks, so `word ` measures as `word`.
+    let width_of = |t: &str| measurer.text_dimensions(t.trim(), FONT_SIZE).0;
+    let words: Vec<&str> = label.split(' ').filter(|w| !w.is_empty()).collect();
+    let mut completed: Vec<String> = Vec::new();
+    let mut next_line = String::new();
+    for (i, word) in words.iter().enumerate() {
+        let word_len = width_of(&format!("{word} "));
+        let next_len = width_of(&next_line);
+        if word_len > max_width {
+            // breakString: hyphenate the word to fit.
+            let chars: Vec<char> = word.chars().collect();
+            let mut lines = Vec::new();
+            let mut current = String::new();
+            for (ci, c) in chars.iter().enumerate() {
+                let candidate = format!("{current}{c}");
+                if width_of(&candidate) >= max_width {
+                    lines.push(if chars.len() == ci + 1 {
+                        candidate
+                    } else {
+                        format!("{candidate}-")
+                    });
+                    current.clear();
+                } else {
+                    current = candidate;
+                }
+            }
+            completed.push(std::mem::take(&mut next_line));
+            completed.extend(lines);
+            next_line = current;
+        } else if next_len + word_len >= max_width {
+            completed.push(std::mem::replace(&mut next_line, (*word).to_owned()));
         } else {
-            format!("{current} {word}")
-        };
-        let (cw, _) = measurer.text_dimensions(&candidate, FONT_SIZE);
-        if cw <= max_width || current.is_empty() {
-            current = candidate;
-        } else {
-            lines.push(std::mem::take(&mut current));
-            word.clone_into(&mut current);
+            next_line = if next_line.is_empty() {
+                (*word).to_owned()
+            } else {
+                format!("{next_line} {word}")
+            };
+        }
+        if i + 1 == words.len() {
+            completed.push(next_line.clone());
         }
     }
-    if !current.is_empty() {
-        lines.push(current);
-    }
-    lines.join("<br/>")
+    completed
+        .into_iter()
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<_>>()
+        .join("<br/>")
 }
 
 thread_local! {
@@ -439,7 +465,9 @@ fn decode_hash_entities(text: &str) -> String {
         let tail = &rest[i + 1..];
         let n = tail.bytes().take_while(u8::is_ascii_alphanumeric).count();
         if n > 0 && tail.as_bytes().get(n) == Some(&b';') {
-            let entity = format!("&{};", &tail[..n]);
+            let body = &tail[..n];
+            let numeric = body.bytes().all(|b| b.is_ascii_digit());
+            let entity = format!("&{}{body};", if numeric { "#" } else { "" });
             let dec = crate::flowchart::db::decode_html_entities(&entity);
             if dec != entity {
                 out.push_str(&dec);

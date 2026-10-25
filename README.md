@@ -70,7 +70,7 @@ mermaid itself embeds, so no port can match those bytes.
 | sequenceDiagram | ✅ done | 37 | blocks, activations, autonumber, boxes, actor figures |
 | stateDiagram-v2 | ✅ done | 29 | 23 byte-exact, 6 modulo rough.js + random divider id |
 | classDiagram | ✅ done | 9 | byte-exact modulo rough.js rectangle/divider randomness |
-| gantt | ✅ done | 5 | byte-exact modulo the render-time today marker |
+| gantt | ✅ done | 5 | byte-exact modulo the render-time today marker; `weekend`, `displayMode compact` and forward `until`/`after` references supported |
 | timeline | ✅ done | 4 | byte-exact |
 | pie | ✅ done | 4 | byte-exact |
 | erDiagram | ✅ done | 3 | byte-exact modulo rough.js randomness |
@@ -95,6 +95,16 @@ mermaid itself embeds, so no port can match those bytes.
 | wardley-beta | ✅ done | 35/39 pele | annotation-box text metrics differ in 4 cases |
 | ishikawa / ishikawa-beta | ✅ done | 13 | byte-exact except a 1-ulp `viewBox` width on some cases (compared rounded to 1e-3); `look: handDrawn` renders the classic geometry |
 | pyramid | 🔵 extension | smoke | **sebastian-only** diagram (no mermaid equivalent): pyramid chart + pyramid of components; original renderer, not a port. Behind the `mermaid-extensions` feature (on by default) |
+
+> **Note on the pele corpus.** `sebastian/tests/pele_corpus.rs` also runs
+> 555 diagrams imported from [pele](https://github.com/obsidianmd/pele)
+> against mermaid 11.15.0 references, across every diagram type and theme.
+> 428 match byte for byte. The rest are listed in
+> `sebastian/tests/pele_cases/KNOWN_FAILURES.txt`, a ratchet: an unlisted
+> failure or a listed case that starts passing fails the test (regenerate with
+> `scripts/update-pele-known-failures.py`). The remaining gaps are mostly
+> mindmap and architecture layouts, C4, `venn` (not ported yet), a few
+> flowchart shapes and icons, and markdown (`**bold**`, `_em_`) labels.
 
 > **Note on mindmap and architecture (approximate renderers).** Mermaid lays
 > both out with force-directed engines that have no byte-exact path here:
