@@ -1,0 +1,10 @@
+stateDiagram-v2
+      [*] --> Loop
+      state Loop {
+        [*] --> Spin
+      }
+      Loop --> Loop
+      Loop --> Exit
+      state Exit {
+        [*] --> Bye
+      }

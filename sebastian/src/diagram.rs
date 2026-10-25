@@ -12,9 +12,25 @@ use crate::render::{self, DiagramChrome, render_unified};
 /// Detects the mermaid diagram type of `source` from its header keyword.
 #[must_use]
 pub fn detect_diagram_type(source: &str) -> &'static str {
+    // A leading `---` YAML front-matter block is skipped.
+    let mut in_front_matter = false;
+    let mut first = true;
     for raw in source.lines() {
         let t = raw.trim();
-        if t.is_empty() || t.starts_with("%%") || t.starts_with('#') {
+        if in_front_matter {
+            in_front_matter = t != "---";
+            continue;
+        }
+        if t.is_empty() {
+            continue;
+        }
+        if first && t == "---" {
+            in_front_matter = true;
+            first = false;
+            continue;
+        }
+        first = false;
+        if t.starts_with("%%") || t.starts_with('#') {
             continue;
         }
         if t.starts_with("stateDiagram") {
@@ -68,6 +84,12 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         }
         if t.starts_with("quadrantChart") {
             return "quadrant";
+        }
+        if t.eq_ignore_ascii_case("ishikawa")
+            || t.eq_ignore_ascii_case("ishikawa-beta")
+            || t.to_ascii_lowercase().starts_with("ishikawa ")
+        {
+            return "ishikawa";
         }
         if t == "packet" || t == "packet-beta" || t.starts_with("packet ") {
             return "packet";
@@ -146,6 +168,10 @@ pub fn render_diagram(source: &str, id: &str) -> Result<String, Box<dyn std::err
 }
 
 fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::error::Error>> {
+    // Front matter (`---` ... `---`) carries `config:`; fold it into an init
+    // directive so every renderer reads configuration from one place.
+    let normalized = crate::frontmatter::normalize(source);
+    let source = normalized.as_str();
     // HAND-DRAWN EXTENSION: the handwritten label font applies to every
     // diagram type, so it is injected once here instead of in each renderer.
     // Text metrics must come from the same font, so measurement is switched
@@ -215,6 +241,7 @@ fn render_by_type(source: &str, id: &str) -> Result<String, Box<dyn std::error::
         "gitgraph" => crate::gitgraph::render_gitgraph(source, id).map_err(Into::into),
         "journey" => crate::journey::render_journey(source, id).map_err(Into::into),
         "quadrant" => crate::quadrant::render_quadrant(source, id).map_err(Into::into),
+        "ishikawa" => crate::ishikawa::render_ishikawa(source, id).map_err(Into::into),
         "packet" => crate::packet::render_packet(source, id).map_err(Into::into),
         "radar" => crate::radar::render_radar(source, id).map_err(Into::into),
         "sankey" => crate::sankey::render_sankey(source, id).map_err(Into::into),

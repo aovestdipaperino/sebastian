@@ -1060,6 +1060,99 @@ pub fn themed_packet_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The ishikawa stylesheet (port of `diagrams/ishikawa/ishikawaStyles.ts`).
+#[must_use]
+pub fn themed_ishikawa_css(id: &str, vars: &Map<String, Value>) -> String {
+    let v = |key: &str| super::themes::get(vars, key);
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    let line = v("lineColor");
+    rule(
+        &mut o,
+        &i,
+        &[
+            " .ishikawa .ishikawa-spine",
+            " .ishikawa .ishikawa-branch",
+            " .ishikawa .ishikawa-sub-branch",
+        ],
+        &format!("stroke:{line};stroke-width:2;fill:none;"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-sub-branch"],
+        "stroke-width:1;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-arrow"],
+        &format!("fill:{line};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-head"],
+        &format!("fill:{};stroke:{line};stroke-width:2;", v("mainBkg")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-label-box"],
+        &format!("fill:{};stroke:{line};stroke-width:2;", v("mainBkg")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa text"],
+        &format!(
+            "font-family:{};font-size:{};fill:{};",
+            v("fontFamily"),
+            v("fontSize"),
+            v("textColor")
+        ),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-head-label"],
+        "font-weight:600;text-anchor:middle;dominant-baseline:middle;font-size:14px;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-label"],
+        "text-anchor:end;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-label.cause"],
+        "text-anchor:middle;dominant-baseline:middle;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-label.align"],
+        "text-anchor:end;dominant-baseline:middle;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-label.up"],
+        "dominant-baseline:baseline;",
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .ishikawa .ishikawa-label.down"],
+        "dominant-baseline:hanging;",
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The user-journey stylesheet (port of `diagrams/user-journey/styles.js`).
 #[must_use]
 pub fn themed_journey_css(id: &str, vars: &Map<String, Value>) -> String {

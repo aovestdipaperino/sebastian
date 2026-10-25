@@ -6,6 +6,21 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **ishikawa (fishbone) diagrams**, a port of mermaid 11.15.0's
+  `ishikawaDb`/`ishikawaRenderer`. The indentation rules follow the upstream
+  grammar, informed by obsidianmd/pele (MIT, kepano). 13 fixtures; all are
+  byte-identical except for a one-ulp difference in the root `viewBox`
+  width on a few cases.
+- **YAML front matter.** A leading `---` block is stripped and its `config:`
+  is folded into an `%%{init}%%` directive before rendering (new
+  `sebastian::frontmatter`). `title:` is not applied yet.
+- `detect_diagram_type` skips a leading YAML front-matter block.
+- **`pele_cases` corpus**: 555 diagram sources from obsidianmd/pele (Mermaid
+  docs examples and ported spec strings) with mermaid 11.15.0 references.
+  196 match byte for byte; the rest are listed in `KNOWN_FAILURES.txt`, which
+  the test enforces as a ratchet.
+
 ## [0.9.1] — 2026-09-11
 
 ### Fixed

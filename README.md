@@ -89,6 +89,7 @@ mermaid itself embeds, so no port can match those bytes.
 | architecture | 🟡 approximate | smoke | renders with a deterministic directional grid; **not byte-exact** (mermaid uses cytoscape-`fcose`, `Math.random`-seeded) |
 | requirement | 🟡 approximate | smoke | reuses the unified dagre pipeline as multi-line boxes; **byte-exact closed as intractable** (box `max-width` doesn't match ground-truth Chrome `getBBox`) |
 | C4 (Context/Container/Component/Dynamic/Deployment) | 🟡 approximate | smoke | deterministic row-based layout; **byte-exact closed as intractable** (same `getBBox` finding) |
+| ishikawa / ishikawa-beta | ✅ done | 13 | byte-exact except a 1-ulp `viewBox` width on some cases (compared rounded to 1e-3); `look: handDrawn` renders the classic geometry |
 | pyramid | 🔵 extension | smoke | **sebastian-only** diagram (no mermaid equivalent): pyramid chart + pyramid of components; original renderer, not a port. Behind the `mermaid-extensions` feature (on by default) |
 
 > **Note on mindmap and architecture (approximate renderers).** Mermaid lays

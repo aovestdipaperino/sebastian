@@ -798,4 +798,28 @@ impl TextMeasurer {
         #[allow(clippy::cast_possible_truncation)]
         (asc, desc, f64::from(snapped as f32))
     }
+
+    /// Bold-face x-height in px at `font_size` (CSS `ex` / `dominant-baseline:
+    /// middle` shift of bold text), same fallbacks as [`Self::bold_metrics`].
+    #[must_use]
+    pub fn bold_x_height_px(&self, font_size: f64) -> f64 {
+        let data = if is_hand_drawn() {
+            hand_drawn_bold_font()
+        } else {
+            BOLD_CANDIDATES
+                .iter()
+                .find_map(|p| read_font(p))
+                .unwrap_or_else(|| CABIN_FALLBACK.to_vec())
+        };
+        let face = Face::parse(&data, 0).expect("valid font");
+        let units = face.x_height().map_or_else(
+            || {
+                face.glyph_index('x')
+                    .and_then(|g| face.glyph_bounding_box(g))
+                    .map_or(0, |b| b.y_max)
+            },
+            i16::from,
+        );
+        f64::from(units) * font_size / f64::from(face.units_per_em())
+    }
 }
