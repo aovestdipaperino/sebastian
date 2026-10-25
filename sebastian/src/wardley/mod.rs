@@ -754,7 +754,14 @@ pub fn render_wardley(source: &str, id: &str) -> Result<String, WardleyParseErro
         component_stroke: wv("componentStroke", &tv("lineColor")),
         component_label: wv("componentLabelColor", &tv("primaryTextColor")),
         link_stroke: wv("linkStroke", &tv("lineColor")),
-        evolution_stroke: wv("evolutionStroke", "#dc3545"),
+        evolution_stroke: wv("evolutionStroke", &{
+            let c = tv("wardleyEvolutionColor");
+            if c.is_empty() {
+                "#dc3545".to_owned()
+            } else {
+                c
+            }
+        }),
         annotation_fill: wv("annotationFill", &tv("background")),
     };
     let annotation_stroke = wv("annotationStroke", &tv("lineColor"));

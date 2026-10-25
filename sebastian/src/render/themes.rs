@@ -95,90 +95,78 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
     match theme {
         "base" => {
             ctor_base(&mut vars);
-            merge_ctor(&mut vars, super::themes_gen::ctor_base);
-            calculate(
+            calculate(&mut vars, overrides, update_base);
+            overlay_generated(
                 &mut vars,
                 overrides,
-                update_base,
-                Some(super::themes_gen::fill_base),
+                super::themes_gen::ctor_base,
+                super::themes_gen::fill_base,
             );
         }
         "dark" => {
             ctor_dark(&mut vars);
-            merge_ctor(&mut vars, super::themes_gen::ctor_dark);
-            calculate(
+            calculate(&mut vars, overrides, update_dark);
+            overlay_generated(
                 &mut vars,
                 overrides,
-                update_dark,
-                Some(super::themes_gen::fill_dark),
+                super::themes_gen::ctor_dark,
+                super::themes_gen::fill_dark,
             );
         }
         "forest" => {
             ctor_forest(&mut vars);
-            merge_ctor(&mut vars, super::themes_gen::ctor_forest);
-            calculate(
+            calculate(&mut vars, overrides, update_forest);
+            overlay_generated(
                 &mut vars,
                 overrides,
-                update_forest,
-                Some(super::themes_gen::fill_forest),
+                super::themes_gen::ctor_forest,
+                super::themes_gen::fill_forest,
             );
         }
         "neutral" => {
             ctor_neutral(&mut vars);
-            merge_ctor(&mut vars, super::themes_gen::ctor_neutral);
-            calculate(
+            calculate(&mut vars, overrides, update_neutral);
+            overlay_generated(
                 &mut vars,
                 overrides,
-                update_neutral,
-                Some(super::themes_gen::fill_neutral),
+                super::themes_gen::ctor_neutral,
+                super::themes_gen::fill_neutral,
             );
         }
         _ => {
             // default (and the fallback for unknown themes via config.ts)
             ctor_default(&mut vars);
             update_default(&mut vars);
-            calculate(&mut vars, overrides, update_default, None);
+            calculate(&mut vars, overrides, update_default);
         }
     }
     vars
 }
 
-/// Adds the constructor variables the hand-written ports do not set, by
-/// running the generated constructor on a blank theme.
-fn merge_ctor(vars: &mut Vars, generated: fn(&mut Vars)) {
-    let mut fresh = Vars::new();
-    generated(&mut fresh);
-    for (k, v) in fresh {
-        if unset(vars, &k) {
-            vars.insert(k, v);
-        }
+/// Runs the generated port (`themes_gen.rs`: the JS constructor and
+/// `updateColors` statement for statement) on a blank theme and lets its
+/// values replace the hand-written port's. The hand-written port keeps the
+/// variables the generator cannot express.
+fn overlay_generated(vars: &mut Vars, overrides: &Vars, ctor: fn(&mut Vars), fill: fn(&mut Vars)) {
+    let mut generated = Vars::new();
+    ctor(&mut generated);
+    for (k, v) in overrides {
+        generated.insert(k.clone(), v.clone());
+    }
+    fill(&mut generated);
+    for (k, v) in overrides {
+        generated.insert(k.clone(), v.clone());
+    }
+    for (k, v) in generated {
+        vars.insert(k, v);
     }
 }
 
-fn calculate(
-    vars: &mut Vars,
-    overrides: &Vars,
-    update: fn(&mut Vars),
-    generated: Option<fn(&mut Vars)>,
-) {
+fn calculate(vars: &mut Vars, overrides: &Vars, update: fn(&mut Vars)) {
     for (k, v) in overrides {
         vars.insert(k.clone(), v.clone());
     }
-    // The generated port (themes_gen.rs) runs on its own copy of the
-    // constructor state.
-    let mut extra = generated.map(|g| {
-        let mut copy = vars.clone();
-        g(&mut copy);
-        copy
-    });
     update(vars);
-    if let Some(extra) = extra.take() {
-        // The generated port follows the JS statement for statement, so its
-        // values win; the hand-written update only supplies what it lacks.
-        for (k, v) in extra {
-            vars.insert(k, v);
-        }
-    }
     for (k, v) in overrides {
         vars.insert(k.clone(), v.clone());
     }

@@ -1103,20 +1103,106 @@ pub fn themed_radar_css(id: &str, vars: &Map<String, Value>, user: &Map<String, 
 
 /// The packet stylesheet (port of `diagrams/packet/styles.ts`, fixed defaults).
 #[must_use]
-pub fn themed_packet_css(id: &str, vars: &Map<String, Value>) -> String {
+pub fn themed_packet_css(
+    id: &str,
+    vars: &Map<String, Value>,
+    user: &Map<String, Value>,
+    theme: &str,
+) -> String {
     let i = format!("#{id}");
     let mut o = String::new();
     css_prefix(&mut o, &i, vars);
-    rule(&mut o, &i, &[" .packetByte"], "font-size:10px;");
-    rule(&mut o, &i, &[" .packetByte.start"], "fill:black;");
-    rule(&mut o, &i, &[" .packetByte.end"], "fill:black;");
-    rule(&mut o, &i, &[" .packetLabel"], "fill:black;font-size:12px;");
-    rule(&mut o, &i, &[" .packetTitle"], "fill:black;font-size:14px;");
+    let v = |key: &str| super::themes::get(vars, key);
+    // `packet/styles.ts`: defaults, replaced by the theme's own `packet`
+    // object (dark, forest) or by the user's themeVariables.packet.
+    let mut opts: Vec<(&str, String)> = vec![
+        ("byteFontSize", "10px".to_owned()),
+        ("startByteColor", "black".to_owned()),
+        ("endByteColor", "black".to_owned()),
+        ("labelColor", "black".to_owned()),
+        ("labelFontSize", "12px".to_owned()),
+        ("titleColor", "black".to_owned()),
+        ("titleFontSize", "14px".to_owned()),
+        ("blockStrokeColor", "black".to_owned()),
+        ("blockStrokeWidth", "1".to_owned()),
+        ("blockFillColor", "#efefef".to_owned()),
+    ];
+    let set = |opts: &mut Vec<(&str, String)>, key: &str, value: String| {
+        if let Some(slot) = opts.iter_mut().find(|(k, _)| *k == key) {
+            slot.1 = value;
+        }
+    };
+    // A user `themeVariables.packet` leaves the plain defaults in every
+    // theme (observed against mermaid 11.15.0).
+    if user.contains_key("packet") {
+        // defaults
+    } else {
+        // dark and forest define their own `packet` object.
+        let fill = match theme {
+            "dark" => Some(v("background")),
+            "forest" => Some(v("mainBkg")),
+            _ => None,
+        };
+        if let Some(fill) = fill {
+            let text = v("primaryTextColor");
+            for key in [
+                "startByteColor",
+                "endByteColor",
+                "labelColor",
+                "titleColor",
+                "blockStrokeColor",
+            ] {
+                set(&mut opts, key, text.clone());
+            }
+            set(&mut opts, "blockFillColor", fill);
+        }
+    }
+    let g = |key: &str| {
+        opts.iter()
+            .find(|(k, _)| *k == key)
+            .map(|(_, val)| val.clone())
+            .unwrap_or_default()
+    };
+    rule(
+        &mut o,
+        &i,
+        &[" .packetByte"],
+        &format!("font-size:{};", g("byteFontSize")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .packetByte.start"],
+        &format!("fill:{};", g("startByteColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .packetByte.end"],
+        &format!("fill:{};", g("endByteColor")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .packetLabel"],
+        &format!("fill:{};font-size:{};", g("labelColor"), g("labelFontSize")),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .packetTitle"],
+        &format!("fill:{};font-size:{};", g("titleColor"), g("titleFontSize")),
+    );
     rule(
         &mut o,
         &i,
         &[" .packetBlock"],
-        "stroke:black;stroke-width:1;fill:#efefef;",
+        &format!(
+            "stroke:{};stroke-width:{};fill:{};",
+            g("blockStrokeColor"),
+            g("blockStrokeWidth"),
+            g("blockFillColor")
+        ),
     );
     css_suffix(&mut o, &i, id, vars);
     o
@@ -1713,7 +1799,7 @@ pub fn themed_gantt_css(id: &str, vars: &Map<String, Value>) -> String {
             " .doneText3.taskTextOutsideLeft",
             " .doneText3.taskTextOutsideRight",
         ],
-        &format!("fill:{task_text_dark}!important;"),
+        &format!("fill:{task_text_outside}!important;"),
     );
     rule(
         &mut o,
@@ -1771,7 +1857,7 @@ pub fn themed_gantt_css(id: &str, vars: &Map<String, Value>) -> String {
             " .doneCritText3.taskTextOutsideLeft",
             " .doneCritText3.taskTextOutsideRight",
         ],
-        &format!("fill:{task_text_dark}!important;"),
+        &format!("fill:{task_text_outside}!important;"),
     );
     rule(&mut o, &i, &[" .vert"], &format!("stroke:{vert_line};"));
     rule(

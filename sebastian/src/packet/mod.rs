@@ -364,7 +364,12 @@ pub fn render_packet(source: &str, id: &str) -> Result<String, PacketParseError>
     let style_el = append(&svg, "style");
     set_text(
         &style_el,
-        &crate::render::css::themed_packet_css(id, &theme_vars),
+        &crate::render::css::themed_packet_css(
+            id,
+            &theme_vars,
+            &config.theme_variables,
+            &config.theme,
+        ),
     );
     let _empty = append(&svg, "g");
 
