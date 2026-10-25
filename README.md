@@ -91,6 +91,7 @@ mermaid itself embeds, so no port can match those bytes.
 | C4 (Context/Container/Component/Dynamic/Deployment) | 🟡 approximate | smoke | deterministic row-based layout; **byte-exact closed as intractable** (same `getBBox` finding) |
 | info | ✅ done | 2 pele | byte-exact (draws the mermaid version) |
 | treeView-beta | ✅ done | 3 pele | byte-exact incl. `treeView` config and theme variables |
+| wardley-beta | ✅ done | 35/39 pele | annotation-box text metrics differ in 4 cases |
 | ishikawa / ishikawa-beta | ✅ done | 13 | byte-exact except a 1-ulp `viewBox` width on some cases (compared rounded to 1e-3); `look: handDrawn` renders the classic geometry |
 | pyramid | 🔵 extension | smoke | **sebastian-only** diagram (no mermaid equivalent): pyramid chart + pyramid of components; original renderer, not a port. Behind the `mermaid-extensions` feature (on by default) |
 

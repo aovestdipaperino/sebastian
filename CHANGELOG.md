@@ -26,6 +26,8 @@ project adheres to [Semantic Versioning](https://semver.org/).
   per-point `radius`/`color`/`stroke-color`/`stroke-width`, `classDef`, a
   trailing `-->` on axes, and `chartWidth`/`chartHeight` from config. The
   render config now keeps the merged directive in `RenderConfig::raw`.
+- **`wardley-beta`** diagram (port of the mermaid 11.15.0 parser, builder and
+  renderer).
 - **`info`** and **`treeView-beta`** diagrams (ports of the mermaid 11.15.0
   renderers); xychart text height now accounts for glyph ink, and plot titles
   may be bare words.

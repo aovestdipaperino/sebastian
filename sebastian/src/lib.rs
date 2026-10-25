@@ -79,6 +79,7 @@ pub mod text;
 pub mod timeline;
 pub mod treemap;
 pub mod treeview;
+pub mod wardley;
 pub mod xychart;
 
 #[cfg(feature = "raster")]
