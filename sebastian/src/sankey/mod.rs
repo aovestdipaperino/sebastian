@@ -35,10 +35,16 @@ impl std::fmt::Display for SankeyParseError {
 impl std::error::Error for SankeyParseError {}
 
 // Fixed defaults from `DEFAULT_CONFIG.sankey` (config.schema.yaml).
-const WIDTH: f64 = 600.0;
-const HEIGHT: f64 = 400.0;
-const NODE_WIDTH: f64 = 10.0;
-const NODE_PADDING: f64 = 12.0;
+struct Conf {
+    width: f64,
+    height: f64,
+    node_width: f64,
+    node_padding: f64,
+    show_values: bool,
+    prefix: String,
+    suffix: String,
+    align: String,
+}
 const ITERATIONS: usize = 6;
 
 /// `schemeTableau10` (d3-scale-chromatic), used by `scaleOrdinal`.
@@ -293,11 +299,10 @@ fn resolve_collisions(nodes: &mut [Node], col: &[usize], alpha: f64, py: f64, y0
 }
 
 #[allow(clippy::too_many_lines)]
-fn layout(g: &mut Graph) {
-    let (x0, y0, x1, y1) = (0.0, 0.0, WIDTH, HEIGHT);
-    let dx = NODE_WIDTH;
-    // showValues is true by default → nodePadding + 15.
-    let dy = NODE_PADDING + 15.0;
+fn layout(g: &mut Graph, conf: &Conf) {
+    let (x0, y0, x1, y1) = (0.0, 0.0, conf.width, conf.height);
+    let dx = conf.node_width;
+    let dy = conf.node_padding + if conf.show_values { 15.0 } else { 0.0 };
     let nodes = &mut g.nodes;
     let links = &g.links;
 
@@ -323,13 +328,34 @@ fn layout(g: &mut Graph) {
     let max_depth = nodes.iter().map(|n| n.depth).max().unwrap_or(0);
     let x = max_depth + 1;
     let kx = (x1 - x0 - dx) / (x - 1) as f64;
+    let depths: Vec<i64> = nodes.iter().map(|n| n.depth).collect();
     let mut columns: Vec<Vec<usize>> = vec![Vec::new(); x as usize];
     for (ni, node) in nodes.iter_mut().enumerate() {
-        // align = justify
-        let a = if node.source_links.is_empty() {
-            (x - 1) as f64
-        } else {
-            node.depth as f64
+        let a = match conf.align.as_str() {
+            "left" => node.depth as f64,
+            "right" => (x - 1 - node.height) as f64,
+            "center" => {
+                if !node.target_links.is_empty() {
+                    node.depth as f64
+                } else if !node.source_links.is_empty() {
+                    (node
+                        .source_links
+                        .iter()
+                        .map(|&l| depths[links[l].target])
+                        .min()
+                        .unwrap_or(0)
+                        - 1) as f64
+                } else {
+                    0.0
+                }
+            }
+            _ => {
+                if node.source_links.is_empty() {
+                    (x - 1) as f64
+                } else {
+                    node.depth as f64
+                }
+            }
         };
         let i = (a.floor() as i64).clamp(0, x - 1);
         node.layer = i;
@@ -530,9 +556,55 @@ pub fn render_sankey(source: &str, id: &str) -> Result<String, SankeyParseError>
     let config = crate::render::config::detect_init(source);
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let mut g = parse(source)?;
-    layout(&mut g);
+    let sk = config.raw.get("sankey");
+    let num = |k: &str, d: f64| {
+        sk.and_then(|c| c.get(k))
+            .and_then(serde_json::Value::as_f64)
+            .unwrap_or(d)
+    };
+    let text = |k: &str, d: &str| {
+        sk.and_then(|c| c.get(k))
+            .and_then(|v| v.as_str())
+            .unwrap_or(d)
+            .to_owned()
+    };
+    let conf = Conf {
+        width: num("width", 600.0),
+        height: num("height", 400.0),
+        node_width: num("nodeWidth", 10.0),
+        node_padding: num("nodePadding", 12.0),
+        show_values: sk
+            .and_then(|c| c.get("showValues"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(true),
+        prefix: text("prefix", ""),
+        suffix: text("suffix", ""),
+        align: text("nodeAlignment", "justify"),
+    };
+    let label_style = text("labelStyle", "legacy");
+    let link_color = text("linkColor", "gradient");
+    layout(&mut g, &conf);
 
-    let node_color = |i: usize| TABLEAU10[i % 10];
+    // scaleOrdinal assigns palette slots in first-use order; custom node
+    // colors do not consume one.
+    let mut palette_next = 0usize;
+    let node_colors: Vec<String> = g
+        .ids
+        .iter()
+        .map(|id| {
+            sk.and_then(|c| c.get("nodeColors"))
+                .and_then(|c| c.get(id))
+                .and_then(|v| v.as_str())
+                .map_or_else(
+                    || {
+                        palette_next += 1;
+                        TABLEAU10[(palette_next - 1) % 10].to_owned()
+                    },
+                    str::to_owned,
+                )
+        })
+        .collect();
+    let node_color = |i: usize| node_colors[i].as_str();
 
     let svg = crate::svg::new_element("svg");
     set_attr(&svg, "id", id);
@@ -573,23 +645,61 @@ pub fn render_sankey(source: &str, id: &str) -> Result<String, SankeyParseError>
         set_attr(&rect, "fill", node_color(i));
     }
 
-    // Node labels (showValues = true).
+    // Node labels.
     let labels_g = append(&svg, "g");
     set_attr(&labels_g, "class", "node-labels");
     set_attr(&labels_g, "font-size", "14");
-    for (i, node) in g.nodes.iter().enumerate() {
-        let (lx, anchor) = if node.x0 < WIDTH / 2.0 {
-            (node.x1 + 6.0, "start")
-        } else {
-            (node.x0 - 6.0, "end")
-        };
-        let text = append(&labels_g, "text");
-        set_attr(&text, "x", js_num(lx));
-        set_attr(&text, "y", js_num((node.y1 + node.y0) / 2.0));
-        set_attr(&text, "dy", "0em");
-        set_attr(&text, "text-anchor", anchor);
-        let rounded = (node.value * 100.0).round() / 100.0;
-        set_text(&text, &format!("{}\n{}", g.ids[i], js_num(rounded)));
+    let outlined = label_style == "outlined";
+    let central_layer = {
+        let mut best = (0.0, 0);
+        for n in &g.nodes {
+            if n.value > best.0 {
+                best = (n.value, n.layer);
+            }
+        }
+        best.1
+    };
+    let passes: &[Option<&str>] = if outlined {
+        &[Some("sankey-label-bg"), Some("sankey-label-fg")]
+    } else {
+        &[None]
+    };
+    for class in passes {
+        for (i, node) in g.nodes.iter().enumerate() {
+            let left = if outlined {
+                node.layer < central_layer
+            } else {
+                node.x0 >= conf.width / 2.0
+            };
+            let (lx, anchor) = if left {
+                (node.x0 - 6.0, "end")
+            } else {
+                (node.x1 + 6.0, "start")
+            };
+            let t = append(&labels_g, "text");
+            if let Some(c) = class {
+                set_attr(&t, "class", *c);
+            }
+            set_attr(&t, "x", js_num(lx));
+            set_attr(&t, "y", js_num((node.y1 + node.y0) / 2.0));
+            set_attr(&t, "dy", if conf.show_values { "0em" } else { "0.35em" });
+            set_attr(&t, "text-anchor", anchor);
+            if conf.show_values {
+                let rounded = (node.value * 100.0).round() / 100.0;
+                set_text(
+                    &t,
+                    &format!(
+                        "{}\n{}{}{}",
+                        g.ids[i],
+                        conf.prefix,
+                        js_num(rounded),
+                        conf.suffix
+                    ),
+                );
+            } else {
+                set_text(&t, &g.ids[i]);
+            }
+        }
     }
 
     // Links.
@@ -604,17 +714,19 @@ pub fn render_sankey(source: &str, id: &str) -> Result<String, SankeyParseError>
         let gid = next_uid();
         let s = &g.nodes[link.source];
         let t = &g.nodes[link.target];
-        let grad = append(&lg, "linearGradient");
-        set_attr(&grad, "id", format!("linearGradient-{gid}"));
-        set_attr(&grad, "gradientUnits", "userSpaceOnUse");
-        set_attr(&grad, "x1", js_num(s.x1));
-        set_attr(&grad, "x2", js_num(t.x0));
-        let stop0 = append(&grad, "stop");
-        set_attr(&stop0, "offset", "0%");
-        set_attr(&stop0, "stop-color", node_color(link.source));
-        let stop1 = append(&grad, "stop");
-        set_attr(&stop1, "offset", "100%");
-        set_attr(&stop1, "stop-color", node_color(link.target));
+        if link_color == "gradient" {
+            let grad = append(&lg, "linearGradient");
+            set_attr(&grad, "id", format!("linearGradient-{gid}"));
+            set_attr(&grad, "gradientUnits", "userSpaceOnUse");
+            set_attr(&grad, "x1", js_num(s.x1));
+            set_attr(&grad, "x2", js_num(t.x0));
+            let stop0 = append(&grad, "stop");
+            set_attr(&stop0, "offset", "0%");
+            set_attr(&stop0, "stop-color", node_color(link.source));
+            let stop1 = append(&grad, "stop");
+            set_attr(&stop1, "offset", "100%");
+            set_attr(&stop1, "stop-color", node_color(link.target));
+        }
         // sankeyLinkHorizontal cubic: M sx,sy C xi,sy,xi,ty,tx,ty
         let (sx, sy, tx, ty) = (s.x1, link.y0, t.x0, link.y1);
         let xi = (sx + tx) / 2.0;
@@ -633,23 +745,63 @@ pub fn render_sankey(source: &str, id: &str) -> Result<String, SankeyParseError>
         );
         let path = append(&lg, "path");
         set_attr(&path, "d", d);
-        set_attr(&path, "stroke", format!("url(#linearGradient-{gid})"));
+        let stroke = match link_color.as_str() {
+            "gradient" => format!("url(#linearGradient-{gid})"),
+            "source" => node_color(link.source).to_owned(),
+            "target" => node_color(link.target).to_owned(),
+            other => other.to_owned(),
+        };
+        set_attr(&path, "stroke", stroke);
         set_attr(&path, "stroke-width", js_num(link.width.max(1.0)));
     }
 
     // setupGraphViewbox: bbox of rendered geometry (text ignored), padding 0.
     let bounds = crate::render::bbox::element_bbox(&svg);
-    let f32q = |v: f64| f64::from(v as f32);
-    let (bx, by, bw, bh) = if bounds.is_empty() {
+    let (mut x0, mut y0, mut x1, mut y1) = if bounds.is_empty() {
         (0.0, 0.0, 0.0, 0.0)
     } else {
         (
-            f32q(bounds.min_x),
-            f32q(bounds.min_y),
-            f32q(bounds.width()),
-            f32q(bounds.height()),
+            bounds.min_x,
+            bounds.min_y,
+            bounds.min_x + bounds.width(),
+            bounds.min_y + bounds.height(),
         )
     };
+    // Label text is part of the svg's bounding box: advance width, and the
+    // font box from baseline - ascent.
+    let tm = crate::text::TextMeasurer::new();
+    let asc = (1923.0f64 * 14.0 / 2048.0).round();
+    for class in passes {
+        let _ = class;
+        for (i, node) in g.nodes.iter().enumerate() {
+            let left = if outlined {
+                node.layer < central_layer
+            } else {
+                node.x0 >= conf.width / 2.0
+            };
+            let line = if conf.show_values {
+                let r = (node.value * 100.0).round() / 100.0;
+                format!("{} {}{}{}", g.ids[i], conf.prefix, js_num(r), conf.suffix)
+            } else {
+                g.ids[i].clone()
+            };
+            let w = tm.measure_advance_svg(&line, 14.0);
+            let (lx0, lx1) = if left {
+                (node.x0 - 6.0 - w, node.x0 - 6.0)
+            } else {
+                (node.x1 + 6.0, node.x1 + 6.0 + w)
+            };
+            let base = (node.y0 + node.y1) / 2.0 + if conf.show_values { 0.0 } else { 0.35 * 14.0 };
+            let top = base - asc;
+            let bottom = top + tm.ink_height(&line, 14.0);
+            x0 = x0.min(lx0);
+            x1 = x1.max(lx1);
+            y0 = y0.min(top);
+            y1 = y1.max(bottom);
+        }
+    }
+    let f32q = |v: f64| f64::from(v as f32);
+    let (bx, by, bw, bh) = (f32q(x0), f32q(y0), f32q(x1 - x0), f32q(y1 - y0));
     set_attr(
         &svg,
         "style",

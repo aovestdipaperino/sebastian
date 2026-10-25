@@ -148,10 +148,6 @@ radar/radar-spec000
 radar/radar-spec001
 radar/radar-spec002
 sankey/sankey-docs000
-sankey/sankey-docs002
-sankey/sankey-docs005
-sankey/sankey-docs006
-sankey/sankey-docs007
 sequence/sequence-docs012
 sequence/sequence-docs013
 sequence/sequence-docs014
