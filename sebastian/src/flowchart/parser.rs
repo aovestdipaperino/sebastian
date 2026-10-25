@@ -535,7 +535,9 @@ impl Parser {
                 Tok::ShapeData(_) => {
                     let data = self.collect_shape_data();
                     let last = prev_group.last().cloned().unwrap_or_default();
-                    self.apply_shape_data(&last, &data);
+                    // `parse_node_group` already applied (and counted) this data
+                    // before backtracking.
+                    self.apply_shape_data(&last, &data, false);
                 }
                 _ => break,
             }
@@ -555,7 +557,7 @@ impl Parser {
     /// `@{...}` metadata: shape, label and labelType keys. A label set here
     /// is a markdown label unless `labelType` says `text` or `string`
     /// (`flowDb.sanitizeNodeLabelType`).
-    fn apply_shape_data(&mut self, id: &str, data: &str) {
+    fn apply_shape_data(&mut self, id: &str, data: &str, counts_vertex: bool) {
         // `e1@{ animate: true }` targets an edge when the id names one.
         if self.db.edges.iter().any(|e| e.id == id) {
             for part in data.split(',') {
@@ -565,6 +567,10 @@ impl Parser {
                 self.db.set_edge_metadata(id, key, value);
             }
             return;
+        }
+        // The shape-data statement is itself an `addVertex` call.
+        if counts_vertex {
+            self.db.vertex_counter += 1;
         }
         let mut label: Option<String> = None;
         let mut label_type: Option<String> = None;
@@ -604,7 +610,7 @@ impl Parser {
             if matches!(self.peek(), Tok::ShapeData(_)) {
                 let data = self.collect_shape_data();
                 let last = group.last().cloned().unwrap_or_default();
-                self.apply_shape_data(&last, &data);
+                self.apply_shape_data(&last, &data, true);
                 self.skip_spaces();
             }
             if matches!(self.peek(), Tok::Amp) {

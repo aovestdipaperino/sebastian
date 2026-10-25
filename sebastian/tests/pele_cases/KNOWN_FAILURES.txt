@@ -44,12 +44,6 @@ flowchart/flowchart-docs051
 flowchart/flowchart-docs102
 flowchart/flowchart-docs111
 flowchart/flowchart-docs112
-flowchart/flowchart-spec002
-flowchart/flowchart-spec003
-flowchart/flowchart-spec004
-flowchart/flowchart-spec005
-flowchart/flowchart-spec006
-flowchart/flowchart-spec007
 gantt/gantt-docs002
 gantt/gantt-docs004
 gantt/gantt-docs010

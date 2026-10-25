@@ -563,23 +563,24 @@ impl FlowDb {
         let title = sanitize_text(title_text.trim());
         self.sub_count += 1;
 
+        // `makeUniq`: members already owned by an earlier subgraph stay there.
+        let nodes: Vec<String> = node_list
+            .into_iter()
+            .filter(|n| !self.sub_graphs.iter().any(|sg| sg.nodes.contains(n)))
+            .collect();
         let subgraph = FlowSubGraph {
             id: id.clone(),
-            nodes: node_list,
+            nodes,
             title,
             dir,
             label_type: title_obj.map_or_else(|| "text".to_owned(), |t| t.label_type.clone()),
             classes: Vec::new(),
         };
 
-        // flowDb replaces an existing subgraph with the same id.
-        if let Some(&idx) = self.sub_graph_lookup.get(&id) {
-            self.sub_graphs[idx] = subgraph;
-        } else {
-            self.sub_graphs.push(subgraph);
-            self.sub_graph_lookup
-                .insert(id.clone(), self.sub_graphs.len() - 1);
-        }
+        // A repeated id adds another entry; the lookup points at the newest.
+        self.sub_graphs.push(subgraph);
+        self.sub_graph_lookup
+            .insert(id.clone(), self.sub_graphs.len() - 1);
         id
     }
 
