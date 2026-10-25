@@ -18,6 +18,7 @@ pub mod shapes;
 pub mod styles;
 pub mod svg_label;
 pub mod themes;
+mod themes_gen;
 
 use crate::svg::{append, js_num, new_element, serialize, set_attr, set_text};
 use crate::text::TextMeasurer;

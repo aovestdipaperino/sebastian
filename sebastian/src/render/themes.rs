@@ -52,7 +52,38 @@ fn set_if(vars: &mut Vars, key: &str, value: impl FnOnce(&Vars) -> String) {
     }
 }
 
-fn dark_mode(vars: &Vars) -> bool {
+/// Unconditional `this.x = expr` from the generated theme code.
+pub(super) fn set_var(vars: &mut Vars, key: &str, value: impl FnOnce(&Vars) -> String) {
+    let v = value(vars);
+    vars.insert(key.to_owned(), Value::String(v));
+}
+
+/// `this.x = this.x || expr` from the generated theme code.
+pub(super) fn fill(vars: &mut Vars, key: &str, value: impl FnOnce(&Vars) -> String) {
+    set_if(vars, key, value);
+}
+
+pub(super) fn js_truthy(s: &str) -> bool {
+    !s.is_empty() && s != "0" && s != "NaN"
+}
+
+pub(super) fn js_bool(b: bool) -> String {
+    if b { "true".to_owned() } else { String::new() }
+}
+
+pub(super) fn js_or(a: String, b: impl FnOnce() -> String) -> String {
+    if js_truthy(&a) { a } else { b() }
+}
+
+pub(super) fn js_and(a: String, b: impl FnOnce() -> String) -> String {
+    if js_truthy(&a) { b() } else { a }
+}
+
+pub(super) fn js_eq(a: &str, b: &str) -> bool {
+    a == b
+}
+
+pub(super) fn dark_mode(vars: &Vars) -> bool {
     get_bool(vars, "darkMode")
 }
 
@@ -64,35 +95,74 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
     match theme {
         "base" => {
             ctor_base(&mut vars);
-            calculate(&mut vars, overrides, update_base);
+            calculate(
+                &mut vars,
+                overrides,
+                update_base,
+                Some(super::themes_gen::fill_base),
+            );
         }
         "dark" => {
             ctor_dark(&mut vars);
-            calculate(&mut vars, overrides, update_dark);
+            calculate(
+                &mut vars,
+                overrides,
+                update_dark,
+                Some(super::themes_gen::fill_dark),
+            );
         }
         "forest" => {
             ctor_forest(&mut vars);
-            calculate(&mut vars, overrides, update_forest);
+            calculate(
+                &mut vars,
+                overrides,
+                update_forest,
+                Some(super::themes_gen::fill_forest),
+            );
         }
         "neutral" => {
             ctor_neutral(&mut vars);
-            calculate(&mut vars, overrides, update_neutral);
+            calculate(
+                &mut vars,
+                overrides,
+                update_neutral,
+                Some(super::themes_gen::fill_neutral),
+            );
         }
         _ => {
             // default (and the fallback for unknown themes via config.ts)
             ctor_default(&mut vars);
             update_default(&mut vars);
-            calculate(&mut vars, overrides, update_default);
+            calculate(&mut vars, overrides, update_default, None);
         }
     }
     vars
 }
 
-fn calculate(vars: &mut Vars, overrides: &Vars, update: fn(&mut Vars)) {
+fn calculate(
+    vars: &mut Vars,
+    overrides: &Vars,
+    update: fn(&mut Vars),
+    generated: Option<fn(&mut Vars)>,
+) {
     for (k, v) in overrides {
         vars.insert(k.clone(), v.clone());
     }
+    // The generated port (themes_gen.rs) runs on its own copy; it only
+    // supplies variables the hand-written update leaves unset.
+    let mut extra = generated.map(|g| {
+        let mut copy = vars.clone();
+        g(&mut copy);
+        copy
+    });
     update(vars);
+    if let Some(extra) = extra.take() {
+        for (k, v) in extra {
+            if unset(vars, &k) {
+                vars.insert(k, v);
+            }
+        }
+    }
     for (k, v) in overrides {
         vars.insert(k.clone(), v.clone());
     }
