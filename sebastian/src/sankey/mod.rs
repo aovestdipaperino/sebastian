@@ -127,7 +127,7 @@ fn parse(source: &str) -> Result<Graph, SankeyParseError> {
             if trimmed.is_empty() || trimmed.starts_with("%%") {
                 continue;
             }
-            if trimmed == "sankey-beta" {
+            if trimmed == "sankey-beta" || trimmed == "sankey" {
                 found_header = true;
                 continue;
             }

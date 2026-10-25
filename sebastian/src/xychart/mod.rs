@@ -245,7 +245,10 @@ fn parse(source: &str) -> Result<Db, XyParseError> {
             continue;
         }
         if !found_header {
-            let Some(rest) = line.strip_prefix("xychart-beta") else {
+            let Some(rest) = line
+                .strip_prefix("xychart-beta")
+                .or_else(|| line.strip_prefix("xychart"))
+            else {
                 return Err(XyParseError {
                     message: format!("expected xychart-beta header, got {line:?}"),
                 });

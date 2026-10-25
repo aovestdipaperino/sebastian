@@ -15,6 +15,13 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - **YAML front matter.** A leading `---` block is stripped and its `config:`
   is folded into an `%%{init}%%` directive before rendering (new
   `sebastian::frontmatter`). `title:` is not applied yet.
+- **Accessibility statements.** `accTitle`, `accDescr:` and `accDescr { }`
+  are removed before rendering and emitted as `<title>`, `<desc>`,
+  `aria-labelledby` and `aria-describedby` (new `sebastian::a11y`), for every
+  diagram type.
+- Flowchart `@{ shape: ... }` accepts mermaid's short names and aliases
+  (`hex`, `cyl`, `lean-r`, `trap-b`, ...), and `@{ label }` is a markdown
+  label. `xychart` and `sankey` are accepted without the `-beta` suffix.
 - `detect_diagram_type` skips a leading YAML front-matter block.
 - **`pele_cases` corpus**: 555 diagram sources from obsidianmd/pele (Mermaid
   docs examples and ported spec strings) with mermaid 11.15.0 references.

@@ -37,6 +37,7 @@
 //! `sebastian-wasm` workspace crate and the
 //! [live demo](https://aovestdipaperino.github.io/sebastian/)).
 
+pub mod a11y;
 pub mod architecture;
 pub mod block;
 pub mod c4;

@@ -70,7 +70,7 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         {
             return "c4";
         }
-        if t.starts_with("xychart-beta") {
+        if t.starts_with("xychart") {
             return "xychart";
         }
         if t == "gantt" || t.starts_with("gantt ") {
@@ -171,7 +171,9 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
     // Front matter (`---` ... `---`) carries `config:`; fold it into an init
     // directive so every renderer reads configuration from one place.
     let normalized = crate::frontmatter::normalize(source);
-    let source = normalized.as_str();
+    // accTitle / accDescr become <title>/<desc> after rendering.
+    let (stripped, a11y) = crate::a11y::extract(&normalized);
+    let source = stripped.as_str();
     // HAND-DRAWN EXTENSION: the handwritten label font applies to every
     // diagram type, so it is injected once here instead of in each renderer.
     // Text metrics must come from the same font, so measurement is switched
@@ -196,7 +198,7 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
         crate::text::set_hand_drawn_family(family);
         ResetHandDrawn
     });
-    let svg = render_by_type(source, id)?;
+    let svg = crate::a11y::inject(&render_by_type(source, id)?, id, &a11y);
     if hand_drawn {
         let css = render::css::hand_drawn_font_css(id);
         // Flowchart injects the override in its own stylesheet already.
