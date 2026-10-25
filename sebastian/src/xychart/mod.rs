@@ -121,6 +121,8 @@ struct Db {
     has_set_y: bool,
     plots: Vec<Plot>,
     plot_index: usize,
+    /// `themeVariables.xyChart.plotColorPalette` override.
+    palette: Vec<String>,
 }
 
 impl Default for Db {
@@ -137,6 +139,7 @@ impl Default for Db {
             has_set_y: false,
             plots: Vec::new(),
             plot_index: 0,
+            palette: Vec::new(),
         }
     }
 }
@@ -190,12 +193,20 @@ impl Db {
     }
 
     fn plot_color(&self) -> String {
+        let len = if self.palette.is_empty() {
+            PLOT_COLOR_PALETTE.len()
+        } else {
+            self.palette.len()
+        };
         let idx = if self.plot_index == 0 {
             0
         } else {
-            self.plot_index % PLOT_COLOR_PALETTE.len()
+            self.plot_index % len
         };
-        PLOT_COLOR_PALETTE[idx].to_owned()
+        self.palette
+            .get(idx)
+            .cloned()
+            .unwrap_or_else(|| PLOT_COLOR_PALETTE[idx % PLOT_COLOR_PALETTE.len()].to_owned())
     }
 }
 
@@ -235,8 +246,11 @@ fn parse_category_list(s: &str) -> Option<Vec<String>> {
     Some(inner.split(',').map(unquote).collect())
 }
 
-fn parse(source: &str) -> Result<Db, XyParseError> {
-    let mut db = Db::default();
+fn parse(source: &str, palette: Vec<String>) -> Result<Db, XyParseError> {
+    let mut db = Db {
+        palette,
+        ..Db::default()
+    };
     let mut found_header = false;
     for raw in source.lines() {
         let line = raw.trim();
@@ -674,7 +688,34 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
     let config = crate::render::config::detect_init(source);
     let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
-    let db = parse(source)?;
+    let xy_theme = |key: &str| -> Option<String> {
+        config
+            .theme_variables
+            .get("xyChart")?
+            .get(key)?
+            .as_str()
+            .map(str::to_owned)
+    };
+    let palette: Vec<String> = xy_theme("plotColorPalette")
+        .map(|p| p.split(',').map(|c| c.trim().to_owned()).collect())
+        .unwrap_or_default();
+    let chart_w = config
+        .section_f64("xyChart", "width")
+        .unwrap_or(CHART_WIDTH);
+    let chart_h = config
+        .section_f64("xyChart", "height")
+        .unwrap_or(CHART_HEIGHT);
+    let xy_flag = |key: &str| {
+        config
+            .raw
+            .get("xyChart")
+            .and_then(|c| c.get(key))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false)
+    };
+    let show_data_label = xy_flag("showDataLabel");
+    let label_outside = xy_flag("showDataLabelOutsideBar");
+    let db = parse(source, palette)?;
     let measurer = XyMeasurer::new();
 
     let text_color = {
@@ -685,6 +726,8 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
             t
         }
     };
+    let title_color = xy_theme("titleColor").unwrap_or_else(|| text_color.clone());
+    let data_label_color = xy_theme("dataLabelColor").unwrap_or_else(|| text_color.clone());
     let background = {
         let b = crate::render::themes::get(&theme_vars, "background");
         if b.is_empty() { "white".to_owned() } else { b }
@@ -708,8 +751,8 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
 
     // Orchestrator.calculateVerticalSpace (horizontal orientation is not
     // exercised by the corpus; vertical only).
-    let mut available_width = CHART_WIDTH;
-    let mut available_height = CHART_HEIGHT;
+    let mut available_width = chart_w;
+    let mut available_height = chart_h;
     let mut chart_width = ((available_width * PLOT_RESERVED_PCT) / 100.0).floor();
     let mut chart_height = ((available_height * PLOT_RESERVED_PCT) / 100.0).floor();
     available_width -= chart_width;
@@ -753,13 +796,13 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
         "style",
         format!(
             "max-width: {}px; background-color: white;",
-            crate::render::css_length(CHART_WIDTH)
+            crate::render::css_length(chart_w)
         ),
     );
     set_attr(
         &svg,
         "viewBox",
-        format!("0 0 {} {}", js_num(CHART_WIDTH), js_num(CHART_HEIGHT)),
+        format!("0 0 {} {}", js_num(chart_w), js_num(chart_h)),
     );
     set_attr(&svg, "role", "graphics-document document");
     set_attr(&svg, "aria-roledescription", "xychart");
@@ -774,8 +817,8 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
     let main = append(&svg, "g");
     set_attr(&main, "class", "main");
     let bg = append(&main, "rect");
-    set_attr(&bg, "width", js_num(CHART_WIDTH));
-    set_attr(&bg, "height", js_num(CHART_HEIGHT));
+    set_attr(&bg, "width", js_num(chart_w));
+    set_attr(&bg, "height", js_num(chart_h));
     set_attr(&bg, "class", "background");
     set_attr(&bg, "fill", &background);
 
@@ -838,9 +881,9 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
         text_elem(
             &g,
             &db.title,
-            CHART_WIDTH / 2.0,
+            chart_w / 2.0,
             title_height / 2.0,
-            &text_color,
+            &title_color,
             TITLE_FONT_SIZE,
             0.0,
             "middle",
@@ -884,6 +927,61 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
                             &plot.color,
                             "",
                         );
+                    }
+                }
+                if show_data_label {
+                    // Uniform font size: the smallest that fits every bar
+                    // (width / (chars * 0.7), reduced until it fits).
+                    let bars: Vec<(f64, f64, f64, String)> = plot
+                        .data
+                        .iter()
+                        .map(|(cat, val)| {
+                            let x = x_axis.scale_value(cat);
+                            let y = y_axis.scale_value(&js_num(*val));
+                            (x - half, y, plot_y + chart_height - y, js_num(*val))
+                        })
+                        .filter(|b| bar_width > 0.0 && b.2 > 0.0)
+                        .collect();
+                    let y_offset = 10.0;
+                    let fit = |size: f64, label: &str, height: f64| {
+                        let text_w = size * label.chars().count() as f64 * 0.7;
+                        let centre = bar_width / 2.0;
+                        centre - text_w / 2.0 >= 0.0
+                            && centre + text_w / 2.0 <= bar_width
+                            && y_offset + size <= height
+                    };
+                    let uniform = bars
+                        .iter()
+                        .map(|(_, _, h, label)| {
+                            let mut size = bar_width / (label.chars().count() as f64 * 0.7);
+                            while !fit(size, label, *h) && size > 0.0 {
+                                size -= 1.0;
+                            }
+                            size
+                        })
+                        .fold(f64::INFINITY, f64::min)
+                        .floor();
+                    for (bx, by, _, label) in &bars {
+                        let t = append(&g, "text");
+                        set_attr(&t, "x", js_num(bx + bar_width / 2.0));
+                        set_attr(
+                            &t,
+                            "y",
+                            js_num(if label_outside {
+                                by - y_offset
+                            } else {
+                                by + y_offset
+                            }),
+                        );
+                        set_attr(&t, "text-anchor", "middle");
+                        set_attr(
+                            &t,
+                            "dominant-baseline",
+                            if label_outside { "auto" } else { "hanging" },
+                        );
+                        set_attr(&t, "fill", data_label_color.clone());
+                        set_attr(&t, "font-size", format!("{}px", js_num(uniform)));
+                        set_text(&t, label);
                     }
                 }
             }
