@@ -399,6 +399,36 @@ fn wrap_label(label: &str, max_width: f64, measurer: &SeqMeasurer) -> String {
     lines.join("<br/>")
 }
 
+thread_local! {
+    /// CSSOM-serialised `actorBorder` / `actorBkg` of the diagram being drawn,
+    /// used by the shapes that carry inline stroke styles.
+    static ACTOR_COLORS: std::cell::RefCell<(String, String)> = const {
+        std::cell::RefCell::new((String::new(), String::new()))
+    };
+}
+
+fn actor_border_color() -> String {
+    ACTOR_COLORS.with(|c| {
+        let v = c.borrow().0.clone();
+        if v.is_empty() {
+            "rgb(147, 112, 219)".to_owned()
+        } else {
+            v
+        }
+    })
+}
+
+fn actor_fill_color() -> String {
+    ACTOR_COLORS.with(|c| {
+        let v = c.borrow().1.clone();
+        if v.is_empty() {
+            "rgb(236, 236, 255)".to_owned()
+        } else {
+            v
+        }
+    })
+}
+
 /// Mermaid encodes `#9829;` / `#infin;` as entities before parsing; they
 /// reach the label as the decoded character.
 fn decode_hash_entities(text: &str) -> String {
@@ -438,6 +468,18 @@ pub fn render_sequence(source: &str, id: &str) -> Result<String, SeqParseError> 
     // module docs — this has no upstream sequence-renderer equivalent).
     let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
+    ACTOR_COLORS.with(|c| {
+        *c.borrow_mut() = (
+            crate::render::css::cssom_color_value(
+                "stroke",
+                &crate::render::themes::get(&theme_vars, "actorBorder"),
+            ),
+            crate::render::css::cssom_color_value(
+                "fill",
+                &crate::render::themes::get(&theme_vars, "actorBkg"),
+            ),
+        );
+    });
 
     // SVG scaffold.
     let svg = new_element("svg");
@@ -1869,7 +1911,8 @@ fn draw_actor_typed(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, is_
             format!("{base} actor-top")
         }
     };
-    let actor_border = "rgb(147, 112, 219)";
+    let actor_border = actor_border_color();
+    let actor_fill = actor_fill_color();
 
     match ty.as_str() {
         "database" => {
@@ -2127,7 +2170,7 @@ fn draw_actor_typed(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, is_
             set_attr(
                 &g,
                 "style",
-                format!("stroke: {actor_border}; fill: rgb(236, 236, 255);"),
+                format!("stroke: {actor_border}; fill: {actor_fill};"),
             );
         }
         "entity" => {
@@ -2332,7 +2375,7 @@ fn draw_actor_man(svg: &Element, actor: &mut Actor, actor_cnt: &mut usize, is_fo
     // getBBox of the stickman: circle top (y+10-15) to leg bottom (y+60).
     actor.height = 65.0;
 
-    set_attr(&g, "style", "stroke: rgb(147, 112, 219);");
+    set_attr(&g, "style", format!("stroke: {};", actor_border_color()));
 
     for (i, line) in split_breaks(&actor.description).iter().enumerate() {
         #[allow(clippy::cast_precision_loss)]

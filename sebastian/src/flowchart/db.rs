@@ -147,9 +147,41 @@ pub fn normalize_url(link: &str) -> String {
     url
 }
 
+/// Mermaid's `encodeEntities` turns `#quot;` / `#9829;` into entities before
+/// parsing; here they are rewritten to the `&name;` form the decoder knows.
+fn hash_entities_to_amp(text: &str) -> String {
+    if !text.contains('#') {
+        return text.to_owned();
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(i) = rest.find('#') {
+        out.push_str(&rest[..i]);
+        let tail = &rest[i + 1..];
+        let n = tail.bytes().take_while(u8::is_ascii_alphanumeric).count();
+        if n > 0 && tail.as_bytes().get(n) == Some(&b';') && !out.ends_with('&') {
+            let body = &tail[..n];
+            let numeric = body.bytes().all(|b| b.is_ascii_digit())
+                || (body.len() > 1
+                    && body.starts_with(['x', 'X'])
+                    && body[1..].bytes().all(|b| b.is_ascii_hexdigit()));
+            out.push_str(if numeric { "&#" } else { "&" });
+            out.push_str(body);
+            out.push(';');
+            rest = &tail[n + 1..];
+        } else {
+            out.push('#');
+            rest = tail;
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 /// Decodes HTML entities the way `span.html(...)` (innerHTML) does in the
 /// browser pipeline. Tags like `<br/>` pass through untouched.
 pub fn decode_html_entities(text: &str) -> String {
+    let text = &hash_entities_to_amp(text);
     let mut out = String::with_capacity(text.len());
     let chars: Vec<char> = text.chars().collect();
     let mut i = 0;

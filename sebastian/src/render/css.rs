@@ -48,7 +48,69 @@ pub fn cssom_color_value(prop: &str, value: &str) -> String {
     cssom_value(prop, value)
 }
 
+/// Chrome's serialisation of a single-animation `animation` shorthand:
+/// `<duration> <timing> <delay> <iteration> <direction> <fill> <play-state> <name>`.
+fn animation_shorthand(value: &str) -> Option<String> {
+    let is_time = |t: &str| {
+        t.strip_suffix("ms")
+            .or_else(|| t.strip_suffix('s'))
+            .is_some_and(|n| n.parse::<f64>().is_ok())
+    };
+    let timing = |t: &str| {
+        matches!(
+            t,
+            "linear" | "ease" | "ease-in" | "ease-out" | "ease-in-out" | "step-start" | "step-end"
+        ) || t.starts_with("cubic-bezier(")
+            || t.starts_with("steps(")
+    };
+    let mut times: Vec<&str> = Vec::new();
+    let (mut tf, mut iter, mut dir, mut fill, mut play, mut name) =
+        (None, None, None, None, None, None);
+    for tok in value.split_whitespace() {
+        if is_time(tok) {
+            times.push(tok);
+        } else if timing(tok) && tf.is_none() {
+            tf = Some(tok);
+        } else if (tok == "infinite" || tok.parse::<f64>().is_ok()) && iter.is_none() {
+            iter = Some(tok);
+        } else if matches!(
+            tok,
+            "normal" | "reverse" | "alternate" | "alternate-reverse"
+        ) && dir.is_none()
+        {
+            dir = Some(tok);
+        } else if matches!(tok, "none" | "forwards" | "backwards" | "both") && fill.is_none() {
+            fill = Some(tok);
+        } else if matches!(tok, "running" | "paused") && play.is_none() {
+            play = Some(tok);
+        } else if name.is_none() {
+            name = Some(tok);
+        } else {
+            return None;
+        }
+    }
+    if times.is_empty() || times.len() > 2 {
+        return None;
+    }
+    Some(format!(
+        "{} {} {} {} {} {} {} {}",
+        times[0],
+        tf.unwrap_or("ease"),
+        times.get(1).copied().unwrap_or("0s"),
+        iter.unwrap_or("1"),
+        dir.unwrap_or("normal"),
+        fill.unwrap_or("none"),
+        play.unwrap_or("running"),
+        name.unwrap_or("none"),
+    ))
+}
+
 fn cssom_value(prop: &str, value: &str) -> String {
+    if prop == "animation"
+        && let Some(v) = animation_shorthand(value)
+    {
+        return v;
+    }
     if COLOR_PROPS.contains(&prop) {
         if let Some(rgb) = hex_to_rgb(value) {
             return rgb;
@@ -214,7 +276,7 @@ pub fn class_defs_css(
     let format_decls = |styles: &[String]| -> String {
         styles
             .iter()
-            .filter(|s| !s.trim().is_empty())
+            .filter(|s| !s.trim().is_empty() && s.contains(':'))
             .fold(String::new(), |mut decls, s| {
                 let mut parts = s.splitn(2, ':');
                 let prop = parts.next().unwrap_or("").trim();
