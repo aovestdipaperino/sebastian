@@ -289,13 +289,8 @@ wardley/wardley-spec017
 wardley/wardley-spec018
 wardley/wardley-spec019
 wardley/wardley-spec020
-xychart/xychart-docs001
 xychart/xychart-docs002
 xychart/xychart-docs003
 xychart/xychart-docs004
 xychart/xychart-docs007
-xychart/xychart-spec003
-xychart/xychart-spec014
-xychart/xychart-spec015
-xychart/xychart-spec029
 xychart/xychart-spec058

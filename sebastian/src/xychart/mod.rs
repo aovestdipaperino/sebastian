@@ -65,10 +65,9 @@ impl XyMeasurer {
             return (0.0, 0.0);
         }
         let width = self.m.measure_width(text, font_size);
-        let ascent = (1923.0 * font_size / 2048.0).round();
-        let descent = (455.0 * font_size / 2048.0).round();
-        let mut height = ascent + descent;
-        if (font_size - 16.0).abs() < f64::EPSILON {
+        // Integer line box extended by glyph ink beyond it (descenders).
+        let mut height = self.m.ink_height(text, font_size);
+        if (font_size - 16.0).abs() < f64::EPSILON && (height - 19.0).abs() < f64::EPSILON {
             // Chrome reports the 16px tspan line box one f32 ulp above 19
             // inside the sized chart svg (empirical).
             height = f64::from(f32::from_bits(19.0f32.to_bits() + 1));
@@ -304,7 +303,11 @@ fn parse(source: &str) -> Result<Db, XyParseError> {
             } else {
                 PlotKind::Line
             };
-            let (_title, rest2) = take_text(rest);
+            // Optional plot title (quoted or bare words) before the `[` list.
+            let rest2 = match take_text(rest) {
+                (t, r) if !t.is_empty() => r,
+                _ => rest.find('[').map_or(rest, |i| rest[i..].trim()),
+            };
             let Some(values) = parse_number_list(rest2) else {
                 return Err(XyParseError {
                     message: format!("bad plot data: {line}"),
