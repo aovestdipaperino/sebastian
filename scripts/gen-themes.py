@@ -225,6 +225,8 @@ def key_format(key, env):
     for n in parts:
         if n[0] == 'str':
             fmt += n[1].replace('{', '{{').replace('}', '}}')
+        elif n[0] == 'num':
+            fmt += n[1]
         elif n == ('id', 'i'):
             fmt += '{}'; args.append('i')
         elif n[0] == 'paren' and n[1][0] == 'bin' and n[1][2] == ('id', 'i') and n[1][3][0] == 'num':
@@ -473,13 +475,13 @@ def method_body(src, name):
     return src[j + 1:k]
 
 
-def gen(theme):
-    src = open('%s/theme-%s.js' % (THEMES, theme)).read()
-    body = method_body(src, 'updateColors')
+def gen(theme, method, name):
+    src = open(os.path.join(THEMES, 'theme-%s.js' % theme)).read()
+    body = method_body(src, method)
     p = P(tokenize(body))
     out, skipped = [], []
     parse_block(p, out, {}, skipped)
-    fn = 'pub(super) fn fill_%s(vars: &mut Vars) {\n    let dm = dark_mode(vars);\n    let _ = dm;\n' % theme
+    fn = 'pub(super) fn %s_%s(vars: &mut Vars) {\n    let dm = dark_mode(vars);\n    let _ = dm;\n' % (name, theme)
     fn += '\n'.join('    ' + l for l in out) + '\n}\n'
     return fn, skipped
 
@@ -501,9 +503,10 @@ type Vars = serde_json::Map<String, serde_json::Value>;
 
 '''
     for t in themes:
-        fn, sk = gen(t)
-        code += fn + '\n'
-        print('%s: %d skipped' % (t, len(sk)), file=sys.stderr)
-        for s in sorted(set(sk)):
-            print('   skip:', s, file=sys.stderr)
+        for method, name in (('constructor', 'ctor'), ('updateColors', 'fill')):
+            fn, sk = gen(t, method, name)
+            code += fn + '\n'
+            print('%s %s: %d skipped' % (t, name, len(sk)), file=sys.stderr)
+            for x in sorted(set(sk)):
+                print('   skip:', x, file=sys.stderr)
     sys.stdout.write(code)

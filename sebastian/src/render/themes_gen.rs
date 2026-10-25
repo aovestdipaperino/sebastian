@@ -15,6 +15,144 @@ use super::themes::{dark_mode, fill, get, js_and, js_bool, js_eq, js_or, js_trut
 
 type Vars = serde_json::Map<String, serde_json::Value>;
 
+pub(super) fn ctor_dark(vars: &mut Vars) {
+    let dm = dark_mode(vars);
+    let _ = dm;
+    set_var(vars, "background", |v| String::from("#333"));
+    set_var(vars, "primaryColor", |v| String::from("#1f2020"));
+    set_var(vars, "secondaryColor", |v| {
+        lighten(&(get(v, "primaryColor")), 16.0f64)
+    });
+    set_var(vars, "tertiaryColor", |v| {
+        adjust(&(get(v, "primaryColor")), &[('h', (-160.0f64))])
+    });
+    set_var(vars, "primaryBorderColor", |v| {
+        invert(&(get(v, "background")))
+    });
+    set_var(vars, "secondaryBorderColor", |v| {
+        mk_border(
+            &(get(v, "secondaryColor")),
+            js_truthy(&(get(v, "darkMode"))),
+        )
+    });
+    set_var(vars, "tertiaryBorderColor", |v| {
+        mk_border(&(get(v, "tertiaryColor")), js_truthy(&(get(v, "darkMode"))))
+    });
+    set_var(vars, "primaryTextColor", |v| {
+        invert(&(get(v, "primaryColor")))
+    });
+    set_var(vars, "secondaryTextColor", |v| {
+        invert(&(get(v, "secondaryColor")))
+    });
+    set_var(vars, "tertiaryTextColor", |v| {
+        invert(&(get(v, "tertiaryColor")))
+    });
+    set_var(vars, "lineColor", |v| invert(&(get(v, "background"))));
+    set_var(vars, "textColor", |v| invert(&(get(v, "background"))));
+    set_var(vars, "mainBkg", |v| String::from("#1f2020"));
+    set_var(vars, "secondBkg", |v| String::from("calculated"));
+    set_var(vars, "mainContrastColor", |v| String::from("lightgrey"));
+    set_var(vars, "darkTextColor", |v| {
+        lighten(&(invert(&(String::from("#323D47")))), 10.0f64)
+    });
+    set_var(vars, "lineColor", |v| String::from("calculated"));
+    set_var(vars, "border1", |v| String::from("#ccc"));
+    set_var(vars, "border2", |v| {
+        rgba(255.0f64, 255.0f64, 255.0f64, 0.25f64)
+    });
+    set_var(vars, "arrowheadColor", |v| String::from("calculated"));
+    set_var(vars, "fontFamily", |v| {
+        String::from("\"trebuchet ms\", verdana, arial, sans-serif")
+    });
+    set_var(vars, "fontSize", |v| String::from("16px"));
+    set_var(vars, "labelBackground", |v| String::from("#181818"));
+    set_var(vars, "textColor", |v| String::from("#ccc"));
+    set_var(vars, "THEME_COLOR_LIMIT", |v| String::from("12"));
+    set_var(vars, "radius", |v| String::from("5"));
+    set_var(vars, "strokeWidth", |v| String::from("1"));
+    set_var(vars, "nodeBkg", |v| String::from("calculated"));
+    set_var(vars, "nodeBorder", |v| String::from("calculated"));
+    set_var(vars, "clusterBkg", |v| String::from("calculated"));
+    set_var(vars, "clusterBorder", |v| String::from("calculated"));
+    set_var(vars, "defaultLinkColor", |v| String::from("calculated"));
+    set_var(vars, "titleColor", |v| String::from("#F9FFFE"));
+    set_var(vars, "edgeLabelBackground", |v| String::from("calculated"));
+    set_var(vars, "actorBorder", |v| String::from("calculated"));
+    set_var(vars, "actorBkg", |v| String::from("calculated"));
+    set_var(vars, "actorTextColor", |v| String::from("calculated"));
+    set_var(vars, "actorLineColor", |v| String::from("calculated"));
+    set_var(vars, "signalColor", |v| String::from("calculated"));
+    set_var(vars, "signalTextColor", |v| String::from("calculated"));
+    set_var(vars, "labelBoxBkgColor", |v| String::from("calculated"));
+    set_var(vars, "labelBoxBorderColor", |v| String::from("calculated"));
+    set_var(vars, "labelTextColor", |v| String::from("calculated"));
+    set_var(vars, "loopTextColor", |v| String::from("calculated"));
+    set_var(vars, "noteBorderColor", |v| String::from("calculated"));
+    set_var(vars, "noteBkgColor", |v| String::from("#fff5ad"));
+    set_var(vars, "noteTextColor", |v| String::from("calculated"));
+    set_var(vars, "activationBorderColor", |v| {
+        String::from("calculated")
+    });
+    set_var(vars, "activationBkgColor", |v| String::from("calculated"));
+    set_var(vars, "sequenceNumberColor", |v| String::from("black"));
+    set_var(vars, "clusterBkg", |v| String::from("#302F3D"));
+    set_var(vars, "sectionBkgColor", |v| {
+        darken(&(String::from("#EAE8D9")), 30.0f64)
+    });
+    set_var(vars, "altSectionBkgColor", |v| String::from("calculated"));
+    set_var(vars, "sectionBkgColor2", |v| String::from("#EAE8D9"));
+    set_var(vars, "excludeBkgColor", |v| {
+        darken(&(get(v, "sectionBkgColor")), 10.0f64)
+    });
+    set_var(vars, "taskBorderColor", |v| {
+        rgba(255.0f64, 255.0f64, 255.0f64, 70.0f64)
+    });
+    set_var(vars, "taskBkgColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextLightColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextOutsideColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextClickableColor", |v| String::from("#003163"));
+    set_var(vars, "activeTaskBorderColor", |v| {
+        rgba(255.0f64, 255.0f64, 255.0f64, 50.0f64)
+    });
+    set_var(vars, "activeTaskBkgColor", |v| String::from("#81B1DB"));
+    set_var(vars, "gridColor", |v| String::from("calculated"));
+    set_var(vars, "doneTaskBkgColor", |v| String::from("calculated"));
+    set_var(vars, "doneTaskBorderColor", |v| String::from("grey"));
+    set_var(vars, "critBorderColor", |v| String::from("#E83737"));
+    set_var(vars, "critBkgColor", |v| String::from("#E83737"));
+    set_var(vars, "taskTextDarkColor", |v| String::from("calculated"));
+    set_var(vars, "todayLineColor", |v| String::from("#DB5757"));
+    set_var(vars, "vertLineColor", |v| String::from("#00BFFF"));
+    set_var(vars, "personBorder", |v| get(v, "primaryBorderColor"));
+    set_var(vars, "personBkg", |v| get(v, "mainBkg"));
+    set_var(vars, "archEdgeColor", |v| String::from("calculated"));
+    set_var(vars, "archEdgeArrowColor", |v| String::from("calculated"));
+    set_var(vars, "archEdgeWidth", |v| String::from("3"));
+    set_var(vars, "archGroupBorderColor", |v| {
+        get(v, "primaryBorderColor")
+    });
+    set_var(vars, "archGroupBorderWidth", |v| String::from("2px"));
+    set_var(vars, "rowOdd", |v| {
+        js_or(
+            js_or(get(v, "rowOdd"), || lighten(&(get(v, "mainBkg")), 5.0f64)),
+            || String::from("#ffffff"),
+        )
+    });
+    fill(vars, "rowEven", |v| darken(&(get(v, "mainBkg")), 10.0f64));
+    set_var(vars, "labelColor", |v| String::from("calculated"));
+    set_var(vars, "errorBkgColor", |v| String::from("#a44141"));
+    set_var(vars, "errorTextColor", |v| String::from("#ddd"));
+    set_var(vars, "useGradient", |v| String::from("true"));
+    set_var(vars, "gradientStart", |v| get(v, "primaryBorderColor"));
+    set_var(vars, "gradientStop", |v| get(v, "secondaryBorderColor"));
+    set_var(vars, "dropShadow", |v| {
+        String::from("drop-shadow( 1px 2px 2px rgba(185,185,185,1))")
+    });
+    fill(vars, "noteFontWeight", |v| String::from("normal"));
+    fill(vars, "fontWeight", |v| String::from("normal"));
+}
+
 pub(super) fn fill_dark(vars: &mut Vars) {
     let dm = dark_mode(vars);
     let _ = dm;
@@ -415,6 +553,119 @@ pub(super) fn fill_dark(vars: &mut Vars) {
     fill(vars, "nodeBorder", |v| String::from("#999"));
 }
 
+pub(super) fn ctor_forest(vars: &mut Vars) {
+    let dm = dark_mode(vars);
+    let _ = dm;
+    set_var(vars, "background", |v| String::from("#f4f4f4"));
+    set_var(vars, "primaryColor", |v| String::from("#cde498"));
+    set_var(vars, "secondaryColor", |v| String::from("#cdffb2"));
+    set_var(vars, "background", |v| String::from("white"));
+    set_var(vars, "mainBkg", |v| String::from("#cde498"));
+    set_var(vars, "secondBkg", |v| String::from("#cdffb2"));
+    set_var(vars, "lineColor", |v| String::from("green"));
+    set_var(vars, "border1", |v| String::from("#13540c"));
+    set_var(vars, "border2", |v| String::from("#6eaa49"));
+    set_var(vars, "arrowheadColor", |v| String::from("green"));
+    set_var(vars, "fontFamily", |v| {
+        String::from("\"trebuchet ms\", verdana, arial, sans-serif")
+    });
+    set_var(vars, "fontSize", |v| String::from("16px"));
+    set_var(vars, "tertiaryColor", |v| {
+        lighten(&(String::from("#cde498")), 10.0f64)
+    });
+    set_var(vars, "primaryBorderColor", |v| {
+        mk_border(&(get(v, "primaryColor")), js_truthy(&(get(v, "darkMode"))))
+    });
+    set_var(vars, "secondaryBorderColor", |v| {
+        mk_border(
+            &(get(v, "secondaryColor")),
+            js_truthy(&(get(v, "darkMode"))),
+        )
+    });
+    set_var(vars, "tertiaryBorderColor", |v| {
+        mk_border(&(get(v, "tertiaryColor")), js_truthy(&(get(v, "darkMode"))))
+    });
+    set_var(vars, "primaryTextColor", |v| {
+        invert(&(get(v, "primaryColor")))
+    });
+    set_var(vars, "secondaryTextColor", |v| {
+        invert(&(get(v, "secondaryColor")))
+    });
+    set_var(vars, "tertiaryTextColor", |v| {
+        invert(&(get(v, "primaryColor")))
+    });
+    set_var(vars, "lineColor", |v| invert(&(get(v, "background"))));
+    set_var(vars, "textColor", |v| invert(&(get(v, "background"))));
+    set_var(vars, "THEME_COLOR_LIMIT", |v| String::from("12"));
+    set_var(vars, "radius", |v| String::from("5"));
+    set_var(vars, "strokeWidth", |v| String::from("1"));
+    set_var(vars, "nodeBkg", |v| String::from("calculated"));
+    set_var(vars, "nodeBorder", |v| String::from("calculated"));
+    set_var(vars, "clusterBkg", |v| String::from("calculated"));
+    set_var(vars, "clusterBorder", |v| String::from("calculated"));
+    set_var(vars, "defaultLinkColor", |v| String::from("calculated"));
+    set_var(vars, "titleColor", |v| String::from("#333"));
+    set_var(vars, "edgeLabelBackground", |v| String::from("#e8e8e8"));
+    set_var(vars, "actorBorder", |v| String::from("calculated"));
+    set_var(vars, "actorBkg", |v| String::from("calculated"));
+    set_var(vars, "actorTextColor", |v| String::from("black"));
+    set_var(vars, "actorLineColor", |v| String::from("calculated"));
+    set_var(vars, "signalColor", |v| String::from("#333"));
+    set_var(vars, "signalTextColor", |v| String::from("#333"));
+    set_var(vars, "labelBoxBkgColor", |v| String::from("calculated"));
+    set_var(vars, "labelBoxBorderColor", |v| String::from("#326932"));
+    set_var(vars, "labelTextColor", |v| String::from("calculated"));
+    set_var(vars, "loopTextColor", |v| String::from("calculated"));
+    set_var(vars, "noteBorderColor", |v| String::from("calculated"));
+    set_var(vars, "noteBkgColor", |v| String::from("#fff5ad"));
+    set_var(vars, "noteTextColor", |v| String::from("calculated"));
+    set_var(vars, "activationBorderColor", |v| String::from("#666"));
+    set_var(vars, "activationBkgColor", |v| String::from("#f4f4f4"));
+    set_var(vars, "sequenceNumberColor", |v| String::from("white"));
+    set_var(vars, "sectionBkgColor", |v| String::from("#6eaa49"));
+    set_var(vars, "altSectionBkgColor", |v| String::from("white"));
+    set_var(vars, "sectionBkgColor2", |v| String::from("#6eaa49"));
+    set_var(vars, "excludeBkgColor", |v| String::from("#eeeeee"));
+    set_var(vars, "taskBorderColor", |v| String::from("calculated"));
+    set_var(vars, "taskBkgColor", |v| String::from("#487e3a"));
+    set_var(vars, "taskTextLightColor", |v| String::from("white"));
+    set_var(vars, "taskTextColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextDarkColor", |v| String::from("black"));
+    set_var(vars, "taskTextOutsideColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextClickableColor", |v| String::from("#003163"));
+    set_var(vars, "activeTaskBorderColor", |v| {
+        String::from("calculated")
+    });
+    set_var(vars, "activeTaskBkgColor", |v| String::from("calculated"));
+    set_var(vars, "gridColor", |v| String::from("lightgrey"));
+    set_var(vars, "doneTaskBkgColor", |v| String::from("lightgrey"));
+    set_var(vars, "doneTaskBorderColor", |v| String::from("grey"));
+    set_var(vars, "critBorderColor", |v| String::from("#ff8888"));
+    set_var(vars, "critBkgColor", |v| String::from("red"));
+    set_var(vars, "todayLineColor", |v| String::from("red"));
+    set_var(vars, "vertLineColor", |v| String::from("#00BFFF"));
+    set_var(vars, "personBorder", |v| get(v, "primaryBorderColor"));
+    set_var(vars, "personBkg", |v| get(v, "mainBkg"));
+    set_var(vars, "archEdgeColor", |v| String::from("calculated"));
+    set_var(vars, "archEdgeArrowColor", |v| String::from("calculated"));
+    set_var(vars, "archEdgeWidth", |v| String::from("3"));
+    set_var(vars, "archGroupBorderColor", |v| {
+        get(v, "primaryBorderColor")
+    });
+    set_var(vars, "archGroupBorderWidth", |v| String::from("2px"));
+    set_var(vars, "noteFontWeight", |v| String::from("normal"));
+    set_var(vars, "fontWeight", |v| String::from("normal"));
+    set_var(vars, "labelColor", |v| String::from("black"));
+    set_var(vars, "errorBkgColor", |v| String::from("#552222"));
+    set_var(vars, "errorTextColor", |v| String::from("#552222"));
+    set_var(vars, "useGradient", |v| String::from("true"));
+    set_var(vars, "gradientStart", |v| get(v, "primaryBorderColor"));
+    set_var(vars, "gradientStop", |v| get(v, "secondaryBorderColor"));
+    set_var(vars, "dropShadow", |v| {
+        String::from("drop-shadow( 1px 2px 2px rgba(185,185,185,0.5))")
+    });
+}
+
 pub(super) fn fill_forest(vars: &mut Vars) {
     let dm = dark_mode(vars);
     let _ = dm;
@@ -457,6 +708,12 @@ pub(super) fn fill_forest(vars: &mut Vars) {
     });
     fill(vars, "cScale11", |v| {
         adjust(&(get(v, "primaryColor")), &[('h', 330.0f64)])
+    });
+    fill(vars, &format!("cScalePeer1"), |v| {
+        darken(&(get(v, "secondaryColor")), 45.0f64)
+    });
+    fill(vars, &format!("cScalePeer2"), |v| {
+        darken(&(get(v, "tertiaryColor")), 40.0f64)
     });
     for i in 0..12 {
         set_var(vars, &format!("cScale{}", i), |v| {
@@ -843,6 +1100,26 @@ pub(super) fn fill_forest(vars: &mut Vars) {
     });
     fill(vars, "emArrowhead", |v| get(v, "lineColor"));
     fill(vars, "emRelationStroke", |v| get(v, "lineColor"));
+}
+
+pub(super) fn ctor_base(vars: &mut Vars) {
+    let dm = dark_mode(vars);
+    let _ = dm;
+    set_var(vars, "background", |v| String::from("#f4f4f4"));
+    set_var(vars, "primaryColor", |v| String::from("#fff4dd"));
+    set_var(vars, "noteBkgColor", |v| String::from("#fff5ad"));
+    set_var(vars, "noteTextColor", |v| String::from("#333"));
+    set_var(vars, "THEME_COLOR_LIMIT", |v| String::from("12"));
+    set_var(vars, "radius", |v| String::from("5"));
+    set_var(vars, "strokeWidth", |v| String::from("1"));
+    set_var(vars, "fontFamily", |v| {
+        String::from("\"trebuchet ms\", verdana, arial, sans-serif")
+    });
+    set_var(vars, "fontSize", |v| String::from("16px"));
+    set_var(vars, "useGradient", |v| String::from("true"));
+    set_var(vars, "dropShadow", |v| {
+        String::from("drop-shadow( 1px 2px 2px rgba(185,185,185,1))")
+    });
 }
 
 pub(super) fn fill_base(vars: &mut Vars) {
@@ -1363,6 +1640,132 @@ pub(super) fn fill_base(vars: &mut Vars) {
     fill(vars, "emRelationStroke", |v| get(v, "lineColor"));
     set_var(vars, "gradientStart", |v| get(v, "primaryBorderColor"));
     set_var(vars, "gradientStop", |v| get(v, "secondaryBorderColor"));
+}
+
+pub(super) fn ctor_neutral(vars: &mut Vars) {
+    let dm = dark_mode(vars);
+    let _ = dm;
+    set_var(vars, "primaryColor", |v| String::from("#eee"));
+    set_var(vars, "contrast", |v| String::from("#707070"));
+    set_var(vars, "secondaryColor", |v| {
+        lighten(&(get(v, "contrast")), 55.0f64)
+    });
+    set_var(vars, "background", |v| String::from("#ffffff"));
+    set_var(vars, "tertiaryColor", |v| {
+        adjust(&(get(v, "primaryColor")), &[('h', (-160.0f64))])
+    });
+    set_var(vars, "primaryBorderColor", |v| {
+        mk_border(&(get(v, "primaryColor")), js_truthy(&(get(v, "darkMode"))))
+    });
+    set_var(vars, "secondaryBorderColor", |v| {
+        mk_border(
+            &(get(v, "secondaryColor")),
+            js_truthy(&(get(v, "darkMode"))),
+        )
+    });
+    set_var(vars, "tertiaryBorderColor", |v| {
+        mk_border(&(get(v, "tertiaryColor")), js_truthy(&(get(v, "darkMode"))))
+    });
+    set_var(vars, "primaryTextColor", |v| {
+        invert(&(get(v, "primaryColor")))
+    });
+    set_var(vars, "secondaryTextColor", |v| {
+        invert(&(get(v, "secondaryColor")))
+    });
+    set_var(vars, "tertiaryTextColor", |v| {
+        invert(&(get(v, "tertiaryColor")))
+    });
+    set_var(vars, "lineColor", |v| invert(&(get(v, "background"))));
+    set_var(vars, "textColor", |v| invert(&(get(v, "background"))));
+    set_var(vars, "mainBkg", |v| String::from("#eee"));
+    set_var(vars, "secondBkg", |v| String::from("calculated"));
+    set_var(vars, "lineColor", |v| String::from("#666"));
+    set_var(vars, "border1", |v| String::from("#999"));
+    set_var(vars, "border2", |v| String::from("calculated"));
+    set_var(vars, "note", |v| String::from("#ffa"));
+    set_var(vars, "text", |v| String::from("#333"));
+    set_var(vars, "critical", |v| String::from("#d42"));
+    set_var(vars, "done", |v| String::from("#bbb"));
+    set_var(vars, "arrowheadColor", |v| String::from("#333333"));
+    set_var(vars, "fontFamily", |v| {
+        String::from("\"trebuchet ms\", verdana, arial, sans-serif")
+    });
+    set_var(vars, "fontSize", |v| String::from("16px"));
+    set_var(vars, "THEME_COLOR_LIMIT", |v| String::from("12"));
+    set_var(vars, "radius", |v| String::from("5"));
+    set_var(vars, "strokeWidth", |v| String::from("1"));
+    set_var(vars, "nodeBkg", |v| String::from("calculated"));
+    set_var(vars, "nodeBorder", |v| String::from("calculated"));
+    set_var(vars, "clusterBkg", |v| String::from("calculated"));
+    set_var(vars, "clusterBorder", |v| String::from("calculated"));
+    set_var(vars, "defaultLinkColor", |v| String::from("calculated"));
+    set_var(vars, "titleColor", |v| String::from("calculated"));
+    set_var(vars, "edgeLabelBackground", |v| String::from("white"));
+    set_var(vars, "actorBorder", |v| String::from("calculated"));
+    set_var(vars, "actorBkg", |v| String::from("calculated"));
+    set_var(vars, "actorTextColor", |v| String::from("calculated"));
+    set_var(vars, "actorLineColor", |v| get(v, "actorBorder"));
+    set_var(vars, "signalColor", |v| String::from("calculated"));
+    set_var(vars, "signalTextColor", |v| String::from("calculated"));
+    set_var(vars, "labelBoxBkgColor", |v| String::from("calculated"));
+    set_var(vars, "labelBoxBorderColor", |v| String::from("calculated"));
+    set_var(vars, "labelTextColor", |v| String::from("calculated"));
+    set_var(vars, "loopTextColor", |v| String::from("calculated"));
+    set_var(vars, "noteBorderColor", |v| String::from("calculated"));
+    set_var(vars, "noteBkgColor", |v| String::from("calculated"));
+    set_var(vars, "noteTextColor", |v| String::from("calculated"));
+    set_var(vars, "activationBorderColor", |v| String::from("#666"));
+    set_var(vars, "activationBkgColor", |v| String::from("#f4f4f4"));
+    set_var(vars, "sequenceNumberColor", |v| String::from("white"));
+    set_var(vars, "sectionBkgColor", |v| String::from("calculated"));
+    set_var(vars, "altSectionBkgColor", |v| String::from("white"));
+    set_var(vars, "sectionBkgColor2", |v| String::from("calculated"));
+    set_var(vars, "excludeBkgColor", |v| String::from("#eeeeee"));
+    set_var(vars, "taskBorderColor", |v| String::from("calculated"));
+    set_var(vars, "taskBkgColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextLightColor", |v| String::from("white"));
+    set_var(vars, "taskTextColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextDarkColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextOutsideColor", |v| String::from("calculated"));
+    set_var(vars, "taskTextClickableColor", |v| String::from("#003163"));
+    set_var(vars, "activeTaskBorderColor", |v| {
+        String::from("calculated")
+    });
+    set_var(vars, "activeTaskBkgColor", |v| String::from("calculated"));
+    set_var(vars, "gridColor", |v| String::from("calculated"));
+    set_var(vars, "doneTaskBkgColor", |v| String::from("calculated"));
+    set_var(vars, "doneTaskBorderColor", |v| String::from("calculated"));
+    set_var(vars, "critBkgColor", |v| String::from("calculated"));
+    set_var(vars, "critBorderColor", |v| String::from("calculated"));
+    set_var(vars, "todayLineColor", |v| String::from("calculated"));
+    set_var(vars, "vertLineColor", |v| String::from("calculated"));
+    set_var(vars, "personBorder", |v| get(v, "primaryBorderColor"));
+    set_var(vars, "personBkg", |v| get(v, "mainBkg"));
+    set_var(vars, "archEdgeColor", |v| String::from("calculated"));
+    set_var(vars, "archEdgeArrowColor", |v| String::from("calculated"));
+    set_var(vars, "archEdgeWidth", |v| String::from("3"));
+    set_var(vars, "archGroupBorderColor", |v| {
+        get(v, "primaryBorderColor")
+    });
+    set_var(vars, "archGroupBorderWidth", |v| String::from("2px"));
+    set_var(vars, "noteFontWeight", |v| String::from("normal"));
+    set_var(vars, "fontWeight", |v| String::from("normal"));
+    set_var(vars, "rowOdd", |v| {
+        js_or(
+            js_or(get(v, "rowOdd"), || lighten(&(get(v, "mainBkg")), 75.0f64)),
+            || String::from("#ffffff"),
+        )
+    });
+    fill(vars, "rowEven", |v| String::from("#f4f4f4"));
+    set_var(vars, "labelColor", |v| String::from("black"));
+    set_var(vars, "errorBkgColor", |v| String::from("#552222"));
+    set_var(vars, "errorTextColor", |v| String::from("#552222"));
+    set_var(vars, "useGradient", |v| String::from("true"));
+    set_var(vars, "gradientStart", |v| get(v, "primaryBorderColor"));
+    set_var(vars, "gradientStop", |v| get(v, "secondaryBorderColor"));
+    set_var(vars, "dropShadow", |v| {
+        String::from("drop-shadow( 1px 2px 2px rgba(185,185,185,1))")
+    });
 }
 
 pub(super) fn fill_neutral(vars: &mut Vars) {

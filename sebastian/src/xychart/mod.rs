@@ -696,9 +696,22 @@ pub fn render_xychart(source: &str, id: &str) -> Result<String, XyParseError> {
             .as_str()
             .map(str::to_owned)
     };
+    // The default palette differs per theme (theme-*.js `xyChart`).
+    let theme_palette = match config.theme.as_str() {
+        "dark" => "#3498db,#2ecc71,#e74c3c,#f1c40f,#bdc3c7,#ffffff,#34495e,#9b59b6,#1abc9c,#e67e22",
+        "forest" => {
+            "#CDE498,#FF6B6B,#A0D2DB,#D7BDE2,#F0F0F0,#FFC3A0,#7FD8BE,#FF9A8B,#FAF3E0,#FFF176"
+        }
+        "base" => "#FFF4DD,#FFD8B1,#FFA07A,#ECEFF1,#D6DBDF,#C3E0A8,#FFB6A4,#FFD74D,#738FA7,#FFFFF0",
+        "neutral" => "#EEE,#6BB8E4,#8ACB88,#C7ACD6,#E8DCC2,#FFB2A8,#FFF380,#7E8D91,#FFD8B1,#FAF3E0",
+        _ => "",
+    };
     let palette: Vec<String> = xy_theme("plotColorPalette")
-        .map(|p| p.split(',').map(|c| c.trim().to_owned()).collect())
-        .unwrap_or_default();
+        .unwrap_or_else(|| theme_palette.to_owned())
+        .split(',')
+        .map(|c| c.trim().to_owned())
+        .filter(|c| !c.is_empty())
+        .collect();
     let chart_w = config
         .section_f64("xyChart", "width")
         .unwrap_or(CHART_WIDTH);

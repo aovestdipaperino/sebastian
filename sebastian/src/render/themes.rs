@@ -95,6 +95,7 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
     match theme {
         "base" => {
             ctor_base(&mut vars);
+            merge_ctor(&mut vars, super::themes_gen::ctor_base);
             calculate(
                 &mut vars,
                 overrides,
@@ -104,6 +105,7 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
         }
         "dark" => {
             ctor_dark(&mut vars);
+            merge_ctor(&mut vars, super::themes_gen::ctor_dark);
             calculate(
                 &mut vars,
                 overrides,
@@ -113,6 +115,7 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
         }
         "forest" => {
             ctor_forest(&mut vars);
+            merge_ctor(&mut vars, super::themes_gen::ctor_forest);
             calculate(
                 &mut vars,
                 overrides,
@@ -122,6 +125,7 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
         }
         "neutral" => {
             ctor_neutral(&mut vars);
+            merge_ctor(&mut vars, super::themes_gen::ctor_neutral);
             calculate(
                 &mut vars,
                 overrides,
@@ -139,6 +143,18 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
     vars
 }
 
+/// Adds the constructor variables the hand-written ports do not set, by
+/// running the generated constructor on a blank theme.
+fn merge_ctor(vars: &mut Vars, generated: fn(&mut Vars)) {
+    let mut fresh = Vars::new();
+    generated(&mut fresh);
+    for (k, v) in fresh {
+        if unset(vars, &k) {
+            vars.insert(k, v);
+        }
+    }
+}
+
 fn calculate(
     vars: &mut Vars,
     overrides: &Vars,
@@ -148,8 +164,8 @@ fn calculate(
     for (k, v) in overrides {
         vars.insert(k.clone(), v.clone());
     }
-    // The generated port (themes_gen.rs) runs on its own copy; it only
-    // supplies variables the hand-written update leaves unset.
+    // The generated port (themes_gen.rs) runs on its own copy of the
+    // constructor state.
     let mut extra = generated.map(|g| {
         let mut copy = vars.clone();
         g(&mut copy);
@@ -157,10 +173,10 @@ fn calculate(
     });
     update(vars);
     if let Some(extra) = extra.take() {
+        // The generated port follows the JS statement for statement, so its
+        // values win; the hand-written update only supplies what it lacks.
         for (k, v) in extra {
-            if unset(vars, &k) {
-                vars.insert(k, v);
-            }
+            vars.insert(k, v);
         }
     }
     for (k, v) in overrides {
@@ -918,75 +934,6 @@ fn update_dark(vars: &mut Vars) {
     for i in 0..12 {
         set_if(vars, &format!("cScaleLabel{i}"), |v| {
             get(v, "scaleLabelColor")
-        });
-    }
-    // git colours
-    let pick = |v: &Vars, key: &str, fallback: String| {
-        let p = get(v, key);
-        if p.is_empty() { fallback } else { p }
-    };
-    let git: [(usize, String, f64); 8] = [
-        (0, get(vars, "secondaryColor"), 20.0),
-        (1, pick(vars, "pie2", get(vars, "secondaryColor")), 20.0),
-        (2, pick(vars, "pie3", get(vars, "tertiaryColor")), 20.0),
-        (
-            3,
-            pick(
-                vars,
-                "pie4",
-                adjust(&get(vars, "primaryColor"), &[('h', -30.0)]),
-            ),
-            20.0,
-        ),
-        (
-            4,
-            pick(
-                vars,
-                "pie5",
-                adjust(&get(vars, "primaryColor"), &[('h', -60.0)]),
-            ),
-            20.0,
-        ),
-        (
-            5,
-            pick(
-                vars,
-                "pie6",
-                adjust(&get(vars, "primaryColor"), &[('h', -90.0)]),
-            ),
-            10.0,
-        ),
-        (
-            6,
-            pick(
-                vars,
-                "pie7",
-                adjust(&get(vars, "primaryColor"), &[('h', 60.0)]),
-            ),
-            10.0,
-        ),
-        (
-            7,
-            pick(
-                vars,
-                "pie8",
-                adjust(&get(vars, "primaryColor"), &[('h', 120.0)]),
-            ),
-            20.0,
-        ),
-    ];
-    for (n, base, amount) in git {
-        set(vars, &format!("git{n}"), lighten(&base, amount));
-    }
-    for n in 0..8 {
-        set_if(vars, &format!("gitInv{n}"), |v| {
-            invert(&get(v, &format!("git{n}")))
-        });
-    }
-    for n in 0..8 {
-        set_if(vars, &format!("gitBranchLabel{n}"), |v| {
-            let l = get(v, "labelTextColor");
-            if n == 0 || n == 3 { invert(&l) } else { l }
         });
     }
 }

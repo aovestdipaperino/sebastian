@@ -457,6 +457,29 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
     );
     let _empty = append(&svg, "g");
 
+    // gitGraph draws its own gradient def (render.ts does it for the
+    // layout-based diagrams only).
+    if crate::render::themes::get_bool(&theme_vars, "useGradient") {
+        let defs = append(&svg, "defs");
+        let gradient = append(&defs, "linearGradient");
+        set_attr(&gradient, "id", format!("{id}-gradient"));
+        set_attr(&gradient, "gradientUnits", "objectBoundingBox");
+        set_attr(&gradient, "x1", "0%");
+        set_attr(&gradient, "y1", "0%");
+        set_attr(&gradient, "x2", "100%");
+        set_attr(&gradient, "y2", "0%");
+        for (offset, key) in [("0%", "gradientStart"), ("100%", "gradientStop")] {
+            let stop = append(&gradient, "stop");
+            set_attr(&stop, "offset", offset);
+            set_attr(
+                &stop,
+                "stop-color",
+                crate::render::themes::get(&theme_vars, key),
+            );
+            set_attr(&stop, "stop-opacity", "1");
+        }
+    }
+
     // drawCommits(modifyGraph=false): position pass.
     let mut commit_pos: std::collections::HashMap<String, (f64, f64)> =
         std::collections::HashMap::new();

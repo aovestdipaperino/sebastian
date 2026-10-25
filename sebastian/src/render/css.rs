@@ -1993,6 +1993,7 @@ pub fn themed_class_css(id: &str, vars: &Map<String, Value>) -> String {
     let font_family = v("fontFamily");
     let node_border = v("nodeBorder");
     let text_color = v("textColor");
+    let title_color = v("titleColor");
     let class_text = v("classText");
     let main_bkg = v("mainBkg");
     let cluster_bkg = v("clusterBkg");
@@ -2020,13 +2021,13 @@ pub fn themed_class_css(id: &str, vars: &Map<String, Value>) -> String {
         &mut o,
         &i,
         &[" .cluster-label text"],
-        &format!("fill:{text_color};"),
+        &format!("fill:{title_color};"),
     );
     rule(
         &mut o,
         &i,
         &[" .cluster-label span"],
-        &format!("color:{text_color};"),
+        &format!("color:{title_color};"),
     );
     rule(
         &mut o,
@@ -2044,13 +2045,13 @@ pub fn themed_class_css(id: &str, vars: &Map<String, Value>) -> String {
         &mut o,
         &i,
         &[" .cluster text"],
-        &format!("fill:{text_color};"),
+        &format!("fill:{title_color};"),
     );
     rule(
         &mut o,
         &i,
         &[" .cluster span"],
-        &format!("color:{text_color};"),
+        &format!("color:{title_color};"),
     );
     rule(
         &mut o,
