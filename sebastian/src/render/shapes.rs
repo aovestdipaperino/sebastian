@@ -392,6 +392,23 @@ pub fn label_helper(
     };
     let font_size = font_size_from_styles_or(&n.label_style_str, config.font_size());
 
+    // `font-weight: bold` / `font-style: italic` from the node's styles
+    // change which Trebuchet face the label measures with.
+    let style_has = |prop: &str, value: &str| {
+        n.label_style_str.split(';').any(|d| {
+            d.split_once(':').is_some_and(|(k, v)| {
+                k.trim() == prop && v.trim().trim_end_matches("!important").trim() == value
+            })
+        })
+    };
+    let styled_bold = style_has("font-weight", "bold");
+    let styled_italic = style_has("font-style", "italic");
+    if styled_bold {
+        measurer.set_bold(true);
+    }
+    if styled_italic {
+        measurer.set_italic(true);
+    }
     let bbox = if config.node_html_labels() {
         let bbox = measure_label_sized(measurer, &n.label, wrap_width, font_size);
         build_html_label_classed(
@@ -456,6 +473,12 @@ pub fn label_helper(
         set_attr(&label_el, "transform", transform);
         bbox
     };
+    if styled_bold {
+        measurer.set_bold(false);
+    }
+    if styled_italic {
+        measurer.set_italic(false);
+    }
 
     let half_padding = n.padding / 2.0;
     // labelEl.insert('rect', ':first-child')

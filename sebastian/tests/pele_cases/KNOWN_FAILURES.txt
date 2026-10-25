@@ -99,10 +99,6 @@ sequence/sequence-docs017
 sequence/sequence-docs030
 sequence/sequence-docs034
 state/state-docs000
-state/state-docs018
-state/state-docs019
-state/state-docs020
-state/state-docs021
 timeline/timeline-docs005
 venn/venn-docs000
 venn/venn-docs001

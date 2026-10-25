@@ -36,6 +36,18 @@ const ARIAL_UNICODE_IDX: usize = 3;
 
 const APPLE_COLOR_EMOJI: &str = "/System/Library/Fonts/Apple Color Emoji.ttc";
 
+const ITALIC_CANDIDATES: &[&str] = &[
+    "/System/Library/Fonts/Supplemental/Trebuchet MS Italic.ttf",
+    "/Library/Fonts/Trebuchet MS Italic.ttf",
+    "C:/Windows/Fonts/trebuit.ttf",
+];
+
+const BOLD_ITALIC_CANDIDATES: &[&str] = &[
+    "/System/Library/Fonts/Supplemental/Trebuchet MS Bold Italic.ttf",
+    "/Library/Fonts/Trebuchet MS Bold Italic.ttf",
+    "C:/Windows/Fonts/trebucbi.ttf",
+];
+
 const BOLD_CANDIDATES: &[&str] = &[
     "/System/Library/Fonts/Supplemental/Trebuchet MS Bold.ttf",
     "/Library/Fonts/Trebuchet MS Bold.ttf",
@@ -266,6 +278,11 @@ struct MeasurerInner {
     /// Trebuchet MS Bold data, used while `bold` is set.
     bold_data: Vec<u8>,
     bold: std::cell::Cell<bool>,
+    /// Trebuchet MS Italic / Bold Italic, used while `italic` is set (empty
+    /// when the host lacks them, in which case the upright face measures).
+    italic_data: Vec<u8>,
+    bold_italic_data: Vec<u8>,
+    italic: std::cell::Cell<bool>,
     units_per_em: f64,
     fallbacks: Vec<Vec<u8>>,
     emoji_font: Option<Vec<u8>>,
@@ -306,11 +323,23 @@ impl TextMeasurer {
                 .find_map(|p| read_font(p))
                 .unwrap_or_default()
         };
+        let load = |paths: &[&str]| {
+            if hand_drawn {
+                Vec::new()
+            } else {
+                paths.iter().find_map(|p| read_font(p)).unwrap_or_default()
+            }
+        };
+        let italic_data = load(ITALIC_CANDIDATES);
+        let bold_italic_data = load(BOLD_ITALIC_CANDIDATES);
         Self {
             inner: Rc::new(MeasurerInner {
                 data,
                 bold_data,
                 bold: std::cell::Cell::new(false),
+                italic_data,
+                bold_italic_data,
+                italic: std::cell::Cell::new(false),
                 units_per_em,
                 fallbacks,
                 emoji_font,
@@ -322,11 +351,27 @@ impl TextMeasurer {
     }
 
     fn face(&self) -> Face<'_> {
+        if self.inner.italic.get() {
+            let data = if self.inner.bold.get() && !self.inner.bold_italic_data.is_empty() {
+                &self.inner.bold_italic_data
+            } else {
+                &self.inner.italic_data
+            };
+            if !data.is_empty() {
+                return Face::parse(data, 0).expect("valid font");
+            }
+        }
         if self.inner.bold.get() && !self.inner.bold_data.is_empty() {
             Face::parse(&self.inner.bold_data, 0).expect("valid font")
         } else {
             Face::parse(&self.inner.data, 0).expect("valid font")
         }
+    }
+
+    /// Switches measurement to the italic face (`font-style: italic`).
+    pub fn set_italic(&self, italic: bool) {
+        self.inner.italic.set(italic);
+        self.inner.advances.borrow_mut().clear();
     }
 
     /// Switches measurement to the bold face (class diagram titles).

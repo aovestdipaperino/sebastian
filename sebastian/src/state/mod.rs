@@ -80,7 +80,17 @@ const DEFAULT_STATE_TYPE: &str = "default";
 pub fn parse(source: &str) -> Result<Vec<Stmt>, StateParseError> {
     let mut lines: Vec<&str> = Vec::new();
     let mut found_header = false;
-    for raw in source.lines() {
+    // The lexer skips `%% comment` anywhere on a line (but not `%%{ ... }%%`).
+    let source: Vec<&str> = source
+        .lines()
+        .map(|l| {
+            let at = l.match_indices("%%").map(|(i, _)| i).find(|&i| {
+                !l[i + 2..].starts_with('{') && (i == 0 || l[..i].ends_with(char::is_whitespace))
+            });
+            at.map_or(l, |i| l[..i].trim_end())
+        })
+        .collect();
+    for raw in source.iter().copied() {
         let t = raw.trim();
         if !found_header {
             if t.is_empty() || t.starts_with("%%") || t.starts_with('#') {
@@ -207,9 +217,17 @@ impl Parser<'_> {
             }
             if let Some(rest) = line.strip_prefix("class ") {
                 let rest = rest.trim();
-                if let Some((ids, class)) = rest.split_once(char::is_whitespace) {
+                // `class a, b name`: the id list may hold spaces after commas;
+                // the class is the last word.
+                if let Some((ids, class)) = rest.rsplit_once(char::is_whitespace) {
+                    let ids = ids
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|i| !i.is_empty())
+                        .collect::<Vec<_>>()
+                        .join(",");
                     doc.push(Stmt::ApplyClass {
-                        id: ids.trim().to_owned(),
+                        id: ids,
                         style_class: class.trim().to_owned(),
                     });
                 }
