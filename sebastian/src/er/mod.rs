@@ -91,7 +91,65 @@ fn cardinality(token: &str, left: bool) -> Option<&'static str> {
 }
 
 /// Splits a relationship line `A <card><line><card> B : label`.
+const CARD_WORDS: &[&str] = &[
+    "one or zero",
+    "zero or one",
+    "one or more",
+    "one or many",
+    "zero or more",
+    "zero or many",
+    "only one",
+    "many(1)",
+    "many(0)",
+    "1+",
+    "0+",
+    "1",
+];
+
+/// Relationship with word cardinalities: `A <card> to <card> B : label`
+/// (`optionally to` draws a non-identifying line).
+fn parse_word_relationship(line: &str) -> Option<(String, String, String, String, bool, String)> {
+    let (idx, sep, ident) = [(" optionally to ", false), (" to ", true)]
+        .iter()
+        .filter_map(|(t, i)| line.find(t).map(|p| (p, *t, *i)))
+        .min_by_key(|(p, _, _)| *p)?;
+    let left = line[..idx].trim_end();
+    let right = line[idx + sep.len()..].trim_start();
+    let card_left = CARD_WORDS
+        .iter()
+        .filter(|w| left.ends_with(*w) && left[..left.len() - w.len()].ends_with(' '))
+        .max_by_key(|w| w.len())?;
+    let card_right = CARD_WORDS
+        .iter()
+        .filter(|w| right.starts_with(*w) && right[w.len()..].starts_with(' '))
+        .max_by_key(|w| w.len())?;
+    let entity_a = left[..left.len() - card_left.len()].trim();
+    let rest = right[card_right.len()..].trim();
+    let (entity_b, label) = match rest.find(':') {
+        Some(c) => (
+            rest[..c].trim().to_owned(),
+            rest[c + 1..].trim().trim_matches('"').to_owned(),
+        ),
+        None => (rest.to_owned(), String::new()),
+    };
+    if entity_a.is_empty() || entity_b.is_empty() {
+        return None;
+    }
+    Some((
+        entity_a.to_owned(),
+        entity_b,
+        label,
+        cardinality(card_right, false)?.to_owned(),
+        ident,
+        cardinality(card_left, true)?.to_owned(),
+    ))
+}
+
 fn parse_relationship(line: &str) -> Option<(String, String, String, String, bool, String)> {
+    parse_word_relationship(line).or_else(|| parse_symbol_relationship(line))
+}
+
+fn parse_symbol_relationship(line: &str) -> Option<(String, String, String, String, bool, String)> {
     // Find the line part: -- (identifying) or .. (non-identifying), also
     // `.-`/`-.` variants.
     let (idx, ident, line_len) = ["--", "..", ".-", "-."]
@@ -186,7 +244,11 @@ fn parse(source: &str) -> Result<ErDb, ErParseError> {
             });
             continue;
         }
-        // Standalone entity declaration.
+        // Standalone entity declaration (a quoted name may hold spaces).
+        if line.len() >= 2 && line.starts_with('"') && line.ends_with('"') {
+            db.add_entity(&line[1..line.len() - 1]);
+            continue;
+        }
         let (name, alias) = split_alias(line);
         if !name.is_empty() && !name.contains(char::is_whitespace) {
             db.add_entity(&name);

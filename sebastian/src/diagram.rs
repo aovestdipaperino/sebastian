@@ -208,13 +208,13 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
     let mut svg = crate::a11y::inject(&render_by_type(source, id)?, id, &a11y);
     if let Some(t) = &fm_title {
         let class = match detect_diagram_type(source) {
-            "flowchart" => Some("flowchartTitleText"),
-            "er" => Some("erDiagramTitleText"),
-            "state" => Some("statediagramTitleText"),
+            "flowchart" => Some(("flowchartTitleText", 18.0)),
+            "er" => Some(("erDiagramTitleText", 16.0)),
+            "state" => Some(("statediagramTitleText", 18.0)),
             _ => None,
         };
-        if let Some(class) = class {
-            svg = crate::frontmatter::inject_title(&svg, t, class);
+        if let Some((class, size)) = class {
+            svg = crate::frontmatter::inject_title(&svg, t, class, size);
         }
     }
     if hand_drawn {

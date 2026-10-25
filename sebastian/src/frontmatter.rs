@@ -172,7 +172,7 @@ pub fn title(source: &str) -> Option<String> {
 /// `insertTitle` does: centred text at y = -25 with the viewBox grown upward
 /// by 50. `class` is the diagram's title class (e.g. `flowchartTitleText`).
 #[must_use]
-pub fn inject_title(svg: &str, title: &str, class: &str) -> String {
+pub fn inject_title(svg: &str, title: &str, class: &str, font_size: f64) -> String {
     let Some(at) = svg.find("viewBox=\"") else {
         return svg.to_owned();
     };
@@ -194,12 +194,16 @@ pub fn inject_title(svg: &str, title: &str, class: &str) -> String {
     // The title joins the bounding box before the viewBox is taken, so a title
     // wider than the diagram widens it (max-width keeps the original width).
     let cx = x + w / 2.0;
-    let tw = f64::from(crate::text::TextMeasurer::new().measure_advance_svg(&text, 18.0) as f32);
+    let tw =
+        f64::from(crate::text::TextMeasurer::new().measure_advance_svg(&text, font_size) as f32);
     let left = x.min(cx - tw / 2.0);
     let right = (x + w).max(cx + tw / 2.0);
     let mut out = String::with_capacity(svg.len() + 100);
     out.push_str(&svg[..start]);
-    let _ = write!(out, "{left} {} {} {}", y - 50.0, right - left, h + 50.0);
+    // The text box (baseline -25, font ascent above it) joins the bbox, then
+    // the 8px viewBox padding is added.
+    let top = (-25.0 - (1923.0 * font_size / 2048.0).round() - 8.0).min(y);
+    let _ = write!(out, "{left} {top} {} {}", right - left, y + h - top);
     out.push_str(&svg[start + len..]);
     let tail = out.rfind("</svg>").unwrap_or(out.len());
     out.insert_str(

@@ -33,16 +33,12 @@ c4/c4-spec022
 c4/c4-spec023
 c4/c4-spec024
 c4/c4-spec025
-er/er-docs000
-er/er-docs004
 er/er-docs005
-er/er-docs007
 er/er-docs015
 er/er-docs016
 er/er-docs018
 er/er-docs019
 er/er-docs020
-er/er-docs024
 eventmodeling/eventmodeling-docs000
 eventmodeling/eventmodeling-docs001
 eventmodeling/eventmodeling-docs002
