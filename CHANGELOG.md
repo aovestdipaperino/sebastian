@@ -22,6 +22,10 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - Flowchart `@{ shape: ... }` accepts mermaid's short names and aliases
   (`hex`, `cyl`, `lean-r`, `trap-b`, ...), and `@{ label }` is a markdown
   label. `xychart` and `sankey` are accepted without the `-beta` suffix.
+- **quadrantChart**: case-insensitive keywords, quoted text, `:::class`,
+  per-point `radius`/`color`/`stroke-color`/`stroke-width`, `classDef`, a
+  trailing `-->` on axes, and `chartWidth`/`chartHeight` from config. The
+  render config now keeps the merged directive in `RenderConfig::raw`.
 - `detect_diagram_type` skips a leading YAML front-matter block.
 - **`pele_cases` corpus**: 555 diagram sources from obsidianmd/pele (Mermaid
   docs examples and ported spec strings) with mermaid 11.15.0 references.

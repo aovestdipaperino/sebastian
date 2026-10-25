@@ -60,6 +60,9 @@ pub struct RenderConfig {
     /// Layout engine: `"dagre"` (default) or `"elk"`. Set by the top-level
     /// `layout` directive or `flowchart.defaultRenderer: "elk"`.
     pub layout: String,
+    /// All directive keys merged in order (objects merge one level deep), so a
+    /// diagram can read its own section such as `quadrantChart` or `sankey`.
+    pub raw: Map<String, Value>,
 }
 
 impl Default for RenderConfig {
@@ -83,11 +86,18 @@ impl Default for RenderConfig {
             edge_label_font_size: None,
             git_show_commit_label: None,
             layout: "dagre".to_owned(),
+            raw: Map::new(),
         }
     }
 }
 
 impl RenderConfig {
+    /// A number from a diagram's own config section (`section.key`).
+    #[must_use]
+    pub fn section_f64(&self, section: &str, key: &str) -> Option<f64> {
+        self.raw.get(section)?.get(key)?.as_f64()
+    }
+
     /// `getEffectiveHtmlLabels`: flowchart.htmlLabels ?? htmlLabels ?? true.
     #[must_use]
     pub fn effective_html_labels(&self) -> bool {
@@ -166,6 +176,18 @@ pub fn detect_init(text: &str) -> RenderConfig {
 }
 
 fn apply_init(config: &mut RenderConfig, map: &Map<String, Value>) {
+    for (k, v) in map {
+        match (config.raw.get_mut(k), v) {
+            (Some(Value::Object(old)), Value::Object(new)) => {
+                for (nk, nv) in new {
+                    old.insert(nk.clone(), nv.clone());
+                }
+            }
+            _ => {
+                config.raw.insert(k.clone(), v.clone());
+            }
+        }
+    }
     if let Some(theme) = map.get("theme").and_then(Value::as_str) {
         theme.clone_into(&mut config.theme);
     }

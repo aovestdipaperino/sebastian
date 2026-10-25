@@ -35,6 +35,24 @@ const POINT_RADIUS: f64 = 5.0;
 const INTERNAL_BORDER_WIDTH: f64 = 1.0;
 const EXTERNAL_BORDER_WIDTH: f64 = 2.0;
 
+/// Style overrides of a point or a `classDef` (`quadrantDb.parseStyles`).
+#[derive(Debug, Default, Clone)]
+struct PointStyle {
+    radius: Option<i64>,
+    color: Option<String>,
+    stroke_color: Option<String>,
+    stroke_width: Option<String>,
+}
+
+#[derive(Debug)]
+struct Point {
+    name: String,
+    x: f64,
+    y: f64,
+    class: String,
+    style: PointStyle,
+}
+
 #[derive(Debug, Default)]
 struct Db {
     title: String,
@@ -46,7 +64,138 @@ struct Db {
     q2: String,
     q3: String,
     q4: String,
-    points: Vec<(String, f64, f64)>,
+    points: Vec<Point>,
+    classes: Vec<(String, PointStyle)>,
+}
+
+fn err(message: String) -> QuadrantParseError {
+    QuadrantParseError { message }
+}
+
+/// Case-insensitive `strip_prefix` for an ASCII keyword.
+fn strip_keyword<'a>(line: &'a str, kw: &str) -> Option<&'a str> {
+    let head = line.get(..kw.len())?;
+    head.eq_ignore_ascii_case(kw).then(|| &line[kw.len()..])
+}
+
+/// The lexer's `text`: a quoted or markdown-quoted string, or the raw run.
+fn parse_text(raw: &str) -> String {
+    let t = raw.trim();
+    if let Some(inner) = t.strip_prefix("\"`").and_then(|r| r.strip_suffix("`\"")) {
+        return inner.to_owned();
+    }
+    if let Some(inner) = t.strip_prefix('"').and_then(|r| r.strip_suffix('"')) {
+        return inner.to_owned();
+    }
+    t.to_owned()
+}
+
+/// Splits axis text on the `--+>` delimiter.
+fn split_axis(rest: &str) -> (String, Option<String>) {
+    let bytes = rest.as_bytes();
+    let mut i = 0;
+    while i + 2 < bytes.len() + 1 {
+        if bytes.get(i) == Some(&b'-') && bytes.get(i + 1) == Some(&b'-') {
+            let mut j = i;
+            while bytes.get(j) == Some(&b'-') {
+                j += 1;
+            }
+            if bytes.get(j) == Some(&b'>') {
+                return (parse_text(&rest[..i]), Some(parse_text(&rest[j + 1..])));
+            }
+        }
+        i += 1;
+    }
+    (parse_text(rest), None)
+}
+
+fn parse_styles(parts: &str) -> Result<PointStyle, QuadrantParseError> {
+    let mut style = PointStyle::default();
+    for part in parts.split(',') {
+        let part = part.trim();
+        if part.is_empty() {
+            continue;
+        }
+        let (key, value) = part
+            .split_once(':')
+            .map_or((part, ""), |(k, v)| (k.trim(), v.trim()));
+        let hex = |v: &str| {
+            let h = v.strip_prefix('#').unwrap_or(v);
+            matches!(h.len(), 3 | 6) && h.chars().all(|c| c.is_ascii_hexdigit())
+        };
+        match key {
+            "radius" => {
+                style.radius = Some(value.parse::<f64>().map_err(|_| {
+                    err(format!(
+                        "value for radius {value} is invalid, please use a valid number"
+                    ))
+                })? as i64);
+            }
+            "color" if hex(value) => style.color = Some(value.to_owned()),
+            "stroke-color" if hex(value) => style.stroke_color = Some(value.to_owned()),
+            "color" | "stroke-color" => {
+                return Err(err(format!(
+                    "value for {key} {value} is invalid, please use a valid hex code"
+                )));
+            }
+            "stroke-width" => {
+                let digits = value.strip_suffix("px").unwrap_or("");
+                if digits.is_empty() || !digits.chars().all(|c| c.is_ascii_digit()) {
+                    return Err(err(format!(
+                        "value for stroke-width {value} is invalid, please use a valid number of pixels (eg. 10px)"
+                    )));
+                }
+                style.stroke_width = Some(value.to_owned());
+            }
+            other => return Err(err(format!("style named {other} is not supported."))),
+        }
+    }
+    Ok(style)
+}
+
+/// Finds the `: [` that opens a point's coordinates (not a `:::` class marker).
+fn point_open(line: &str) -> Option<usize> {
+    let b = line.as_bytes();
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b':' {
+            if b.get(i + 1) == Some(&b':') && b.get(i + 2) == Some(&b':') {
+                i += 3;
+                continue;
+            }
+            if line[i + 1..].trim_start().starts_with('[') {
+                return Some(i);
+            }
+        }
+        i += 1;
+    }
+    None
+}
+
+fn parse_point(line: &str, open: usize) -> Result<Point, QuadrantParseError> {
+    let bad = || err(format!("bad quadrant point: {line}"));
+    let (name_part, class) = match line[..open].split_once(":::") {
+        Some((n, c)) => (n, c.trim().to_owned()),
+        None => (&line[..open], String::new()),
+    };
+    let after = line[open + 1..]
+        .trim_start()
+        .strip_prefix('[')
+        .ok_or_else(bad)?;
+    let close = after.find(']').ok_or_else(bad)?;
+    let (xs, ys) = after[..close].split_once(',').ok_or_else(bad)?;
+    let x: f64 = xs.trim().parse().map_err(|_| bad())?;
+    let y: f64 = ys.trim().parse().map_err(|_| bad())?;
+    if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
+        return Err(bad());
+    }
+    Ok(Point {
+        name: parse_text(name_part),
+        x,
+        y,
+        class,
+        style: parse_styles(&after[close + 1..])?,
+    })
 }
 
 fn parse(source: &str) -> Result<Db, QuadrantParseError> {
@@ -58,82 +207,68 @@ fn parse(source: &str) -> Result<Db, QuadrantParseError> {
             continue;
         }
         if !found_header {
-            if line.starts_with("quadrantChart") {
+            if strip_keyword(line, "quadrantChart").is_some() {
                 found_header = true;
                 continue;
             }
-            return Err(QuadrantParseError {
-                message: format!("expected quadrantChart header, got {line:?}"),
-            });
+            return Err(err(format!("expected quadrantChart header, got {line:?}")));
         }
-        if let Some(rest) = line.strip_prefix("title") {
+        if let Some(rest) = strip_keyword(line, "title") {
             db.title = rest.trim().to_owned();
             continue;
         }
-        if let Some(rest) = line.strip_prefix("x-axis") {
-            let rest = rest.trim();
-            if let Some((l, r)) = rest.split_once("-->") {
-                db.x_left = l.trim().to_owned();
-                db.x_right = r.trim().to_owned();
+        let axis = [("x-axis", true), ("y-axis", false)]
+            .iter()
+            .find_map(|(kw, is_x)| strip_keyword(line, kw).map(|rest| (rest, *is_x)));
+        if let Some((rest, is_x)) = axis {
+            let (first, second) = split_axis(rest);
+            // A trailing delimiter without a second text appends " ⟶ ", which
+            // mermaid's sanitizer then trims.
+            let (first, second) = match second {
+                Some(s) if s.is_empty() => (format!("{first} ⟶"), String::new()),
+                Some(s) => (first, s),
+                None => (first, String::new()),
+            };
+            if is_x {
+                db.x_left = first;
+                db.x_right = second;
             } else {
-                db.x_left = rest.to_owned();
+                db.y_bottom = first;
+                db.y_top = second;
             }
             continue;
         }
-        if let Some(rest) = line.strip_prefix("y-axis") {
-            let rest = rest.trim();
-            if let Some((b, t)) = rest.split_once("-->") {
-                db.y_bottom = b.trim().to_owned();
-                db.y_top = t.trim().to_owned();
-            } else {
-                db.y_bottom = rest.to_owned();
-            }
-            continue;
-        }
-        for (kw, field) in [
-            ("quadrant-1", 1),
-            ("quadrant-2", 2),
-            ("quadrant-3", 3),
-            ("quadrant-4", 4),
-        ] {
-            if let Some(rest) = line.strip_prefix(kw) {
-                let t = rest.trim().to_owned();
-                match field {
+        let mut handled = false;
+        for n in 1..=4 {
+            if let Some(rest) = strip_keyword(line, &format!("quadrant-{n}")) {
+                let t = parse_text(rest);
+                match n {
                     1 => db.q1 = t,
                     2 => db.q2 = t,
                     3 => db.q3 = t,
                     _ => db.q4 = t,
                 }
+                handled = true;
                 break;
             }
         }
-        if line.starts_with("quadrant-") {
+        if handled {
             continue;
         }
-        // Point: name: [x, y]
-        if let Some((name, rest)) = line.split_once(':') {
-            let rest = rest.trim();
-            if let Some(inner) = rest.strip_prefix('[').and_then(|r| r.strip_suffix(']'))
-                && let Some((xs, ys)) = inner.split_once(',')
-            {
-                let x: f64 = xs.trim().parse().map_err(|_| QuadrantParseError {
-                    message: format!("bad quadrant point: {line}"),
-                })?;
-                let y: f64 = ys.trim().parse().map_err(|_| QuadrantParseError {
-                    message: format!("bad quadrant point: {line}"),
-                })?;
-                db.points.push((name.trim().to_owned(), x, y));
-                continue;
-            }
+        if let Some(rest) = line.strip_prefix("classDef") {
+            let rest = rest.trim_start();
+            let (name, styles) = rest.split_once(char::is_whitespace).unwrap_or((rest, ""));
+            db.classes.push((name.to_owned(), parse_styles(styles)?));
+            continue;
         }
-        return Err(QuadrantParseError {
-            message: format!("unsupported quadrantChart statement: {line}"),
-        });
+        if let Some(open) = point_open(line) {
+            db.points.push(parse_point(line, open)?);
+            continue;
+        }
+        return Err(err(format!("unsupported quadrantChart statement: {line}")));
     }
     if !found_header {
-        return Err(QuadrantParseError {
-            message: "missing quadrantChart header".to_owned(),
-        });
+        return Err(err("missing quadrantChart header".to_owned()));
     }
     Ok(db)
 }
@@ -159,6 +294,12 @@ struct TextItem {
 #[allow(clippy::too_many_lines)]
 pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseError> {
     let config = crate::render::config::detect_init(source);
+    let chart_width = config
+        .section_f64("quadrantChart", "chartWidth")
+        .unwrap_or(CHART_WIDTH);
+    let chart_height = config
+        .section_f64("quadrantChart", "chartHeight")
+        .unwrap_or(CHART_HEIGHT);
     let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
@@ -192,8 +333,8 @@ pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseEr
 
     let q_left = QUADRANT_PADDING + y_left;
     let q_top = QUADRANT_PADDING + x_top + title_top;
-    let q_width = CHART_WIDTH - QUADRANT_PADDING * 2.0 - y_left;
-    let q_height = CHART_HEIGHT - QUADRANT_PADDING * 2.0 - x_top - x_bottom - title_top;
+    let q_width = chart_width - QUADRANT_PADDING * 2.0 - y_left;
+    let q_height = chart_height - QUADRANT_PADDING * 2.0 - x_top - x_bottom - title_top;
     let q_half_w = q_width / 2.0;
     let q_half_h = q_height / 2.0;
 
@@ -207,13 +348,13 @@ pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseEr
         "style",
         format!(
             "max-width: {}px; background-color: white;",
-            crate::render::css_length(CHART_WIDTH)
+            crate::render::css_length(chart_width)
         ),
     );
     set_attr(
         &svg,
         "viewBox",
-        format!("0 0 {} {}", js_num(CHART_WIDTH), js_num(CHART_HEIGHT)),
+        format!("0 0 {} {}", js_num(chart_width), js_num(chart_height)),
     );
     set_attr(&svg, "role", "graphics-document document");
     set_attr(&svg, "aria-roledescription", "quadrantChart");
@@ -264,7 +405,10 @@ pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseEr
                 js_num(t.rotation)
             ),
         );
-        set_text(&text, &t.text);
+        // d3 `.text('')` leaves a text element with no child node.
+        if !t.text.is_empty() {
+            set_text(&text, &t.text);
+        }
     };
 
     // Title.
@@ -274,7 +418,7 @@ pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseEr
             &TextItem {
                 text: db.title.clone(),
                 fill: v("quadrantTitleFill"),
-                x: CHART_WIDTH / 2.0,
+                x: chart_width / 2.0,
                 y: TITLE_PADDING,
                 font_size: TITLE_FONT_SIZE,
                 anchor_left: false,
@@ -479,7 +623,23 @@ pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseEr
     // Data points (circle + label). Prepended in input order, so reversed.
     let point_fill = v("quadrantPointFill");
     let point_text_fill = v("quadrantPointTextFill");
-    for (name, px, py) in db.points.iter().rev() {
+    for point in db.points.iter().rev() {
+        let (px, py) = (point.x, point.y);
+        // classDef styles under the point's own styles.
+        let mut style = db
+            .classes
+            .iter()
+            .rev()
+            .find(|(n, _)| *n == point.class)
+            .map(|(_, st)| st.clone())
+            .unwrap_or_default();
+        let own = &point.style;
+        style.radius = own.radius.or(style.radius);
+        style.color = own.color.clone().or(style.color);
+        style.stroke_color = own.stroke_color.clone().or(style.stroke_color);
+        style.stroke_width = own.stroke_width.clone().or(style.stroke_width);
+        let fill = style.color.clone().unwrap_or_else(|| point_fill.clone());
+        let name = &point.name;
         // d3 scaleLinear interpolate: a*(1-t) + b*t (not fma).
         let cx = q_left * (1.0 - px) + (q_width + q_left) * px;
         let cy = (q_height + q_top) * (1.0 - py) + q_top * py;
@@ -488,10 +648,29 @@ pub fn render_quadrant(source: &str, id: &str) -> Result<String, QuadrantParseEr
         let circle = append(&g, "circle");
         set_attr(&circle, "cx", js_num(cx));
         set_attr(&circle, "cy", js_num(cy));
-        set_attr(&circle, "r", js_num(POINT_RADIUS));
-        set_attr(&circle, "fill", point_fill.clone());
-        set_attr(&circle, "stroke", point_fill.clone());
-        set_attr(&circle, "stroke-width", "0px");
+        #[allow(clippy::cast_precision_loss)]
+        set_attr(
+            &circle,
+            "r",
+            js_num(style.radius.map_or(POINT_RADIUS, |r| r as f64)),
+        );
+        set_attr(&circle, "fill", fill);
+        set_attr(
+            &circle,
+            "stroke",
+            style
+                .stroke_color
+                .clone()
+                .unwrap_or_else(|| point_fill.clone()),
+        );
+        set_attr(
+            &circle,
+            "stroke-width",
+            style
+                .stroke_width
+                .clone()
+                .unwrap_or_else(|| "0px".to_owned()),
+        );
         draw_text(
             &g,
             &TextItem {
