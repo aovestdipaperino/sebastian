@@ -177,6 +177,7 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
     // Front matter (`---` ... `---`) carries `config:`; fold it into an init
     // directive so every renderer reads configuration from one place.
     let normalized = crate::frontmatter::normalize(source);
+    let fm_title = crate::frontmatter::title(source);
     // accTitle / accDescr become <title>/<desc> after rendering.
     let (stripped, a11y) = crate::a11y::extract(&normalized);
     let source = stripped.as_str();
@@ -204,7 +205,18 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
         crate::text::set_hand_drawn_family(family);
         ResetHandDrawn
     });
-    let svg = crate::a11y::inject(&render_by_type(source, id)?, id, &a11y);
+    let mut svg = crate::a11y::inject(&render_by_type(source, id)?, id, &a11y);
+    if let Some(t) = &fm_title {
+        let class = match detect_diagram_type(source) {
+            "flowchart" => Some("flowchartTitleText"),
+            "er" => Some("erDiagramTitleText"),
+            "state" => Some("statediagramTitleText"),
+            _ => None,
+        };
+        if let Some(class) = class {
+            svg = crate::frontmatter::inject_title(&svg, t, class);
+        }
+    }
     if hand_drawn {
         let css = render::css::hand_drawn_font_css(id);
         // Flowchart injects the override in its own stylesheet already.

@@ -107,6 +107,8 @@ pub struct RenderEdge {
     pub label_style: Vec<String>,
     pub css_compiled_styles: Vec<String>,
     pub curve: String,
+    pub animate: bool,
+    pub animation: Option<String>,
     pub look: String,
 
     // Set during rendering:

@@ -126,6 +126,66 @@ impl Parser {
         }
     }
 
+    /// `click` statements: a callback (optionally with a tooltip) or a link
+    /// (optionally with a tooltip and a target).
+    fn parse_click(&mut self, id: &str) {
+        self.skip_spaces();
+        match self.peek().clone() {
+            Tok::CallbackName(_) => {
+                self.pos += 1;
+                self.skip_spaces();
+                if matches!(self.peek(), Tok::CallbackArgs(_)) {
+                    self.pos += 1;
+                    self.skip_spaces();
+                }
+                if let Tok::Str(t) = self.peek().clone() {
+                    self.pos += 1;
+                    self.db.set_tooltip(id, &t);
+                }
+                self.db.set_click_event(id);
+            }
+            Tok::NodeString(_) | Tok::Num(_) | Tok::UnicodeText(_) => {
+                self.pos += 1;
+                self.skip_spaces();
+                if let Tok::Str(t) = self.peek().clone() {
+                    self.pos += 1;
+                    self.db.set_tooltip(id, &t);
+                }
+                self.db.set_click_event(id);
+            }
+            Tok::Href => {
+                self.pos += 1;
+                self.skip_spaces();
+                self.parse_click_link(id);
+            }
+            Tok::Str(_) => self.parse_click_link(id),
+            _ => {}
+        }
+    }
+
+    fn parse_click_link(&mut self, id: &str) {
+        let Tok::Str(link) = self.peek().clone() else {
+            return;
+        };
+        self.pos += 1;
+        self.skip_spaces();
+        let mut tooltip = None;
+        if let Tok::Str(t) = self.peek().clone() {
+            tooltip = Some(t);
+            self.pos += 1;
+            self.skip_spaces();
+        }
+        let mut target = None;
+        if let Tok::LinkTarget(t) = self.peek().clone() {
+            target = Some(t);
+            self.pos += 1;
+        }
+        self.db.set_link(id, &link, target.as_deref());
+        if let Some(t) = tooltip {
+            self.db.set_tooltip(id, &t);
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
     fn parse_statement(&mut self) -> Result<Vec<DocItem>, ParseError> {
         match self.peek().clone() {
@@ -142,8 +202,9 @@ impl Parser {
                 }
                 Ok(vec![])
             }
-            Tok::Click(_) => {
-                // Interactivity is not rendered; consume the line.
+            Tok::Click(id) => {
+                self.pos += 1;
+                self.parse_click(&id);
                 self.skip_to_end_of_line();
                 Ok(vec![])
             }
@@ -495,6 +556,16 @@ impl Parser {
     /// is a markdown label unless `labelType` says `text` or `string`
     /// (`flowDb.sanitizeNodeLabelType`).
     fn apply_shape_data(&mut self, id: &str, data: &str) {
+        // `e1@{ animate: true }` targets an edge when the id names one.
+        if self.db.edges.iter().any(|e| e.id == id) {
+            for part in data.split(',') {
+                let mut kv = part.splitn(2, ':');
+                let key = kv.next().unwrap_or("").trim();
+                let value = kv.next().unwrap_or("").trim().trim_matches('"');
+                self.db.set_edge_metadata(id, key, value);
+            }
+            return;
+        }
         let mut label: Option<String> = None;
         let mut label_type: Option<String> = None;
         for part in data.split(',') {

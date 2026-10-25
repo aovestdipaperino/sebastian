@@ -7,6 +7,8 @@
 //! block and re-expresses its `config:` as an init directive so every renderer
 //! sees one configuration path.
 
+use std::fmt::Write;
+
 use serde_json::{Map, Value};
 
 /// Splits a leading front-matter block off `source`.
@@ -153,6 +155,60 @@ pub fn normalize(source: &str) -> String {
         }
         _ => rest.to_owned(),
     }
+}
+
+/// The front-matter `title:` value, if any.
+#[must_use]
+pub fn title(source: &str) -> Option<String> {
+    let (block, _) = split(source)?;
+    match parse_map(&block).get("title")? {
+        Value::String(s) => Some(s.clone()),
+        Value::Number(n) => Some(n.to_string()),
+        _ => None,
+    }
+}
+
+/// Draws a front-matter title above a finished SVG, as mermaid's
+/// `insertTitle` does: centred text at y = -25 with the viewBox grown upward
+/// by 50. `class` is the diagram's title class (e.g. `flowchartTitleText`).
+#[must_use]
+pub fn inject_title(svg: &str, title: &str, class: &str) -> String {
+    let Some(at) = svg.find("viewBox=\"") else {
+        return svg.to_owned();
+    };
+    let start = at + "viewBox=\"".len();
+    let Some(len) = svg[start..].find('"') else {
+        return svg.to_owned();
+    };
+    let nums: Vec<f64> = svg[start..start + len]
+        .split_whitespace()
+        .filter_map(|n| n.parse().ok())
+        .collect();
+    let [x, y, w, h] = nums[..] else {
+        return svg.to_owned();
+    };
+    let text = title
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
+    // The title joins the bounding box before the viewBox is taken, so a title
+    // wider than the diagram widens it (max-width keeps the original width).
+    let cx = x + w / 2.0;
+    let tw = f64::from(crate::text::TextMeasurer::new().measure_advance_svg(&text, 18.0) as f32);
+    let left = x.min(cx - tw / 2.0);
+    let right = (x + w).max(cx + tw / 2.0);
+    let mut out = String::with_capacity(svg.len() + 100);
+    out.push_str(&svg[..start]);
+    let _ = write!(out, "{left} {} {} {}", y - 50.0, right - left, h + 50.0);
+    out.push_str(&svg[start + len..]);
+    let tail = out.rfind("</svg>").unwrap_or(out.len());
+    out.insert_str(
+        tail,
+        &format!(
+            "<text text-anchor=\"middle\" x=\"{cx}\" y=\"-25\" class=\"{class}\">{text}</text>"
+        ),
+    );
+    out
 }
 
 #[cfg(test)]

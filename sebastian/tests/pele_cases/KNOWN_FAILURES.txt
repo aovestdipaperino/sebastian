@@ -83,8 +83,6 @@ eventmodeling/eventmodeling-spec007
 eventmodeling/eventmodeling-spec008
 eventmodeling/eventmodeling-spec009
 eventmodeling/eventmodeling-spec010
-flowchart/flowchart-docs000
-flowchart/flowchart-docs001
 flowchart/flowchart-docs003
 flowchart/flowchart-docs006
 flowchart/flowchart-docs007
@@ -98,14 +96,9 @@ flowchart/flowchart-docs041
 flowchart/flowchart-docs050
 flowchart/flowchart-docs051
 flowchart/flowchart-docs056
-flowchart/flowchart-docs086
-flowchart/flowchart-docs087
 flowchart/flowchart-docs088
 flowchart/flowchart-docs095
 flowchart/flowchart-docs102
-flowchart/flowchart-docs103
-flowchart/flowchart-docs104
-flowchart/flowchart-docs106
 flowchart/flowchart-docs111
 flowchart/flowchart-docs112
 flowchart/flowchart-spec002

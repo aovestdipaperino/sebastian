@@ -680,6 +680,113 @@ impl<'a> BasisCurve<'a> {
     }
 }
 
+/// d3 `curveNatural`: a natural cubic spline through the points.
+fn natural_path(ctx: &mut D3Path, points: &[(f64, f64)]) {
+    let n = points.len();
+    if n == 0 {
+        return;
+    }
+    ctx.move_to(points[0].0, points[0].1);
+    if n == 1 {
+        return;
+    }
+    if n == 2 {
+        ctx.line_to(points[1].0, points[1].1);
+        return;
+    }
+    let xs: Vec<f64> = points.iter().map(|p| p.0).collect();
+    let ys: Vec<f64> = points.iter().map(|p| p.1).collect();
+    let (ax, bx) = natural_control_points(&xs);
+    let (ay, by) = natural_control_points(&ys);
+    for i in 0..n - 1 {
+        ctx.bezier_curve_to(ax[i], ay[i], bx[i], by[i], xs[i + 1], ys[i + 1]);
+    }
+}
+
+fn natural_control_points(x: &[f64]) -> (Vec<f64>, Vec<f64>) {
+    let n = x.len() - 1;
+    let mut a = vec![0.0; n];
+    let mut b = vec![0.0; n];
+    let mut r = vec![0.0; n];
+    a[0] = 0.0;
+    b[0] = 2.0;
+    r[0] = x[0] + 2.0 * x[1];
+    for i in 1..n - 1 {
+        a[i] = 1.0;
+        b[i] = 4.0;
+        r[i] = 4.0 * x[i] + 2.0 * x[i + 1];
+    }
+    a[n - 1] = 2.0;
+    b[n - 1] = 7.0;
+    r[n - 1] = 8.0 * x[n - 1] + x[n];
+    for i in 1..n {
+        let m = a[i] / b[i - 1];
+        b[i] -= m;
+        r[i] -= m * r[i - 1];
+    }
+    a[n - 1] = r[n - 1] / b[n - 1];
+    for i in (0..n - 1).rev() {
+        a[i] = (r[i] - a[i + 1]) / b[i];
+    }
+    b[n - 1] = f64::midpoint(x[n], a[n - 1]);
+    for i in 0..n - 1 {
+        b[i] = 2.0 * x[i + 1] - a[i + 1];
+    }
+    (a, b)
+}
+
+/// d3 `curveStep`, `curveStepAfter` and `curveStepBefore`.
+fn step_path(ctx: &mut D3Path, points: &[(f64, f64)], kind: &str) {
+    let mut prev = (0.0, 0.0);
+    for (i, &(x, y)) in points.iter().enumerate() {
+        if i == 0 {
+            ctx.move_to(x, y);
+        } else {
+            match kind {
+                "stepAfter" => {
+                    ctx.line_to(x, prev.1);
+                }
+                "stepBefore" => {
+                    ctx.line_to(prev.0, y);
+                }
+                _ => {
+                    let xm = f64::midpoint(prev.0, x);
+                    ctx.line_to(xm, prev.1);
+                    ctx.line_to(xm, y);
+                    prev = (x, y);
+                    continue;
+                }
+            }
+            ctx.line_to(x, y);
+        }
+        prev = (x, y);
+    }
+    // `lineEnd` of a centred step closes the last half-step.
+    if kind == "step"
+        && points.len() >= 2
+        && let Some(&(x, y)) = points.last()
+    {
+        ctx.line_to(x, y);
+    }
+}
+
+/// d3 `curveBumpX` / `curveBumpY`.
+fn bump_path(ctx: &mut D3Path, points: &[(f64, f64)], horizontal: bool) {
+    let mut prev = (0.0, 0.0);
+    for (i, &(x, y)) in points.iter().enumerate() {
+        if i == 0 {
+            ctx.move_to(x, y);
+        } else if horizontal {
+            let xm = f64::midpoint(prev.0, x);
+            ctx.bezier_curve_to(xm, prev.1, xm, y, x, y);
+        } else {
+            let ym = f64::midpoint(prev.1, y);
+            ctx.bezier_curve_to(prev.0, ym, x, ym, x, y);
+        }
+        prev = (x, y);
+    }
+}
+
 /// Linear curve.
 fn linear_path(ctx: &mut D3Path, points: &[(f64, f64)]) {
     for (i, &(x, y)) in points.iter().enumerate() {
@@ -981,6 +1088,9 @@ pub fn insert_edge(
             }
             curve.line_end();
         }
+        "natural" => natural_path(&mut path, &with_offsets),
+        "step" | "stepAfter" | "stepBefore" => step_path(&mut path, &with_offsets, curve_type),
+        "bumpX" | "bumpY" => bump_path(&mut path, &with_offsets, curve_type == "bumpX"),
         _ => {
             // Other curve families fall back to basis (the flowchart default).
             let mut curve = BasisCurve::new(&mut path);
@@ -1017,6 +1127,12 @@ pub fn insert_edge(
     if !e.classes.is_empty() {
         class.push(' ');
         class.push_str(&e.classes);
+    }
+    if let Some(a) = e.animation.as_deref().filter(|a| !a.is_empty()) {
+        class.push_str(" edge-animation-");
+        class.push_str(a);
+    } else if e.animate {
+        class.push_str(" edge-animation-fast");
     }
     set_attr(&svg_path, "class", class);
 

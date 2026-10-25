@@ -25,6 +25,9 @@ pub struct FlowVertex {
     pub classes: Vec<String>,
     pub dir: Option<String>,
     pub dom_id: String,
+    pub link: Option<String>,
+    pub link_target: Option<String>,
+    pub tooltip: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -41,6 +44,8 @@ pub struct FlowEdge {
     pub classes: Vec<String>,
     pub interpolate: Option<String>,
     pub style: Vec<String>,
+    pub animate: bool,
+    pub animation: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -264,7 +269,8 @@ impl FlowDb {
             return;
         }
 
-        // Metadata on edges (id collision) is rare; supported minimally.
+        // An edge id used as a node id carries edge metadata (see
+        // `set_edge_metadata`); it never creates a vertex.
         if self.edges.iter().any(|e| e.id == id) {
             return;
         }
@@ -420,8 +426,60 @@ impl FlowDb {
         }
     }
 
+    /// Applies `e1@{ animate, animation, curve }` to the edge with that id.
+    /// Returns false when no edge has the id.
+    pub fn set_edge_metadata(&mut self, id: &str, key: &str, value: &str) -> bool {
+        let Some(edge) = self.edges.iter_mut().find(|e| e.id == id) else {
+            return false;
+        };
+        match key {
+            "animate" => edge.animate = value == "true",
+            "animation" => edge.animation = Some(value.to_owned()),
+            "curve" => edge.interpolate = Some(value.to_owned()),
+            _ => {}
+        }
+        true
+    }
+
+    /// `setLink`: `click A "url"`. The URL is normalised like the browser's
+    /// `URL.href` (a bare origin gains a trailing slash) and the node becomes
+    /// clickable.
+    pub fn set_link(&mut self, ids: &str, link: &str, target: Option<&str>) {
+        let mut url = link.trim().to_owned();
+        if let Some((_, rest)) = url.split_once("://")
+            && !rest.is_empty()
+            && !rest.contains(['/', '?', '#'])
+        {
+            url.push('/');
+        }
+        for id in ids.split(',') {
+            if let Some(v) = self.vertices.get_mut(id) {
+                v.link = Some(url.clone());
+                v.link_target = target.map(str::to_owned);
+            }
+        }
+        self.set_class(ids, "clickable");
+    }
+
+    /// `setClickEvent`: callbacks never run in a static render, but the node
+    /// is still marked clickable.
+    pub fn set_click_event(&mut self, ids: &str) {
+        self.set_class(ids, "clickable");
+    }
+
+    pub fn set_tooltip(&mut self, ids: &str, tooltip: &str) {
+        for id in ids.split(',') {
+            if let Some(v) = self.vertices.get_mut(id) {
+                v.tooltip = Some(tooltip.to_owned());
+            }
+        }
+    }
+
     pub fn set_class(&mut self, ids: &str, class_name: &str) {
         for id in ids.split(',') {
+            for edge in self.edges.iter_mut().filter(|e| e.id == id) {
+                edge.classes.push(class_name.to_owned());
+            }
             if let Some(vertex) = self.vertices.get_mut(id) {
                 vertex.classes.push(class_name.to_owned());
             }
@@ -722,6 +780,9 @@ impl FlowDb {
                 node.css_styles.clone_from(&vertex.styles);
                 node.css_compiled_styles = self.get_compiled_styles(&vertex.classes);
                 node.css_classes = vertex.classes.join(" ");
+                node.link.clone_from(&vertex.link);
+                node.link_target.clone_from(&vertex.link_target);
+                node.tooltip.clone_from(&vertex.tooltip);
                 continue;
             }
             let mut all_classes = vec!["default".to_owned(), "node".to_owned()];
@@ -741,6 +802,9 @@ impl FlowDb {
                 dir: vertex.dir.clone(),
                 dom_id: vertex.dom_id.clone(),
                 look: config.look.clone(),
+                link: vertex.link.clone(),
+                link_target: vertex.link_target.clone(),
+                tooltip: vertex.tooltip.clone(),
                 ..Default::default()
             };
             if is_group {
@@ -803,6 +867,8 @@ impl FlowDb {
                     .or_else(|| config.curve.clone())
                     .unwrap_or_else(|| "basis".to_owned()),
                 look: config.edge_look(),
+                animate: raw_edge.animate,
+                animation: raw_edge.animation.clone(),
                 ..Default::default()
             });
         }

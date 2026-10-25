@@ -250,10 +250,27 @@ pub fn recursive_render(
                 },
             );
         } else {
-            let el = insert_node_shape(&nodes_g, &node, &ctx.measurer, &ctx.config);
+            // A node with a link is wrapped in an anchor; the anchor (not the
+            // shape group) is what gets positioned.
+            let link = node.borrow().link.clone();
+            let anchor = link.map(|href| {
+                let a = append(&nodes_g, "a");
+                set_attr(&a, "xlink:href", href);
+                a
+            });
+            let shape = insert_node_shape(
+                anchor.as_ref().unwrap_or(&nodes_g),
+                &node,
+                &ctx.measurer,
+                &ctx.config,
+            );
+            let el = anchor.unwrap_or_else(|| shape.clone());
             let look = node.borrow().look.clone();
             if !look.is_empty() {
                 set_attr(&el, "data-look", look);
+            }
+            if let Some(tip) = node.borrow().tooltip.clone() {
+                set_attr(&shape, "title", tip);
             }
             ctx.node_elems.insert(v.clone(), el);
         }
