@@ -33,15 +33,12 @@ c4/c4-spec022
 c4/c4-spec023
 c4/c4-spec024
 c4/c4-spec025
-er/er-docs005
-flowchart/flowchart-docs003
 flowchart/flowchart-docs006
 flowchart/flowchart-docs007
 flowchart/flowchart-docs011
 flowchart/flowchart-docs026
 flowchart/flowchart-docs050
 flowchart/flowchart-docs051
-flowchart/flowchart-docs102
 gantt/gantt-docs002
 gantt/gantt-docs004
 gantt/gantt-docs010

@@ -95,7 +95,7 @@ pub fn insert_edge_label(
     if !config.effective_html_labels() {
         // SVG text labels: createText appends the label group to the edge
         // labels container, then the label element is moved into `label`.
-        let ft = super::svg_label::create_formatted_text(
+        let ft = super::svg_label::create_formatted_text_md(
             elem,
             &e.label_raw,
             measurer,
@@ -103,6 +103,7 @@ pub fn insert_edge_label(
             config.wrapping_width,
             true,
             true,
+            e.label_type == "markdown",
         );
         crate::svg::move_element(&ft.label_element, &label);
         // createText isNode=false style transforms: the rect keeps non-stroke/

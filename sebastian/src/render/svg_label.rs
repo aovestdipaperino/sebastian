@@ -104,43 +104,233 @@ pub fn non_markdown_to_lines(text: &str) -> Vec<Vec<String>> {
         .collect()
 }
 
+/// Style of a markdown word (`MarkdownWordType`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WordKind {
+    Normal,
+    Strong,
+    Em,
+}
+
+/// A word with its markdown style.
+#[derive(Debug, Clone)]
+struct Word {
+    content: String,
+    kind: WordKind,
+}
+
+fn plain_words(lines: Vec<Vec<String>>) -> Vec<Vec<Word>> {
+    lines
+        .into_iter()
+        .map(|l| {
+            l.into_iter()
+                .map(|content| Word {
+                    content,
+                    kind: WordKind::Normal,
+                })
+                .collect()
+        })
+        .collect()
+}
+
+/// Inline markdown tokens: `(text, kind)` runs for `**strong**`, `__strong__`,
+/// `*em*` and `_em_` (the subset of marked's inline lexer labels use).
+fn inline_runs(text: &str, kind: WordKind, out: &mut Vec<(String, WordKind)>) {
+    let chars: Vec<char> = text.chars().collect();
+    let mut plain = String::new();
+    let mut i = 0;
+    let flush = |plain: &mut String, out: &mut Vec<(String, WordKind)>| {
+        if !plain.is_empty() {
+            out.push((std::mem::take(plain), kind));
+        }
+    };
+    while i < chars.len() {
+        let c = chars[i];
+        if (c == '*' || c == '_') && kind == WordKind::Normal {
+            let double = chars.get(i + 1) == Some(&c);
+            let len = if double { 2 } else { 1 };
+            let prev_ok = i == 0 || !(chars[i - 1].is_alphanumeric() && c == '_');
+            let open_ok = chars.get(i + len).is_some_and(|n| !n.is_whitespace());
+            if prev_ok && open_ok {
+                // Closing delimiter: same run, preceded by non-space.
+                let mut j = i + len;
+                let mut close = None;
+                while j + len <= chars.len() {
+                    if chars[j..j + len].iter().all(|&x| x == c)
+                        && !chars[j - 1].is_whitespace()
+                        && j > i + len
+                        && (c == '*' || chars.get(j + len).is_none_or(|n| !n.is_alphanumeric()))
+                    {
+                        close = Some(j);
+                        break;
+                    }
+                    j += 1;
+                }
+                if let Some(j) = close {
+                    flush(&mut plain, out);
+                    let inner: String = chars[i + len..j].iter().collect();
+                    let inner_kind = if double {
+                        WordKind::Strong
+                    } else {
+                        WordKind::Em
+                    };
+                    inline_runs(&inner, inner_kind, out);
+                    i = j + len;
+                    continue;
+                }
+            }
+        }
+        plain.push(c);
+        i += 1;
+    }
+    flush(&mut plain, out);
+}
+
+/// Style of a run in an HTML markdown label.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MdKind {
+    Normal,
+    Strong,
+    Em,
+}
+
+/// `markdownToHTML` for inline text: lines (split at newlines) of
+/// `(text, kind)` runs, rendered as `<strong>` / `<em>` / plain text.
+#[must_use]
+pub fn markdown_html_lines(text: &str) -> Vec<Vec<(String, MdKind)>> {
+    let mut runs = Vec::new();
+    inline_runs(text, WordKind::Normal, &mut runs);
+    let mut lines: Vec<Vec<(String, MdKind)>> = vec![Vec::new()];
+    for (run, kind) in runs {
+        let kind = match kind {
+            WordKind::Normal => MdKind::Normal,
+            WordKind::Strong => MdKind::Strong,
+            WordKind::Em => MdKind::Em,
+        };
+        for (i, part) in run.split('\n').enumerate() {
+            let part = if i == 0 {
+                part
+            } else {
+                part.trim_start_matches(' ')
+            };
+            if i > 0 {
+                lines.push(Vec::new());
+            }
+            if !part.is_empty() {
+                lines
+                    .last_mut()
+                    .expect("a line exists")
+                    .push((part.to_owned(), kind));
+            }
+        }
+    }
+    lines
+}
+
+/// `markdownToLines`: lines of words with strong/em styles.
+fn markdown_to_lines(markdown: &str) -> Vec<Vec<Word>> {
+    // createText normalises `<br\s*/?>` to `<br/>`, preprocessing turns it
+    // into a newline.
+    let mut text = String::new();
+    let mut rest = markdown;
+    while let Some(pos) = rest.find("<br") {
+        let after = &rest[pos + 3..];
+        let trimmed = after.trim_start();
+        let tail = trimmed.strip_prefix('/').unwrap_or(trimmed);
+        if let Some(tail) = tail.strip_prefix('>') {
+            text.push_str(&rest[..pos]);
+            text.push('\n');
+            rest = tail;
+        } else {
+            text.push_str(&rest[..pos + 3]);
+            rest = after;
+        }
+    }
+    text.push_str(rest);
+    let mut lines: Vec<Vec<Word>> = vec![Vec::new()];
+    let mut collapsed = String::new();
+    let mut prev_nl = false;
+    for ch in text.chars() {
+        if ch == '\n' {
+            if prev_nl {
+                continue;
+            }
+            prev_nl = true;
+        } else {
+            prev_nl = false;
+        }
+        collapsed.push(ch);
+    }
+    let mut runs = Vec::new();
+    inline_runs(&collapsed, WordKind::Normal, &mut runs);
+    for (text, kind) in runs {
+        for (index, text_line) in text.split('\n').enumerate() {
+            if index != 0 {
+                lines.push(Vec::new());
+            }
+            for word in text_line.split(' ') {
+                let word = word.replace("&#39;", "'");
+                if !word.is_empty() {
+                    lines.last_mut().expect("a line exists").push(Word {
+                        content: word,
+                        kind,
+                    });
+                }
+            }
+        }
+    }
+    lines
+}
+
 /// Rendered inner-tspan contents for a line: first word plain, others with a
 /// leading space (updateTextContentAndStyles).
-fn tspan_contents(words: &[String]) -> Vec<String> {
+fn tspan_contents(words: &[Word]) -> Vec<(String, WordKind)> {
     words
         .iter()
         .enumerate()
         .map(|(i, w)| {
-            let decoded = decode_entities_minimal(w);
+            let decoded = decode_entities_minimal(&w.content);
             if i == 0 {
-                decoded
+                (decoded, w.kind)
             } else {
-                format!(" {decoded}")
+                (format!(" {decoded}"), w.kind)
             }
         })
         .collect()
 }
 
 /// `getComputedTextLength` of a line: per-tspan advances summed (no kerning
-/// across tspan boundaries), full float precision.
-fn line_width(measurer: &TextMeasurer, words: &[String], font_size: f64) -> f64 {
+/// across tspan boundaries), full float precision. Strong and em words
+/// measure with the bold / italic face.
+fn line_width(measurer: &TextMeasurer, words: &[Word], font_size: f64) -> f64 {
+    let (bold, italic) = (measurer.is_bold(), measurer.is_italic());
     tspan_contents(words)
         .iter()
-        .map(|t| measurer.measure_advance_svg(t, font_size))
+        .map(|(t, kind)| {
+            match kind {
+                WordKind::Strong => measurer.set_bold(true),
+                WordKind::Em => measurer.set_italic(true),
+                WordKind::Normal => {}
+            }
+            let w = measurer.measure_advance_svg(t, font_size);
+            measurer.set_bold(bold);
+            measurer.set_italic(italic);
+            w
+        })
         .sum()
 }
 
 /// `splitLineToFitWidth` port.
 fn split_line_to_fit(
     measurer: &TextMeasurer,
-    line: &[String],
+    line: &[Word],
     width: f64,
     font_size: f64,
-) -> Vec<Vec<String>> {
-    let check_fit = |candidate: &[String]| line_width(measurer, candidate, font_size) <= width;
-    let mut words: std::collections::VecDeque<String> = line.iter().cloned().collect();
-    let mut lines: Vec<Vec<String>> = Vec::new();
-    let mut new_line: Vec<String> = Vec::new();
+) -> Vec<Vec<Word>> {
+    let check_fit = |candidate: &[Word]| line_width(measurer, candidate, font_size) <= width;
+    let mut words: std::collections::VecDeque<Word> = line.iter().cloned().collect();
+    let mut lines: Vec<Vec<Word>> = Vec::new();
+    let mut new_line: Vec<Word> = Vec::new();
 
     loop {
         if words.is_empty() {
@@ -160,15 +350,20 @@ fn split_line_to_fit(
         if !new_line.is_empty() {
             lines.push(std::mem::take(&mut new_line));
             words.push_front(next_word);
-        } else if !next_word.is_empty() {
+        } else if !next_word.content.is_empty() {
             // Split the word character by character.
-            let chars: Vec<char> = next_word.chars().collect();
+            let kind = next_word.kind;
+            let chars: Vec<char> = next_word.content.chars().collect();
             let mut used = String::new();
             let mut idx = 0;
             while idx < chars.len() {
                 let mut candidate = used.clone();
                 candidate.push(chars[idx]);
-                if check_fit(std::slice::from_ref(&candidate)) {
+                let probe = Word {
+                    content: candidate.clone(),
+                    kind,
+                };
+                if check_fit(std::slice::from_ref(&probe)) {
                     used = candidate;
                     idx += 1;
                 } else {
@@ -181,9 +376,15 @@ fn split_line_to_fit(
                 idx += 1;
             }
             let rest: String = chars[idx..].iter().collect();
-            lines.push(vec![used]);
+            lines.push(vec![Word {
+                content: used,
+                kind,
+            }]);
             if !rest.is_empty() {
-                words.push_front(rest);
+                words.push_front(Word {
+                    content: rest,
+                    kind,
+                });
             }
         }
     }
@@ -231,10 +432,38 @@ pub fn create_formatted_text(
     add_background: bool,
     center_text: bool,
 ) -> FormattedText {
+    create_formatted_text_md(
+        parent,
+        raw_text,
+        measurer,
+        font_size,
+        width,
+        add_background,
+        center_text,
+        false,
+    )
+}
+
+/// `createFormattedText` for markdown labels when `markdown` is set.
+#[allow(clippy::too_many_arguments)]
+pub fn create_formatted_text_md(
+    parent: &Element,
+    raw_text: &str,
+    measurer: &TextMeasurer,
+    font_size: f64,
+    width: f64,
+    add_background: bool,
+    center_text: bool,
+    markdown: bool,
+) -> FormattedText {
     // createText: text.replace(/<br\s*\/?>/g, '<br/>') happens before
     // nonMarkdownToLines; our splitter handles all br forms directly.
     let add_background = add_background && !raw_text.is_empty();
-    let structured = non_markdown_to_lines(raw_text);
+    let structured = if markdown {
+        markdown_to_lines(raw_text)
+    } else {
+        plain_words(non_markdown_to_lines(raw_text))
+    };
 
     let label_group = append(parent, "g");
     let bkg = append(&label_group, "rect");
@@ -250,7 +479,7 @@ pub fn create_formatted_text(
     let mut max_width: f64 = 0.0;
     for line in &structured {
         let fits = line_width(measurer, line, font_size) <= width;
-        let prepared: Vec<Vec<String>> = if fits {
+        let prepared: Vec<Vec<Word>> = if fits {
             vec![line.clone()]
         } else {
             split_line_to_fit(measurer, line, width, font_size)
@@ -266,11 +495,27 @@ pub fn create_formatted_text(
             if center_text {
                 set_attr(&tspan, "text-anchor", "middle");
             }
-            for content in tspan_contents(prepared_line) {
+            for (content, kind) in tspan_contents(prepared_line) {
                 let inner = append(&tspan, "tspan");
-                set_attr(&inner, "font-style", "normal");
+                set_attr(
+                    &inner,
+                    "font-style",
+                    if kind == WordKind::Em {
+                        "italic"
+                    } else {
+                        "normal"
+                    },
+                );
                 set_attr(&inner, "class", "text-inner-tspan");
-                set_attr(&inner, "font-weight", "normal");
+                set_attr(
+                    &inner,
+                    "font-weight",
+                    if kind == WordKind::Strong {
+                        "bold"
+                    } else {
+                        "normal"
+                    },
+                );
                 set_text_append(&inner, &content);
             }
             max_width = max_width.max(line_width(measurer, prepared_line, font_size));
@@ -286,8 +531,15 @@ pub fn create_formatted_text(
         SvgBBox::default()
     } else {
         let first_baseline = font_size; // (-0.1 + 1.1) em
+        // Chrome resolves `y="{n}em"` and `dy="1.1em"` to f32 pixels and adds
+        // them in f32.
         #[allow(clippy::cast_precision_loss)]
-        let last_baseline = font_size * (1.0 + 1.1 * (line_index as f64 - 1.0));
+        let last_baseline = {
+            let y_em = f64::from(((line_index as f64 - 1.0) * 1.1 - 0.1) as f32);
+            let y_px = (y_em * font_size) as f32;
+            let dy_px = (f64::from(1.1_f32) * font_size) as f32;
+            f64::from(y_px + dy_px)
+        };
         SvgBBox {
             x: if center_text {
                 f32q(-max_width / 2.0)

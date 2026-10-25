@@ -369,6 +369,18 @@ impl TextMeasurer {
     }
 
     /// Switches measurement to the italic face (`font-style: italic`).
+    /// Whether the bold face is currently selected.
+    #[must_use]
+    pub fn is_bold(&self) -> bool {
+        self.inner.bold.get()
+    }
+
+    /// Whether the italic face is currently selected.
+    #[must_use]
+    pub fn is_italic(&self) -> bool {
+        self.inner.italic.get()
+    }
+
     pub fn set_italic(&self, italic: bool) {
         self.inner.italic.set(italic);
         self.inner.advances.borrow_mut().clear();

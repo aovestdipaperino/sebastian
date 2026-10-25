@@ -29,7 +29,7 @@ fn insert_cluster_svg_label(
     compiled: super::styles::CompiledStyles,
     mut n: std::cell::RefMut<'_, super::data::RenderNode>,
 ) -> InsertedCluster {
-    let ft = super::svg_label::create_formatted_text(
+    let ft = super::svg_label::create_formatted_text_md(
         label_el,
         &n.label_raw,
         measurer,
@@ -37,6 +37,7 @@ fn insert_cluster_svg_label(
         f64::INFINITY,
         false,
         false,
+        n.label_type == "markdown",
     );
     // createText isNode=true sets the (empty) node label text style.
     set_attr(&ft.label_element, "style", compiled.label_styles);

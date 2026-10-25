@@ -5,6 +5,7 @@ use crate::svg::{Element, append, append_xhtml, insert_first, js_num, set_attr};
 use crate::text::TextMeasurer;
 
 use super::data::{IntersectShape, NodeRef};
+use super::svg_label::MdKind;
 
 pub const FONT_SIZE: f64 = 16.0;
 pub const LINE_HEIGHT: f64 = 24.0;
@@ -239,6 +240,30 @@ pub(crate) fn build_html_label_classed(
     wrap_width: f64,
     label_style: &str,
 ) -> Element {
+    build_html_label_md(
+        parent,
+        label,
+        None,
+        bbox,
+        span_class,
+        add_background,
+        wrap_width,
+        label_style,
+    )
+}
+
+/// As above; `markdown` supplies pre-parsed `<strong>` / `<em>` runs.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn build_html_label_md(
+    parent: &Element,
+    label: &str,
+    markdown: Option<&[Vec<(String, MdKind)>]>,
+    bbox: BBox,
+    span_class: &str,
+    add_background: bool,
+    wrap_width: f64,
+    label_style: &str,
+) -> Element {
     let fo = append(parent, "foreignObject");
     set_attr(&fo, "width", js_num(bbox.width));
     set_attr(&fo, "height", js_num(bbox.height));
@@ -269,8 +294,74 @@ pub(crate) fn build_html_label_classed(
         set_attr(&span, "style", label_style.clone());
     }
     set_attr(&span, "class", span_class);
-    write_label_paragraph(&span, label);
+    if let Some(lines) = markdown {
+        write_markdown_paragraph(&span, lines);
+    } else {
+        write_label_paragraph(&span, label);
+    }
     fo
+}
+
+/// Writes a markdown `<p>`: runs as text, `<strong>` or `<em>`, `<br/>` between lines.
+fn write_markdown_paragraph(span: &Element, lines: &[Vec<(String, MdKind)>]) {
+    let p = append_xhtml(span, "p");
+    for (i, line) in lines.iter().enumerate() {
+        if i > 0 {
+            append_xhtml(&p, "br");
+        }
+        for (text, kind) in line {
+            match kind {
+                MdKind::Normal => crate::svg::set_text_append(&p, text),
+                MdKind::Strong => {
+                    let el = append_xhtml(&p, "strong");
+                    crate::svg::set_text_append(&el, text);
+                }
+                MdKind::Em => {
+                    let el = append_xhtml(&p, "em");
+                    crate::svg::set_text_append(&el, text);
+                }
+            }
+        }
+    }
+}
+
+/// Unwrapped width of markdown lines, measuring strong/em runs with the bold /
+/// italic faces; `None` when a line would wrap at `wrap_width`.
+fn measure_markdown_lines(
+    measurer: &TextMeasurer,
+    lines: &[Vec<(String, MdKind)>],
+    wrap_width: f64,
+    font_size: f64,
+) -> Option<BBox> {
+    let (bold, italic) = (measurer.is_bold(), measurer.is_italic());
+    let mut width: f64 = 0.0;
+    for line in lines {
+        let w: f64 = line
+            .iter()
+            .map(|(t, kind)| {
+                match kind {
+                    MdKind::Strong => measurer.set_bold(true),
+                    MdKind::Em => measurer.set_italic(true),
+                    MdKind::Normal => {}
+                }
+                let w = measurer.measure_width(t, font_size);
+                measurer.set_bold(bold);
+                measurer.set_italic(italic);
+                w
+            })
+            .sum();
+        width = width.max(w);
+    }
+    if width >= wrap_width {
+        return None;
+    }
+    #[allow(clippy::cast_precision_loss)]
+    let height = font_size * 1.5 * lines.len() as f64;
+    Some(BBox {
+        width,
+        height,
+        wrapped: false,
+    })
 }
 
 /// Splits a label line at mermaid's `replaceIconSubstring` matches
@@ -489,10 +580,23 @@ pub fn label_helper(
         measurer.set_italic(true);
     }
     let bbox = if config.node_html_labels() {
-        let bbox = measure_label_sized(measurer, &n.label, wrap_width, font_size);
-        build_html_label_classed(
+        let md_lines = (n.label_type == "markdown")
+            .then(|| super::svg_label::markdown_html_lines(&n.label))
+            .filter(|lines| {
+                lines
+                    .iter()
+                    .flatten()
+                    .any(|(_, k)| *k != super::svg_label::MdKind::Normal)
+            });
+        let md_bbox = md_lines
+            .as_deref()
+            .and_then(|lines| measure_markdown_lines(measurer, lines, wrap_width, font_size));
+        let bbox = md_bbox
+            .unwrap_or_else(|| measure_label_sized(measurer, &n.label, wrap_width, font_size));
+        build_html_label_md(
             &label_el,
             &n.label,
+            md_bbox.and(md_lines.as_deref()),
             bbox,
             if n.label_type == "markdown" {
                 "nodeLabel markdown-node-label"
@@ -519,8 +623,15 @@ pub fn label_helper(
         // addSvgBackground is false for plain nodes; centerText = !isNode =
         // false (horizontal centering comes from the `.node .label text`
         // `text-anchor: middle` CSS rule).
-        let ft = super::svg_label::create_formatted_text(
-            &label_el, &n.label, measurer, font_size, wrap_width, false, false,
+        let ft = super::svg_label::create_formatted_text_md(
+            &label_el,
+            &n.label,
+            measurer,
+            font_size,
+            wrap_width,
+            false,
+            false,
+            n.label_type == "markdown",
         );
         // createText isNode branch applies the derived text style to the
         // returned label element (the bare <text> when no background).

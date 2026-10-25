@@ -492,6 +492,11 @@ impl<'a> Lexer<'a> {
             State::ThickEdgeText => '=',
             _ => '.',
         };
+        if self.starts_with("\"`") {
+            self.pos += 2;
+            self.stack.push(State::MdStr);
+            return self.next_token();
+        }
         if let Some((n, body)) = self.match_link(true, kind) {
             self.pos += n;
             self.stack.pop();
