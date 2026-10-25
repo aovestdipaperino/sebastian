@@ -750,7 +750,14 @@ pub fn render_wardley(source: &str, id: &str) -> Result<String, WardleyParseErro
         axis: wv("axisColor", &tv("lineColor")),
         axis_text: wv("axisTextColor", &tv("primaryTextColor")),
         grid: wv("gridColor", &tv("gridColor")),
-        component_fill: wv("componentFill", &tv("background")),
+        component_fill: wv(
+            "componentFill",
+            &tv(if config.theme == "dark" {
+                "mainBkg"
+            } else {
+                "background"
+            }),
+        ),
         component_stroke: wv("componentStroke", &tv("lineColor")),
         component_label: wv("componentLabelColor", &tv("primaryTextColor")),
         link_stroke: wv("linkStroke", &tv("lineColor")),
@@ -762,7 +769,14 @@ pub fn render_wardley(source: &str, id: &str) -> Result<String, WardleyParseErro
                 c
             }
         }),
-        annotation_fill: wv("annotationFill", &tv("background")),
+        annotation_fill: wv(
+            "annotationFill",
+            &tv(if config.theme == "dark" {
+                "mainBkg"
+            } else {
+                "background"
+            }),
+        ),
     };
     let annotation_stroke = wv("annotationStroke", &tv("lineColor"));
     let annotation_text = wv("annotationTextColor", &tv("primaryTextColor"));
