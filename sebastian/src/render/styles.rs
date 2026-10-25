@@ -32,6 +32,8 @@ pub fn is_label_style(key: &str) -> bool {
 pub struct CompiledStyles {
     pub label_styles: String,
     pub node_styles: String,
+    /// Declarations whose property name contains `stroke`.
+    pub border_styles: Vec<String>,
 }
 
 /// `styles2String`: split compiled+direct styles into label vs node styles.
@@ -54,17 +56,22 @@ pub fn styles2string(
     }
     let mut label_styles = Vec::new();
     let mut node_styles = Vec::new();
+    let mut border_styles = Vec::new();
     for (key, value) in &map {
         let decl = format!("{key}:{value} !important");
         if is_label_style(key) {
             label_styles.push(decl);
         } else {
+            if key.contains("stroke") {
+                border_styles.push(decl.clone());
+            }
             node_styles.push(decl);
         }
     }
     CompiledStyles {
         label_styles: label_styles.join(";"),
         node_styles: node_styles.join(";"),
+        border_styles,
     }
 }
 

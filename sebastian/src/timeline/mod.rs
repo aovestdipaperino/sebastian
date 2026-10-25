@@ -42,7 +42,11 @@ fn parse(source: &str) -> Result<TimelineDb, TimelineParseError> {
             continue;
         }
         if !found_header {
-            if line == "timeline" {
+            if line == "timeline"
+                || line
+                    .strip_prefix("timeline")
+                    .is_some_and(|r| matches!(r.trim(), "LR" | "TD") && r.starts_with([' ', '\t']))
+            {
                 found_header = true;
                 continue;
             }
@@ -322,6 +326,12 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
     let measurer = TextMeasurer::new();
     let config = crate::render::config::detect_init(source);
     let hand_drawn = config.is_hand_drawn();
+    let multicolor = !config
+        .raw
+        .get("timeline")
+        .and_then(|t| t.get("disableMulticolor"))
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
 
     let svg = new_element("svg");
@@ -421,6 +431,7 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
                     max_task_height,
                     max_event_line_length,
                     false,
+                    multicolor,
                     id,
                     &measurer,
                     &mut node_count,
@@ -444,6 +455,7 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
             max_task_height,
             max_event_line_length,
             true,
+            multicolor,
             id,
             &measurer,
             &mut node_count,
@@ -543,6 +555,7 @@ fn draw_tasks(
     max_task_height: f64,
     max_event_line_length: f64,
     is_without_sections: bool,
+    multicolor: bool,
     diagram_id: &str,
     measurer: &TextMeasurer,
     node_count: &mut usize,
@@ -602,7 +615,7 @@ fn draw_tasks(
         }
 
         master_x += 200.0;
-        if is_without_sections {
+        if is_without_sections && multicolor {
             section_color += 1;
         }
     }

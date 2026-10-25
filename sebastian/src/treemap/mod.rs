@@ -42,6 +42,7 @@ struct FlatItem {
     name: String,
     is_leaf: bool,
     value: Option<f64>,
+    class: Option<String>,
 }
 
 /// A hierarchy node in the layout arena.
@@ -52,6 +53,9 @@ struct HNode {
     children: Vec<usize>,
     depth: usize,
     parent: Option<usize>,
+    /// The node's `:::class` and its styles.
+    class: Option<String>,
+    styles: Vec<String>,
     x0: f64,
     y0: f64,
     x1: f64,
@@ -62,8 +66,12 @@ struct HNode {
 // Parser (langium treemap grammar, indentation-based rows)
 // ---------------------------------------------------------------------------
 
-fn parse(source: &str) -> Result<Vec<FlatItem>, TreemapParseError> {
+/// `classDef` name to its style declarations, in definition order.
+type ClassDefs = indexmap::IndexMap<String, Vec<String>>;
+
+fn parse(source: &str) -> Result<(Vec<FlatItem>, ClassDefs), TreemapParseError> {
     let mut items = Vec::new();
+    let mut classes: ClassDefs = indexmap::IndexMap::new();
     let mut found_header = false;
     for raw in source.lines() {
         let trimmed = raw.trim();
@@ -80,10 +88,25 @@ fn parse(source: &str) -> Result<Vec<FlatItem>, TreemapParseError> {
             )));
         }
         // accTitle/title/accDescr are ignored for layout.
+        if let Some(def) = trimmed.strip_prefix("classDef") {
+            // `classDef name style[,style];` — commas separate declarations
+            // unless escaped.
+            let def = def.trim_start();
+            let (name, body) = def.split_once(char::is_whitespace).unwrap_or((def, ""));
+            let body = body.split(';').next().unwrap_or("");
+            let styles: Vec<String> = body
+                .replace("\\,", "\u{a7}\u{a7}\u{a7}")
+                .replace(',', ";")
+                .replace("\u{a7}\u{a7}\u{a7}", ",")
+                .split(';')
+                .map(str::to_owned)
+                .collect();
+            classes.entry(name.to_owned()).or_default().extend(styles);
+            continue;
+        }
         if trimmed.starts_with("title")
             || trimmed.starts_with("accTitle")
             || trimmed.starts_with("accDescr")
-            || trimmed.starts_with("classDef")
         {
             continue;
         }
@@ -102,7 +125,11 @@ fn parse(source: &str) -> Result<Vec<FlatItem>, TreemapParseError> {
         };
         let name = rest[..end].to_owned();
         let after = rest[end + 1..].trim_start();
-        // strip a `:::class` selector (ignored for layout)
+        // a `:::class` selector, before or after the value
+        let class = after
+            .split_once(":::")
+            .map(|(_, c)| c.trim().to_owned())
+            .filter(|c| !c.is_empty());
         let after = after.split(":::").next().unwrap_or(after).trim();
         let (is_leaf, value) =
             if let Some(v) = after.strip_prefix(':').or_else(|| after.strip_prefix(',')) {
@@ -120,9 +147,10 @@ fn parse(source: &str) -> Result<Vec<FlatItem>, TreemapParseError> {
             name,
             is_leaf,
             value,
+            class,
         });
     }
-    Ok(items)
+    Ok((items, classes))
 }
 
 // ---------------------------------------------------------------------------
@@ -130,13 +158,15 @@ fn parse(source: &str) -> Result<Vec<FlatItem>, TreemapParseError> {
 // ---------------------------------------------------------------------------
 
 /// Builds the layout arena. Index 0 is the synthetic root (name "", depth 0).
-fn build_arena(items: &[FlatItem]) -> Vec<HNode> {
+fn build_arena(items: &[FlatItem], classes: &ClassDefs) -> Vec<HNode> {
     let mut arena: Vec<HNode> = vec![HNode {
         name: String::new(),
         value: 0.0,
         children: Vec::new(),
         depth: 0,
         parent: None,
+        class: None,
+        styles: Vec::new(),
         x0: 0.0,
         y0: 0.0,
         x1: 0.0,
@@ -162,6 +192,13 @@ fn build_arena(items: &[FlatItem]) -> Vec<HNode> {
             children: Vec::new(),
             depth,
             parent: Some(parent),
+            class: item.class.clone(),
+            styles: item
+                .class
+                .as_ref()
+                .and_then(|c| classes.get(c))
+                .cloned()
+                .unwrap_or_default(),
             x0: 0.0,
             y0: 0.0,
             x1: 0.0,
@@ -424,25 +461,117 @@ impl Ordinal {
 // Rendering
 // ---------------------------------------------------------------------------
 
-/// d3 `format(',')` for a value (thousands separators; integers common).
-fn value_format(value: f64) -> String {
-    // Match d3's default `,` format: group integer part, keep decimals as-is.
-    if value.fract() == 0.0 {
-        let neg = value < 0.0;
-        let digits = format!("{}", value.abs() as i64);
-        let bytes = digits.as_bytes();
-        let mut out = String::new();
-        let len = bytes.len();
-        for (i, b) in bytes.iter().enumerate() {
-            if i > 0 && (len - i) % 3 == 0 {
-                out.push(',');
+/// A d3-format spec, restricted to what treemap `valueFormat` uses.
+struct ValueFormat {
+    prefix: &'static str,
+    group: bool,
+    precision: Option<usize>,
+    kind: char,
+}
+
+impl ValueFormat {
+    /// Mirrors the renderer's special cases for `$` formats, then d3-format.
+    fn parse(spec: &str) -> Self {
+        let spec = if spec.is_empty() { "," } else { spec };
+        let (prefix, body) = if spec == "$0,0" {
+            ("$", ",".to_owned())
+        } else if let Some(rest) = spec.strip_prefix('$') {
+            if rest.contains(',') || spec.contains(',') {
+                let precision = rest.find('.').map_or("", |i| {
+                    let digits = rest[i + 1..].bytes().take_while(u8::is_ascii_digit).count();
+                    &rest[i..i + 1 + digits]
+                });
+                ("$", format!(",{precision}"))
+            } else {
+                ("$", rest.to_owned())
             }
-            out.push(*b as char);
+        } else {
+            ("", spec.to_owned())
+        };
+        let group = body.contains(',');
+        let precision = body.find('.').and_then(|i| {
+            let digits: String = body[i + 1..]
+                .chars()
+                .take_while(char::is_ascii_digit)
+                .collect();
+            digits.parse().ok()
+        });
+        let kind = body
+            .chars()
+            .rev()
+            .find(|c| c.is_ascii_alphabetic() || *c == '%')
+            .unwrap_or(' ');
+        Self {
+            prefix,
+            group,
+            precision,
+            kind,
         }
-        if neg { format!("-{out}") } else { out }
-    } else {
-        js_num(value)
     }
+
+    fn apply(&self, value: f64) -> String {
+        let v = if self.kind == '%' {
+            value * 100.0
+        } else {
+            value
+        };
+        let mut body = match self.kind {
+            'f' | '%' => format!("{:.*}", self.precision.unwrap_or(6), v.abs()),
+            'd' => format!("{:.0}", v.abs()),
+            _ => match self.precision {
+                // d3 default: up to 12 significant digits, trailing zeros trimmed.
+                None => js_num((v.abs() * 1e12).round() / 1e12),
+                Some(p) => {
+                    let digits = p.max(1);
+                    let magnitude = if v == 0.0 {
+                        0
+                    } else {
+                        v.abs().log10().floor() as i32
+                    };
+                    let dec = usize::try_from(
+                        (i32::try_from(digits).unwrap_or(0) - 1 - magnitude).max(0),
+                    )
+                    .unwrap_or(0);
+                    format!("{:.*}", dec, v.abs())
+                }
+            },
+        };
+        if self.group {
+            let (int, frac) = body
+                .split_once('.')
+                .map_or((body.as_str(), ""), |(i, f)| (i, f));
+            let mut grouped = String::new();
+            for (i, ch) in int.chars().enumerate() {
+                if i > 0 && (int.len() - i) % 3 == 0 {
+                    grouped.push(',');
+                }
+                grouped.push(ch);
+            }
+            body = if frac.is_empty() {
+                grouped
+            } else {
+                format!("{grouped}.{frac}")
+            };
+        }
+        let sign = if v < 0.0 { "-" } else { "" };
+        format!(
+            "{sign}{}{body}{}",
+            self.prefix,
+            if self.kind == '%' { "%" } else { "" }
+        )
+    }
+}
+
+/// The CSSOM fill of a leaf label: a class `color` (mapped to `fill`) wins
+/// over the theme label colour and keeps its priority.
+fn label_fill(label_extra: &str, theme_color: &str) -> String {
+    label_extra
+        .split(';')
+        .find_map(|d| d.strip_prefix("fill:"))
+        .map_or_else(
+            || crate::render::css::cssom_color_value("fill", theme_color),
+            |v| v.trim().to_owned(),
+        )
 }
 
 /// Renders mermaid `treemap-beta` source to a complete SVG document string.
@@ -456,15 +585,34 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
     let tv = |k: &str| crate::render::themes::get(&theme_vars, k);
 
     let measurer = crate::text::TextMeasurer::new();
-    let items = parse(source)?;
-    let mut arena = build_arena(&items);
+    let (items, classes) = parse(source)?;
+    let tm = |k: &str| config.raw.get("treemap").and_then(|t| t.get(k));
+    let value_format_spec = tm("valueFormat")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or(",")
+        .to_owned();
+    let vf = ValueFormat::parse(&value_format_spec);
+    let value_format = |v: f64| vf.apply(v);
+    let node_width = tm("nodeWidth")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(100.0);
+    let node_height = tm("nodeHeight")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(40.0);
+    let inner_padding = tm("padding")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(10.0);
+    let diagram_padding = tm("diagramPadding")
+        .and_then(serde_json::Value::as_f64)
+        .unwrap_or(8.0);
+    let mut arena = build_arena(&items, &classes);
     sum_values(&mut arena, 0);
     sort_children(&mut arena);
 
     // Config defaults: nodeWidth=100, nodeHeight=40, padding=10.
-    let width = 100.0 * SECTION_INNER_PADDING; // 1000
-    let height = 40.0 * SECTION_INNER_PADDING; // 400
-    layout(&mut arena, width, height, SECTION_INNER_PADDING, true);
+    let width = node_width * SECTION_INNER_PADDING; // 1000
+    let height = node_height * SECTION_INNER_PADDING; // 400
+    layout(&mut arena, width, height, inner_padding, true);
 
     // eachBefore order of node indices.
     let mut order: Vec<usize> = Vec::new();
@@ -511,9 +659,17 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
     set_attr(&svg, "xmlns:xlink", "http://www.w3.org/1999/xlink");
     // viewBox + style filled in after bbox.
     let style_el = append(&svg, "style");
+    let class_list: Vec<(String, Vec<String>, Vec<String>)> = classes
+        .iter()
+        .map(|(n, st)| (n.clone(), st.clone(), Vec::new()))
+        .collect();
     crate::svg::set_text(
         &style_el,
-        &crate::render::css::themed_treemap_css(id, &theme_vars),
+        &format!(
+            "{}{}",
+            crate::render::css::themed_treemap_css(id, &theme_vars),
+            crate::render::css::class_defs_css(id, true, &class_list)
+        ),
     );
     let _empty = append(&svg, "g");
     let g = append(&svg, "g");
@@ -584,13 +740,19 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
             set_attr(&ol, "stroke-width", "2");
             set_attr(&ol, "stroke-opacity", "0.4");
         }
+        let compiled = crate::render::styles::styles2string(&n.styles, &[], &[]);
+        let label_extra = compiled.label_styles.replace("color:", "fill:");
         set_attr(
             &sr,
             "style",
             if is_root {
                 "display: none;".to_owned()
             } else {
-                ";".to_owned()
+                format!(
+                    "{};{}",
+                    compiled.node_styles,
+                    compiled.border_styles.join(";")
+                )
             },
         );
         // label
@@ -608,7 +770,7 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
                 &lbl,
                 "style",
                 format!(
-                    "dominant-baseline: middle; font-size: 12px; fill:{c}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                    "dominant-baseline: middle; font-size: 12px; fill:{c}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;{label_extra}"
                 ),
             );
             if hand_drawn {
@@ -632,7 +794,7 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
                 &val,
                 "style",
                 format!(
-                    "text-anchor: end; dominant-baseline: middle; font-size: 10px; fill:{c}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                    "text-anchor: end; dominant-baseline: middle; font-size: 10px; fill:{c}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;{label_extra}"
                 ),
             );
         }
@@ -655,7 +817,12 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
         set_attr(
             &cell,
             "class",
-            format!("treemapNode treemapLeafGroup leaf{i}x"),
+            format!(
+                "treemapNode treemapLeafGroup leaf{i}{}x",
+                n.class
+                    .as_ref()
+                    .map_or_else(String::new, |c| format!(" {c}"))
+            ),
         );
         set_attr(
             &cell,
@@ -668,7 +835,9 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
         set_attr(&rect, "class", "treemapLeaf");
         let fill = color_scale.get(&parent_name);
         set_attr(&rect, "fill", &fill);
-        set_attr(&rect, "style", "");
+        let compiled = crate::render::styles::styles2string(&n.styles, &[], &[]);
+        let label_extra = compiled.label_styles.replace("color:", "fill:");
+        set_attr(&rect, "style", compiled.node_styles.clone());
         set_attr(&rect, "fill-opacity", "0.3");
         set_attr(&rect, "stroke", &fill);
         if hand_drawn {
@@ -719,7 +888,7 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
                 format!(
                     "text-anchor: middle; dominant-baseline: middle; font-size: {}px; fill: {}; display: none;",
                     js_num(font),
-                    crate::render::css::cssom_color_value("fill", &lc)
+                    label_fill(&label_extra, &lc)
                 ),
             );
         } else if shrunk {
@@ -729,7 +898,7 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
                 format!(
                     "text-anchor: middle; dominant-baseline: middle; font-size: {}px; fill: {};",
                     js_num(font),
-                    crate::render::css::cssom_color_value("fill", &lc)
+                    label_fill(&label_extra, &lc)
                 ),
             );
         } else {
@@ -737,7 +906,7 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
                 &lbl,
                 "style",
                 format!(
-                    "text-anchor: middle; dominant-baseline: middle; font-size: 38px;fill:{raw_color};"
+                    "text-anchor: middle; dominant-baseline: middle; font-size: 38px;fill:{raw_color};{label_extra}"
                 ),
             );
         }
@@ -756,7 +925,13 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
         set_attr(&val, "x", js_num(nw / 2.0));
         set_attr(&val, "y", js_num(value_top));
         // The leaf value always gets a later `.style()` call → CSSOM-canonical.
-        let vc = crate::render::css::cssom_color_value("fill", &color_label.get(&name));
+        let vc = label_extra
+            .split(';')
+            .find_map(|d| d.strip_prefix("fill:"))
+            .map_or_else(
+                || crate::render::css::cssom_color_value("fill", &color_label.get(&name)),
+                |v| v.trim().to_owned(),
+            );
         let disp = if value_hidden { " display: none;" } else { "" };
         set_attr(
             &val,
@@ -772,7 +947,7 @@ pub fn render_treemap(source: &str, id: &str) -> Result<String, TreemapParseErro
     }
 
     // viewBox = content bbox ± padding 8 (setupViewPortForSVG).
-    let padding = 8.0;
+    let padding = diagram_padding;
     let (cw, ch) = (bx1 - bx0, by1 - by0);
     let vw = cw + 2.0 * padding;
     let vh = ch + 2.0 * padding;

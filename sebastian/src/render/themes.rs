@@ -654,6 +654,45 @@ fn update_base(vars: &mut Vars) {
             get(v, "scaleLabelColor")
         });
     }
+    // git colours: darkened (lightened in dark mode) after being set.
+    set_if(vars, "git0", |v| get(v, "primaryColor"));
+    set_if(vars, "git1", |v| get(v, "secondaryColor"));
+    set_if(vars, "git2", |v| get(v, "tertiaryColor"));
+    for (n, h) in [(3, -30.0), (4, -60.0), (5, -90.0), (6, 60.0), (7, 120.0)] {
+        set_if(vars, &format!("git{n}"), |v| {
+            adjust(&get(v, "primaryColor"), &[('h', h)])
+        });
+    }
+    for n in 0..8 {
+        let key = format!("git{n}");
+        let c = get(vars, &key);
+        set(
+            vars,
+            &key,
+            if dm {
+                lighten(&c, 25.0)
+            } else {
+                darken(&c, 25.0)
+            },
+        );
+    }
+    for n in 0..8 {
+        set_if(vars, &format!("gitInv{n}"), |v| {
+            invert(&get(v, &format!("git{n}")))
+        });
+    }
+    set_if(vars, "branchLabelColor", |v| {
+        if dm {
+            "black".to_owned()
+        } else {
+            get(v, "labelTextColor")
+        }
+    });
+    for n in 0..8 {
+        set_if(vars, &format!("gitBranchLabel{n}"), |v| {
+            get(v, "branchLabelColor")
+        });
+    }
     set(vars, "gradientStart", get(vars, "primaryBorderColor"));
     set(vars, "gradientStop", get(vars, "secondaryBorderColor"));
 }
@@ -772,6 +811,7 @@ fn update_dark(vars: &mut Vars) {
 }
 
 fn ctor_forest(vars: &mut Vars) {
+    set(vars, "actorTextColor", "black");
     set(vars, "radius", "5");
     set(vars, "background", "#f4f4f4");
     set(vars, "primaryColor", "#cde498");
@@ -868,6 +908,78 @@ fn ctor_forest(vars: &mut Vars) {
 }
 
 fn update_forest(vars: &mut Vars) {
+    // Colour scale (cScale0..11), darkened once per updateColors pass.
+    set_if(vars, "cScale0", |v| get(v, "primaryColor"));
+    set_if(vars, "cScale1", |v| get(v, "secondaryColor"));
+    set_if(vars, "cScale2", |v| get(v, "tertiaryColor"));
+    for (i, h) in [
+        (3, 30.0),
+        (4, 60.0),
+        (5, 90.0),
+        (6, 120.0),
+        (7, 150.0),
+        (8, 210.0),
+        (9, 270.0),
+        (10, 300.0),
+        (11, 330.0),
+    ] {
+        set_if(vars, &format!("cScale{i}"), |v| {
+            adjust(&get(v, "primaryColor"), &[('h', h)])
+        });
+    }
+    set_if(vars, "cScalePeer1", |v| {
+        darken(&get(v, "secondaryColor"), 45.0)
+    });
+    set_if(vars, "cScalePeer2", |v| {
+        darken(&get(v, "tertiaryColor"), 40.0)
+    });
+    for i in 0..12 {
+        let key = format!("cScale{i}");
+        let darkened = darken(&get(vars, &key), 10.0);
+        set(vars, &key, darkened);
+        set_if(vars, &format!("cScalePeer{i}"), |v| {
+            darken(&get(v, &format!("cScale{i}")), 25.0)
+        });
+    }
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleInv{i}"), |v| {
+            adjust(&get(v, &format!("cScale{i}")), &[('h', 180.0)])
+        });
+    }
+    if get(vars, "scaleLabelColor").is_empty() || get(vars, "scaleLabelColor") == "calculated" {
+        let label = get(vars, "labelTextColor");
+        set(vars, "scaleLabelColor", label);
+    }
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleLabel{i}"), |v| {
+            get(v, "scaleLabelColor")
+        });
+    }
+    // git colours: darkened after being set (forest is never dark mode).
+    set_if(vars, "git0", |v| get(v, "primaryColor"));
+    set_if(vars, "git1", |v| get(v, "secondaryColor"));
+    set_if(vars, "git2", |v| get(v, "tertiaryColor"));
+    for (n, h) in [(3, -30.0), (4, -60.0), (5, -90.0), (6, 60.0), (7, 120.0)] {
+        set_if(vars, &format!("git{n}"), |v| {
+            adjust(&get(v, "primaryColor"), &[('h', h)])
+        });
+    }
+    for n in 0..8 {
+        let key = format!("git{n}");
+        let c = get(vars, &key);
+        set(vars, &key, darken(&c, 25.0));
+    }
+    for n in 0..8 {
+        set_if(vars, &format!("gitInv{n}"), |v| {
+            invert(&get(v, &format!("git{n}")))
+        });
+    }
+    for n in 0..8 {
+        set_if(vars, &format!("gitBranchLabel{n}"), |v| {
+            let l = get(v, "labelTextColor");
+            if n == 0 || n == 3 { invert(&l) } else { l }
+        });
+    }
     set(vars, "nodeBkg", get(vars, "mainBkg"));
     set(vars, "nodeBorder", get(vars, "border1"));
     set(vars, "clusterBkg", get(vars, "secondBkg"));

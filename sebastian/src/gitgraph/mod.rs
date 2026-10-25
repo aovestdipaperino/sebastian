@@ -266,6 +266,19 @@ fn parse(source: &str) -> Result<Db, GitParseError> {
                     break;
                 }
             }
+            let merge_type = remainder.find("type:").and_then(|i| {
+                let word: String = remainder[i + 5..]
+                    .trim_start()
+                    .chars()
+                    .take_while(char::is_ascii_alphabetic)
+                    .collect();
+                match word.as_str() {
+                    "REVERSE" => Some(REVERSE),
+                    "HIGHLIGHT" => Some(HIGHLIGHT),
+                    "NORMAL" => Some(NORMAL),
+                    _ => None,
+                }
+            });
             let other_head = db.branches.get(&other).cloned().flatten();
             let verified = other_head.unwrap_or_default();
             let id = if custom_id.is_empty() {
@@ -282,7 +295,7 @@ fn parse(source: &str) -> Result<Db, GitParseError> {
                 id,
                 seq: 0,
                 ty: MERGE,
-                custom_type: None,
+                custom_type: merge_type,
                 custom_id: !custom_id.is_empty(),
                 tags,
                 parents,
@@ -491,13 +504,13 @@ pub fn render_gitgraph(source: &str, id: &str) -> Result<String, GitParseError> 
                 set_attr(&line, "y1", "30");
                 set_attr(&line, "x2", js_num(pos));
                 set_attr(&line, "y2", js_num(max_pos));
-                acc_branches.add_line(pos, 30.0, 0.0, max_pos - 30.0);
+                acc_branches.add_line(pos, max_pos.min(30.0), 0.0, (max_pos - 30.0).abs());
             } else if dir == "BT" {
                 set_attr(&line, "x1", js_num(pos));
                 set_attr(&line, "y1", js_num(max_pos));
                 set_attr(&line, "x2", js_num(pos));
                 set_attr(&line, "y2", "30");
-                acc_branches.add_line(pos, 30.0, 0.0, max_pos - 30.0);
+                acc_branches.add_line(pos, max_pos.min(30.0), 0.0, (max_pos - 30.0).abs());
             } else {
                 set_attr(&line, "x1", "0");
                 set_attr(&line, "y1", js_num(spine_y));

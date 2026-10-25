@@ -536,6 +536,28 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
             }),
         );
     }
+    if super::themes::get_bool(vars, "useGradient") {
+        for n in 0..12i32 {
+            let s = n - 1;
+            let main_bkg = v("mainBkg");
+            rule(
+                &mut o,
+                &i,
+                &[
+                    &format!(" .section-{s}[data-look=\"neo\"] rect"),
+                    &format!(" .section-{s}[data-look=\"neo\"] path"),
+                    &format!(" .section-{s}[data-look=\"neo\"] circle"),
+                ],
+                &format!("fill:{main_bkg};stroke:url(#{id}-gradient);stroke-width:2;"),
+            );
+            rule(
+                &mut o,
+                &i,
+                &[&format!(" .section-{s}[data-look=\"neo\"] line")],
+                &format!("stroke:url(#{id}-gradient);stroke-width:2;"),
+            );
+        }
+    }
     rule(
         &mut o,
         &i,

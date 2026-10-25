@@ -70,9 +70,6 @@ gantt/gantt-docs004
 gantt/gantt-docs006
 gantt/gantt-docs007
 gantt/gantt-docs010
-git/git-docs008
-git/git-spec019
-git/git-spec020
 mindmap/mindmap-docs000
 mindmap/mindmap-docs001
 mindmap/mindmap-docs002
@@ -118,17 +115,8 @@ state/state-docs019
 state/state-docs020
 state/state-docs021
 timeline/timeline-docs005
-timeline/timeline-docs007
-timeline/timeline-docs009
-timeline/timeline-docs010
 timeline/timeline-docs011
 timeline/timeline-docs013
-treemap/treemap-docs002
-treemap/treemap-docs003
-treemap/treemap-docs004
-treemap/treemap-docs005
-treemap/treemap-docs006
-treemap/treemap-docs007
 venn/venn-docs000
 venn/venn-docs001
 venn/venn-docs002
