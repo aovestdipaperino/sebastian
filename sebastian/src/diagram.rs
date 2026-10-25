@@ -88,6 +88,9 @@ pub fn detect_diagram_type(source: &str) -> &'static str {
         if t == "info" || t.starts_with("info ") {
             return "info";
         }
+        if t == "eventmodeling" {
+            return "eventmodeling";
+        }
         if t == "wardley-beta" || t.starts_with("wardley-beta ") {
             return "wardley";
         }
@@ -265,6 +268,9 @@ fn render_by_type(source: &str, id: &str) -> Result<String, Box<dyn std::error::
         "journey" => crate::journey::render_journey(source, id).map_err(Into::into),
         "quadrant" => crate::quadrant::render_quadrant(source, id).map_err(Into::into),
         "info" => crate::info::render_info(source, id).map_err(Into::into),
+        "eventmodeling" => {
+            crate::eventmodeling::render_eventmodeling(source, id).map_err(Into::into)
+        }
         "wardley" => crate::wardley::render_wardley(source, id).map_err(Into::into),
         "treeview" => crate::treeview::render_treeview(source, id).map_err(Into::into),
         "ishikawa" => crate::ishikawa::render_ishikawa(source, id).map_err(Into::into),
