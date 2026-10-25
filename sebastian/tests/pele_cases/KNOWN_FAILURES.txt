@@ -126,8 +126,6 @@ gantt/gantt-docs010
 git/git-docs008
 git/git-spec019
 git/git-spec020
-info/info-docs000
-info/info-docs001
 kanban/kanban-docs001
 kanban/kanban-docs002
 kanban/kanban-spec001
@@ -225,9 +223,6 @@ treemap/treemap-docs004
 treemap/treemap-docs005
 treemap/treemap-docs006
 treemap/treemap-docs007
-treeview/treeview-docs010
-treeview/treeview-docs012
-treeview/treeview-spec002
 venn/venn-docs000
 venn/venn-docs001
 venn/venn-docs002

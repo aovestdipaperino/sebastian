@@ -1060,6 +1060,40 @@ pub fn themed_packet_css(id: &str, vars: &Map<String, Value>) -> String {
     o
 }
 
+/// The `info` stylesheet: the shared prefix and suffix only.
+#[must_use]
+pub fn themed_info_css(id: &str, vars: &Map<String, Value>) -> String {
+    themed_xychart_css(id, vars)
+}
+
+/// The treeView stylesheet (port of `diagrams/treeView/styles.ts`).
+#[must_use]
+pub fn themed_treeview_css(
+    id: &str,
+    vars: &Map<String, Value>,
+    label_font_size: &str,
+    label_color: &str,
+    line_color: &str,
+) -> String {
+    let i = format!("#{id}");
+    let mut o = String::new();
+    css_prefix(&mut o, &i, vars);
+    rule(
+        &mut o,
+        &i,
+        &[" .treeView-node-label"],
+        &format!("font-size:{label_font_size};fill:{label_color};"),
+    );
+    rule(
+        &mut o,
+        &i,
+        &[" .treeView-node-line"],
+        &format!("stroke:{line_color};"),
+    );
+    css_suffix(&mut o, &i, id, vars);
+    o
+}
+
 /// The ishikawa stylesheet (port of `diagrams/ishikawa/ishikawaStyles.ts`).
 #[must_use]
 pub fn themed_ishikawa_css(id: &str, vars: &Map<String, Value>) -> String {

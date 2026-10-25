@@ -26,6 +26,9 @@ project adheres to [Semantic Versioning](https://semver.org/).
   per-point `radius`/`color`/`stroke-color`/`stroke-width`, `classDef`, a
   trailing `-->` on axes, and `chartWidth`/`chartHeight` from config. The
   render config now keeps the merged directive in `RenderConfig::raw`.
+- **`info`** and **`treeView-beta`** diagrams (ports of the mermaid 11.15.0
+  renderers); xychart text height now accounts for glyph ink, and plot titles
+  may be bare words.
 - `detect_diagram_type` skips a leading YAML front-matter block.
 - **`pele_cases` corpus**: 555 diagram sources from obsidianmd/pele (Mermaid
   docs examples and ported spec strings) with mermaid 11.15.0 references.

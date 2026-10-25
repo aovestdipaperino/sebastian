@@ -50,6 +50,7 @@ pub mod frontmatter;
 pub mod gantt;
 pub mod gitgraph;
 pub mod graphlib;
+pub mod info;
 pub mod ishikawa;
 pub mod journey;
 pub mod jsmap;
@@ -77,6 +78,7 @@ pub mod system_chart;
 pub mod text;
 pub mod timeline;
 pub mod treemap;
+pub mod treeview;
 pub mod xychart;
 
 #[cfg(feature = "raster")]
