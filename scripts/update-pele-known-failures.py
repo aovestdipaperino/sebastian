@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Rewrites sebastian/tests/pele_cases/KNOWN_FAILURES.txt from the current
 renderer. Build first: cargo build -p seb. Run from the repository root."""
-import glob, os, subprocess, tempfile
+import glob, os, re, subprocess, tempfile
+
+
+def mask(s):
+    # gantt 'today' marker depends on the render date
+    return re.sub(r'(<g class="today"><line x1=")[^"]*(" x2=")[^"]*', r'\g<1>0\g<2>0', s)
+
 
 D = 'sebastian/tests/pele_cases'
 fails = []
@@ -13,7 +19,7 @@ with tempfile.TemporaryDirectory() as tmp:
         try:
             r = subprocess.run(['./target/debug/seb', '-i', mmd, '-o', out],
                                capture_output=True, timeout=60)
-            ok = r.returncode == 0 and open(out).read() == open(mmd[:-4] + '.svg').read()
+            ok = r.returncode == 0 and mask(open(out).read()) == mask(open(mmd[:-4] + '.svg').read())
         except subprocess.TimeoutExpired:
             pass
         if os.path.exists(out):

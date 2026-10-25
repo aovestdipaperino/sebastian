@@ -5,6 +5,20 @@
 use sebastian::render_diagram;
 use std::collections::BTreeSet;
 
+/// The gantt "today" marker depends on the render date, so the position of
+/// that line is masked on both sides.
+fn mask_today(svg: &str) -> String {
+    const OPEN: &str = "<g class=\"today\"><line x1=\"";
+    let Some(at) = svg.find(OPEN) else {
+        return svg.to_owned();
+    };
+    let start = at + OPEN.len();
+    let Some(end) = svg[start..].find(" y1=") else {
+        return svg.to_owned();
+    };
+    format!("{}0\" x2=\"0\"{}", &svg[..start], &svg[start + end..])
+}
+
 #[test]
 fn pele_corpus() {
     let dir = format!("{}/tests/pele_cases", env!("CARGO_MANIFEST_DIR"));
@@ -36,7 +50,8 @@ fn pele_corpus() {
     for case in &cases {
         let source = std::fs::read_to_string(format!("{dir}/{case}.mmd")).expect("source");
         let reference = std::fs::read_to_string(format!("{dir}/{case}.svg")).expect("reference");
-        let passes = render_diagram(&source, "my-svg").is_ok_and(|svg| svg == reference);
+        let passes = render_diagram(&source, "my-svg")
+            .is_ok_and(|svg| mask_today(&svg) == mask_today(&reference));
         match (passes, known.contains(case)) {
             (false, false) => regressions.push(case.clone()),
             (true, true) => fixed.push(case.clone()),
