@@ -29,27 +29,113 @@ impl std::fmt::Display for KanbanParseError {
 
 impl std::error::Error for KanbanParseError {}
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Section {
     id: String,
     label: String,
     items: Vec<Item>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Item {
     id: String,
     label: String,
+    ticket: String,
+    assigned: String,
+    priority: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
-// Parser (mindmap-style indentation)
+// Parser (port of kanban.jison + kanbanDb.addNode)
 // ---------------------------------------------------------------------------
 
+/// A parsed node statement: indentation, id, description, `@{}` data.
+struct Row {
+    level: usize,
+    id: String,
+    descr: String,
+    data: Option<String>,
+}
+
+/// Splits `@{ ... }` metadata into key/value pairs. Values may be quoted;
+/// pairs are separated by commas or newlines.
+fn parse_shape_data(text: &str) -> Vec<(String, String)> {
+    let mut parts: Vec<String> = Vec::new();
+    let mut cur = String::new();
+    let mut quote: Option<char> = None;
+    for c in text.chars() {
+        match quote {
+            Some(q) => {
+                if c == q {
+                    quote = None;
+                }
+                cur.push(c);
+            }
+            None if c == '"' || c == '\'' => {
+                quote = Some(c);
+                cur.push(c);
+            }
+            None if c == ',' || c == '\n' => parts.push(std::mem::take(&mut cur)),
+            None => cur.push(c),
+        }
+    }
+    parts.push(cur);
+    parts
+        .iter()
+        .filter_map(|p| {
+            let (k, v) = p.split_once(':')?;
+            let v = v.trim();
+            let v = ['"', '\'']
+                .iter()
+                .find_map(|q| v.strip_prefix(*q).and_then(|r| r.strip_suffix(*q)))
+                .unwrap_or(v);
+            Some((k.trim().to_owned(), v.to_owned()))
+        })
+        .collect()
+}
+
+/// Reads one node token at the start of `t`: `ID`, `ID[descr]`, `[descr]`.
+/// Returns (id, descr, rest-of-line).
+fn read_node(t: &str) -> (String, String, &str) {
+    let id_end = t.find(['(', '[', ')', '{', '}', '@']).unwrap_or(t.len());
+    let id = &t[..id_end];
+    let rest = &t[id_end..];
+    let opener = ["((", "{{", "(", "[", "))", ")", "-)", "(-"]
+        .iter()
+        .find(|o| rest.starts_with(**o));
+    let Some(opener) = opener else {
+        return (id.to_owned(), id.to_owned(), rest);
+    };
+    let body = &rest[opener.len()..];
+    // Quoted description keeps brackets; otherwise it runs to the closer.
+    let (descr, after) = if let Some(q) = body.strip_prefix("\"`") {
+        let end = q.find("`\"").unwrap_or(q.len());
+        let after = q.get(end + 2..).unwrap_or("");
+        (q[..end].to_owned(), after)
+    } else if let Some(q) = body.strip_prefix('"') {
+        let end = q.find('"').unwrap_or(q.len());
+        let after = q.get(end + 1..).unwrap_or("");
+        (q[..end].to_owned(), after)
+    } else {
+        let end = body.find([')', ']', '(', '}']).unwrap_or(body.len());
+        (body[..end].to_owned(), &body[end..])
+    };
+    // Skip the closing delimiter.
+    let after = after.trim_start_matches([')', ']', '}', '-', '(']);
+    let (id, descr) = if id.is_empty() {
+        (descr.clone(), descr)
+    } else {
+        (id.to_owned(), descr)
+    };
+    (id, descr, after)
+}
+
 fn parse(source: &str) -> Result<Vec<Section>, KanbanParseError> {
-    let mut rows: Vec<(usize, String)> = Vec::new();
+    let mut rows: Vec<Row> = Vec::new();
     let mut found = false;
-    for raw in source.lines() {
+    let mut lines = source.split('\n');
+    while let Some(raw) = lines.next() {
+        let raw = raw.trim_end_matches('\r');
         let t = raw.trim();
         if t.is_empty() || t.starts_with("%%") {
             continue;
@@ -65,55 +151,80 @@ fn parse(source: &str) -> Result<Vec<Section>, KanbanParseError> {
             continue;
         }
         let level = raw.len() - raw.trim_start().len();
-        // node: `[descr]` (or other brackets) or bare id.
-        let (id, label) = parse_node(t);
-        rows.push((level, format!("{id}\u{0}{label}")));
+        // `:::class` and `::icon(x)` decorate the previous node; neither is
+        // drawn by the kanban renderer.
+        if t.starts_with(":::") || t.starts_with("::icon(") {
+            continue;
+        }
+        let (id, descr, rest) = read_node(t);
+        let rest = rest.trim_start();
+        let mut data = None;
+        if let Some(body) = rest.strip_prefix("@{") {
+            // The block may span lines and ends at the first `}` outside quotes.
+            let mut acc = String::from(body);
+            let mut closed = find_close(&acc);
+            while closed.is_none() {
+                let Some(next) = lines.next() else { break };
+                acc.push('\n');
+                acc.push_str(next);
+                closed = find_close(&acc);
+            }
+            let end = closed.unwrap_or(acc.len());
+            data = Some(acc[..end].to_owned());
+        }
+        rows.push(Row {
+            level,
+            id,
+            descr,
+            data,
+        });
     }
-    if rows.is_empty() {
+    let Some(section_level) = rows.first().map(|r| r.level) else {
         return Ok(Vec::new());
-    }
-    let section_level = rows[0].0;
+    };
     let mut sections: Vec<Section> = Vec::new();
-    for (level, packed) in rows {
-        let mut parts = packed.splitn(2, '\u{0}');
-        let id = parts.next().unwrap_or("").to_owned();
-        let label = parts.next().unwrap_or("").to_owned();
-        if level == section_level {
+    for row in rows {
+        let mut item = Item {
+            id: row.id,
+            label: row.descr,
+            ..Item::default()
+        };
+        if let Some(data) = &row.data {
+            for (k, v) in parse_shape_data(data) {
+                match k.as_str() {
+                    "label" if !v.is_empty() => item.label = v,
+                    "assigned" => item.assigned = v,
+                    "ticket" => item.ticket = v,
+                    "priority" if !v.is_empty() => item.priority = Some(v),
+                    _ => {}
+                }
+            }
+        }
+        if row.level == section_level {
             sections.push(Section {
-                id,
-                label,
+                id: item.id,
+                label: item.label,
                 items: Vec::new(),
             });
         } else if let Some(sec) = sections.last_mut() {
-            sec.items.push(Item { id, label });
+            sec.items.push(item);
         }
     }
     Ok(sections)
 }
 
-/// Extracts (id, descr) from a node token, mirroring the jison node rules.
-fn parse_node(t: &str) -> (String, String) {
-    // Bracketed forms: `[descr]`, `(descr)`, `((descr))`, `{{descr}}`, etc.
-    let bytes = t.as_bytes();
-    if let Some(&first) = bytes.first()
-        && matches!(first, b'[' | b'(' | b'{')
-    {
-        // find the descr between the opening and closing delimiters
-        let inner = t
-            .trim_start_matches(['[', '(', '{'])
-            .trim_end_matches([']', ')', '}']);
-        return (inner.to_owned(), inner.to_owned());
+/// Index of the `}` closing a `@{` block, ignoring braces inside quotes.
+fn find_close(text: &str) -> Option<usize> {
+    let mut quote: Option<char> = None;
+    for (i, c) in text.char_indices() {
+        match quote {
+            Some(q) if c == q => quote = None,
+            None if c == '"' || c == '\'' => quote = Some(c),
+            None if c == '}' => return Some(i),
+            _ => {}
+        }
     }
-    // bare id (may be followed by a bracket shape — split at first bracket)
-    let end = t.find(['[', '(', '{']).unwrap_or(t.len());
-    if end < t.len() {
-        let id = t[..end].to_owned();
-        let inner = t[end..]
-            .trim_start_matches(['[', '(', '{'])
-            .trim_end_matches([']', ')', '}']);
-        return (id, inner.to_owned());
-    }
-    (t.to_owned(), t.to_owned())
+    None
 }
 
 // ---------------------------------------------------------------------------
@@ -169,6 +280,12 @@ pub fn render_kanban(source: &str, id: &str) -> Result<String, KanbanParseError>
     };
     let measurer = TextMeasurer::new();
     let sections = parse(source)?;
+    let ticket_base_url = config
+        .raw
+        .get("kanban")
+        .and_then(|k| k.get("ticketBaseUrl"))
+        .and_then(|v| v.as_str())
+        .map(str::to_owned);
 
     let svg = new_element("svg");
     set_attr(&svg, "id", id);
@@ -262,24 +379,33 @@ pub fn render_kanban(source: &str, id: &str) -> Result<String, KanbanParseError>
                 wrap_width,
                 &measurer,
             );
-            // ticket + assigned (empty)
-            let (ticket_g, _, _) = item_label(
-                &item_g,
-                "",
+            // ticket (linked when kanban.ticketBaseUrl is set) + assigned
+            let ticket_parent = match (&ticket_base_url, item.ticket.is_empty()) {
+                (Some(base), false) => {
+                    let a = insert_first(&item_g, "a");
+                    set_attr(&a, "class", "kanban-ticket-link");
+                    set_attr(&a, "xlink:href", base.replace("#TICKET#", &item.ticket));
+                    a
+                }
+                _ => item_g.clone(),
+            };
+            let (ticket_g, _, tkh) = item_label(
+                &ticket_parent,
+                &item.ticket,
                 "nodeLabel",
                 "text-align:left !important",
                 wrap_width,
                 &measurer,
             );
-            let (assigned_g, aw, _) = item_label(
+            let (assigned_g, aw, ash) = item_label(
                 &item_g,
-                "",
+                &item.assigned,
                 "nodeLabel",
                 "text-align:left !important",
                 wrap_width,
                 &measurer,
             );
-            let height_adj = 0.0f64; // max(ticket.h, assigned.h)/2, both empty
+            let height_adj = tkh.max(ash) / 2.0;
             let total_height = (th + 2.0 * 10.0).max(0.0) + height_adj; // labelPaddingY=10
             let padding = 10.0;
             let label_padding_x = 10.0;
@@ -320,6 +446,25 @@ pub fn render_kanban(source: &str, id: &str) -> Result<String, KanbanParseError>
             set_attr(&rect, "y", js_num(-total_height / 2.0));
             set_attr(&rect, "width", js_num(total_width));
             set_attr(&rect, "height", js_num(total_height));
+            if let Some(priority) = item.priority.as_deref().filter(|_| !hand_drawn) {
+                let color = match priority {
+                    "Very High" => Some("red"),
+                    "High" => Some("orange"),
+                    "Low" => Some("blue"),
+                    "Very Low" => Some("lightblue"),
+                    _ => None,
+                };
+                let line = append(&item_g, "line");
+                let line_x = -total_width / 2.0 + 2.0;
+                set_attr(&line, "x1", js_num(line_x));
+                set_attr(&line, "y1", js_num(-total_height / 2.0 + 2.0));
+                set_attr(&line, "x2", js_num(line_x));
+                set_attr(&line, "y2", js_num(total_height / 2.0 - 2.0));
+                set_attr(&line, "stroke-width", "4");
+                if let Some(c) = color {
+                    set_attr(&line, "stroke", c);
+                }
+            }
             if hand_drawn {
                 set_attr(&rect, "style", "stroke:none");
                 crate::render::handdrawn::hd_overlay_rect(
