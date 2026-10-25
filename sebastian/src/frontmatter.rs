@@ -147,7 +147,22 @@ pub fn normalize(source: &str) -> String {
     let Some((block, rest)) = split(source) else {
         return source.to_owned();
     };
-    let map = parse_map(&block);
+    let mut map = parse_map(&block);
+    // Gantt's `displayMode` may sit at the top level of the front matter.
+    if let Some(Value::String(mode)) = map.get("displayMode").cloned() {
+        let cfg = map
+            .entry("config".to_owned())
+            .or_insert_with(|| Value::Object(Map::new()));
+        if let Value::Object(cfg) = cfg {
+            let gantt = cfg
+                .entry("gantt".to_owned())
+                .or_insert_with(|| Value::Object(Map::new()));
+            if let Value::Object(g) = gantt {
+                g.entry("displayMode".to_owned())
+                    .or_insert(Value::String(mode));
+            }
+        }
+    }
     match map.get("config") {
         Some(Value::Object(cfg)) if !cfg.is_empty() => {
             let json = serde_json::to_string(cfg).unwrap_or_default();

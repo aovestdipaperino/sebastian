@@ -320,14 +320,21 @@ const WEEKDAY_NAMES: [&str; 7] = [
 ];
 
 /// `isInvalidDate`.
-fn is_invalid_date(date: Ts, date_format: &str, excludes: &[String], includes: &[String]) -> bool {
+fn is_invalid_date(
+    date: Ts,
+    date_format: &str,
+    excludes: &[String],
+    includes: &[String],
+    weekend_start: i64,
+) -> bool {
     let formatted = format_date(date, date_format);
     let date_only = format_date(date, "YYYY-MM-DD");
     if includes.iter().any(|i| *i == formatted || *i == date_only) {
         return false;
     }
     let wd = iso_weekday(date);
-    if excludes.iter().any(|e| e == "weekends") && (wd == 6 || wd == 7) {
+    if excludes.iter().any(|e| e == "weekends") && (wd == weekend_start || wd == weekend_start + 1)
+    {
         return true;
     }
     let name = WEEKDAY_NAMES[usize::try_from(wd - 1).unwrap_or(0)];
@@ -381,70 +388,178 @@ struct Db {
     today_marker: String,
     tick_interval: String,
     weekday: String,
+    display_mode: String,
+    weekend_start: i64,
     tasks: Vec<Task>,
     task_cnt: usize,
 }
 
-impl Db {
-    fn find_task(&self, id: &str) -> Option<&Task> {
-        self.tasks.iter().find(|t| t.id == id)
-    }
+/// How a raw task finds its start.
+#[derive(Debug, Clone)]
+enum StartSpec {
+    /// The end of the task defined just before (`None` for the first task).
+    PrevEnd(Option<String>),
+    /// `after a b`, a date, or a timestamp.
+    Get(String),
+}
 
-    fn get_start(&self, s: &str) -> Option<Ts> {
-        let s = s.trim();
-        if let Some(rest) = s.strip_prefix("after ") {
-            let mut latest: Option<Ts> = None;
-            for id in rest.split(' ') {
-                if let Some(t) = self.find_task(id.trim())
-                    && latest.is_none_or(|l| t.end > l)
-                {
-                    latest = Some(t.end);
-                }
-            }
-            return latest;
-        }
-        parse_date(s, &self.date_format)
-    }
+#[derive(Debug, Clone)]
+struct RawTask {
+    id: String,
+    name: String,
+    section: String,
+    start_spec: StartSpec,
+    end_data: String,
+    start: Option<Ts>,
+    end: Option<Ts>,
+    render_end: Option<Ts>,
+    processed: bool,
+    active: bool,
+    done: bool,
+    crit: bool,
+    milestone: bool,
+}
 
-    fn get_end(&self, start: Ts, s: &str) -> Ts {
-        let s = s.trim();
-        if let Some(rest) = s.strip_prefix("until ") {
-            for id in rest.split(' ') {
-                if let Some(t) = self.find_task(id.trim()) {
-                    return t.start;
-                }
+fn find_raw<'a>(raws: &'a [RawTask], id: &str) -> Option<&'a RawTask> {
+    // taskDb keeps the last task registered under an id.
+    raws.iter().rev().find(|t| t.id == id)
+}
+
+/// `found` is the referenced task's date (itself possibly unresolved); with no
+/// referenced task at all the answer is today's midnight.
+fn today_or(found: Option<&RawTask>, pick: impl Fn(&RawTask) -> Option<Ts>) -> Option<Ts> {
+    found.map_or_else(|| Some(today_midnight()), pick)
+}
+
+/// `getStartDate`: `Some(None)` means "referenced task has no end yet".
+fn raw_start(raws: &[RawTask], date_format: &str, s: &str) -> Result<Option<Ts>, GanttParseError> {
+    let s = s.trim();
+    if let Some(rest) = s.strip_prefix("after")
+        && rest.starts_with(char::is_whitespace)
+    {
+        let mut latest: Option<&RawTask> = None;
+        for id in rest.trim_start().split(' ') {
+            if let Some(t) = find_raw(raws, id.trim())
+                && latest.is_none_or(|l| matches!((t.end, l.end), (Some(a), Some(b)) if a > b))
+            {
+                latest = Some(t);
             }
         }
-        if let Some(d) = parse_date(s, &self.date_format) {
-            return d;
+        return Ok(today_or(latest, |t| t.end));
+    }
+    parse_date(s, date_format)
+        .map(Some)
+        .ok_or_else(|| GanttParseError {
+            message: format!("Invalid date:{s}"),
+        })
+}
+
+/// `getEndDate`.
+fn raw_end(raws: &[RawTask], date_format: &str, start: Ts, s: &str) -> Option<Ts> {
+    let s = s.trim();
+    if let Some(rest) = s.strip_prefix("until")
+        && rest.starts_with(char::is_whitespace)
+    {
+        let mut earliest: Option<&RawTask> = None;
+        for id in rest.trim_start().split(' ') {
+            if let Some(t) = find_raw(raws, id.trim())
+                && earliest
+                    .is_none_or(|e| matches!((t.start, e.start), (Some(a), Some(b)) if a < b))
+            {
+                earliest = Some(t);
+            }
         }
-        // Duration: (\d+(\.\d+)?)([Mdhmswy]|ms)
-        let (num_part, unit): (&str, &str) = if let Some(n) = s.strip_suffix("ms") {
-            (n, "ms")
-        } else if let Some(last) = s.chars().last()
-            && "Mdhmswy".contains(last)
-        {
-            (
-                &s[..s.len() - last.len_utf8()],
-                &s[s.len() - last.len_utf8()..],
-            )
-        } else {
-            return start;
-        };
+        return today_or(earliest, |t| t.start);
+    }
+    if let Some(d) = parse_date(s, date_format) {
+        return Some(d);
+    }
+    // Duration: (\d+(\.\d+)?)([Mdhmswy]|ms)
+    let (num_part, unit): (&str, &str) = if let Some(n) = s.strip_suffix("ms") {
+        (n, "ms")
+    } else if let Some(last) = s.chars().last()
+        && "Mdhmswy".contains(last)
+    {
+        (
+            &s[..s.len() - last.len_utf8()],
+            &s[s.len() - last.len_utf8()..],
+        )
+    } else {
+        return Some(start);
+    };
+    Some(
         num_part
             .trim()
             .parse::<f64>()
-            .map_or(start, |v| add_duration(start, v, unit))
+            .map_or(start, |v| add_duration(start, v, unit)),
+    )
+}
+
+/// `compileTask`: resolves one raw task if its references are known.
+fn compile_raw(db: &Db, raws: &mut [RawTask], pos: usize) -> Result<(), GanttParseError> {
+    match raws[pos].start_spec.clone() {
+        StartSpec::PrevEnd(prev) => {
+            raws[pos].start = match prev {
+                Some(id) => find_raw(raws, &id).and_then(|t| t.end),
+                None => Some(Ts(0.0)),
+            };
+        }
+        StartSpec::Get(data) => {
+            if let Some(Some(t)) = Some(raw_start(raws, &db.date_format, &data)?) {
+                raws[pos].start = Some(t);
+            }
+        }
     }
+    let Some(start) = raws[pos].start else {
+        return Ok(());
+    };
+    let end_data = raws[pos].end_data.clone();
+    let Some(mut end) = raw_end(raws, &db.date_format, start, &end_data) else {
+        return Ok(());
+    };
+    raws[pos].processed = true;
+    // checkTaskDates: push the end date past excluded days.
+    let manual_end = parse_date(&end_data, "YYYY-MM-DD").is_some();
+    raws[pos].render_end = None;
+    if !db.excludes.is_empty() && !manual_end {
+        let mut st = Ts(add_duration(start, 1.0, "d").0);
+        let max_end = add_duration(end, 10_000.0, "d");
+        let mut invalid = false;
+        while st.0 <= end.0 {
+            if !invalid {
+                raws[pos].render_end = Some(end);
+            }
+            invalid = is_invalid_date(
+                st,
+                &db.date_format,
+                &db.excludes,
+                &db.includes,
+                db.weekend_start,
+            );
+            if invalid {
+                end = add_duration(end, 1.0, "d");
+                if end.0 > max_end.0 {
+                    return Err(GanttParseError {
+                        message: "Failed to find a valid date not excluded by excludes".to_owned(),
+                    });
+                }
+            }
+            st = add_duration(st, 1.0, "d");
+        }
+    }
+    raws[pos].end = Some(end);
+    Ok(())
 }
 
 fn parse(source: &str) -> Result<Db, GanttParseError> {
     let mut db = Db {
         date_format: "YYYY-MM-DD".to_owned(),
+        weekend_start: 6,
         ..Db::default()
     };
     let mut found_header = false;
     let mut section = String::new();
+    let mut raws: Vec<RawTask> = Vec::new();
     for raw in source.lines() {
         let line = raw.trim();
         if line.is_empty() || line.starts_with("%%") {
@@ -505,17 +620,27 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
             db.tick_interval = rest.trim().to_owned();
             continue;
         }
+        if let Some(rest) = line.strip_prefix("weekend")
+            && rest.starts_with(char::is_whitespace)
+        {
+            match rest.trim() {
+                "friday" => db.weekend_start = 5,
+                "saturday" => db.weekend_start = 6,
+                _ => {}
+            }
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("displayMode")
+            && rest.starts_with(char::is_whitespace)
+        {
+            rest.trim().clone_into(&mut db.display_mode);
+            continue;
+        }
         if let Some(rest) = line.strip_prefix("weekday") {
             db.weekday = rest.trim().to_owned();
             continue;
         }
-        for kw in [
-            "displayMode",
-            "inclusiveEndDates",
-            "topAxis",
-            "accTitle",
-            "accDescr",
-        ] {
+        for kw in ["inclusiveEndDates", "topAxis", "accTitle", "accDescr"] {
             if line.starts_with(kw) {
                 return Err(GanttParseError {
                     message: format!("unsupported gantt statement: {line}"),
@@ -552,33 +677,27 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
             parts.remove(0);
         }
 
-        let prev_end = db.tasks.last().map(|t| t.end);
-        let (id, start, end_data) = match parts.len() {
+        let last_id = raws.last().map(|t| t.id.clone());
+        let (id, start_spec, end_data) = match parts.len() {
             1 => {
                 db.task_cnt += 1;
                 (
                     format!("task{}", db.task_cnt),
-                    prev_end.unwrap_or(Ts(0.0)),
+                    StartSpec::PrevEnd(last_id),
                     parts[0].clone(),
                 )
             }
             2 => {
-                // Either "id, endData" (start from prev/`after`) or
-                // "startData, endData".
-                if let Some(start) = db.get_start(&parts[0]) {
-                    db.task_cnt += 1;
-                    (format!("task{}", db.task_cnt), start, parts[1].clone())
-                } else {
-                    (
-                        parts[0].clone(),
-                        db.get_start(&parts[1]).or(prev_end).unwrap_or(Ts(0.0)),
-                        String::new(),
-                    )
-                }
+                db.task_cnt += 1;
+                (
+                    format!("task{}", db.task_cnt),
+                    StartSpec::Get(parts[0].clone()),
+                    parts[1].clone(),
+                )
             }
             3 => (
                 parts[0].clone(),
-                db.get_start(&parts[1]).or(prev_end).unwrap_or(Ts(0.0)),
+                StartSpec::Get(parts[1].clone()),
                 parts[2].clone(),
             ),
             _ => {
@@ -587,40 +706,16 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
                 });
             }
         };
-        let mut end = db.get_end(start, &end_data);
-        // checkTaskDates: push the end date past excluded days.
-        let manual_end = parse_date(&end_data, "YYYY-MM-DD").is_some();
-        let mut render_end: Option<Ts> = None;
-        if !db.excludes.is_empty() && !manual_end {
-            let mut st = Ts(add_duration(start, 1.0, "d").0);
-            let max_end = add_duration(end, 10_000.0, "d");
-            let mut invalid = false;
-            while st.0 <= end.0 {
-                if !invalid {
-                    render_end = Some(end);
-                }
-                invalid = is_invalid_date(st, &db.date_format, &db.excludes, &db.includes);
-                if invalid {
-                    end = add_duration(end, 1.0, "d");
-                    if end.0 > max_end.0 {
-                        return Err(GanttParseError {
-                            message: "Failed to find a valid date not excluded by excludes"
-                                .to_owned(),
-                        });
-                    }
-                }
-                st = add_duration(st, 1.0, "d");
-            }
-        }
-        let order = db.tasks.len();
-        db.tasks.push(Task {
+        raws.push(RawTask {
             id,
             name,
             section: section.clone(),
-            start,
-            end,
-            render_end,
-            order,
+            start_spec,
+            end_data,
+            start: None,
+            end: None,
+            render_end: None,
+            processed: false,
             active,
             done,
             crit,
@@ -632,9 +727,35 @@ fn parse(source: &str) -> Result<Db, GanttParseError> {
             message: "missing gantt header".to_owned(),
         });
     }
-    if db.tasks.is_empty() {
-        return Err(GanttParseError {
-            message: "no tasks".to_owned(),
+    // getTasks: compile repeatedly until every task resolves (max 11 passes).
+    for _ in 0..11 {
+        let mut all = true;
+        for pos in 0..raws.len() {
+            compile_raw(&db, &mut raws, pos)?;
+            all = all && raws[pos].processed;
+        }
+        if all {
+            break;
+        }
+    }
+    for (order, t) in raws.iter().enumerate() {
+        let (Some(start), Some(end)) = (t.start, t.end) else {
+            return Err(GanttParseError {
+                message: format!("task {:?} could not be resolved", t.id),
+            });
+        };
+        db.tasks.push(Task {
+            id: t.id.clone(),
+            name: t.name.clone(),
+            section: t.section.clone(),
+            start,
+            end,
+            render_end: t.render_end,
+            order,
+            active: t.active,
+            done: t.done,
+            crit: t.crit,
+            milestone: t.milestone,
         });
     }
     Ok(db)
@@ -935,12 +1056,17 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
     let config = crate::render::config::detect_init(source);
     let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
-    let db = parse(source)?;
+    let mut db = parse(source)?;
     let measurer = crate::text::TextMeasurer::new();
 
     let w = PAGE_WIDTH;
-    #[allow(clippy::cast_precision_loss)]
-    let h = 2.0f64.mul_add(TOP_PADDING, db.tasks.len() as f64 * (BAR_HEIGHT + BAR_GAP));
+    let compact = db.display_mode == "compact"
+        || config
+            .raw
+            .get("gantt")
+            .and_then(|g| g.get("displayMode"))
+            .and_then(serde_json::Value::as_str)
+            == Some("compact");
 
     // Categories in order of first appearance.
     let mut categories: Vec<String> = Vec::new();
@@ -949,6 +1075,50 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
             categories.push(t.section.clone());
         }
     }
+    // Rows per category (all tasks, or the packed rows in compact mode).
+    let mut category_heights: Vec<f64> = Vec::new();
+    #[allow(clippy::cast_precision_loss)]
+    let h = if compact {
+        let mut h = 2.0 * TOP_PADDING;
+        let mut offset = 0usize;
+        for c in &categories {
+            let idx: Vec<usize> = (0..db.tasks.len())
+                .filter(|&i| db.tasks[i].section == *c)
+                .collect();
+            // getMaxIntersections: first-fit rows over start-sorted tasks.
+            let mut timeline = vec![f64::NEG_INFINITY; idx.len()];
+            let mut sorted = idx.clone();
+            sorted.sort_by(|&a, &b| {
+                db.tasks[a]
+                    .start
+                    .0
+                    .partial_cmp(&db.tasks[b].start.0)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+                    .then(db.tasks[a].order.cmp(&db.tasks[b].order))
+            });
+            let mut max_inter = 0usize;
+            for i in sorted {
+                for (j, slot) in timeline.iter_mut().enumerate() {
+                    if db.tasks[i].start.0 >= *slot {
+                        *slot = db.tasks[i].end.0;
+                        db.tasks[i].order = j + offset;
+                        max_inter = max_inter.max(j);
+                        break;
+                    }
+                }
+            }
+            let rows = (max_inter + 1) as f64;
+            offset += max_inter + 1;
+            h += rows * (BAR_HEIGHT + BAR_GAP);
+            category_heights.push(rows);
+        }
+        h
+    } else {
+        for c in &categories {
+            category_heights.push(db.tasks.iter().filter(|t| t.section == *c).count() as f64);
+        }
+        2.0f64.mul_add(TOP_PADDING, db.tasks.len() as f64 * (BAR_HEIGHT + BAR_GAP))
+    };
     let sec_num = |section: &str| -> usize {
         categories.iter().position(|c| c == section).unwrap_or(0) % NUMBER_SECTION_STYLES
     };
@@ -1015,7 +1185,13 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
         let mut range: Option<Range> = None;
         let mut d = Ts(min_time);
         while d.0 <= max_time {
-            if is_invalid_date(d, &db.date_format, &db.excludes, &db.includes) {
+            if is_invalid_date(
+                d,
+                &db.date_format,
+                &db.excludes,
+                &db.includes,
+                db.weekend_start,
+            ) {
                 match &mut range {
                     Some(r) => r.end = d,
                     None => range = Some(Range { start: d, end: d }),
@@ -1322,11 +1498,8 @@ pub fn render_gantt(source: &str, id: &str) -> Result<String, GanttParseError> {
         let mut prev_gap = 0.0f64;
         let num_occurrences: Vec<(String, f64)> = categories
             .iter()
-            .map(|c| {
-                #[allow(clippy::cast_precision_loss)]
-                let n = db.tasks.iter().filter(|t| t.section == *c).count() as f64;
-                (c.clone(), n)
-            })
+            .cloned()
+            .zip(category_heights.iter().copied())
             .collect();
         for (i, (name, n)) in num_occurrences.iter().enumerate() {
             let text = append(&g, "text");

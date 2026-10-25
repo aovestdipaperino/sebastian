@@ -61,12 +61,8 @@ flowchart/flowchart-spec004
 flowchart/flowchart-spec005
 flowchart/flowchart-spec006
 flowchart/flowchart-spec007
-gantt/gantt-docs001
 gantt/gantt-docs002
-gantt/gantt-docs003
 gantt/gantt-docs004
-gantt/gantt-docs006
-gantt/gantt-docs007
 gantt/gantt-docs010
 mindmap/mindmap-docs000
 mindmap/mindmap-docs001
