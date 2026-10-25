@@ -464,7 +464,11 @@ fn path_bbox(d: &str, out: &mut SkAcc) {
                             let midx = f64::midpoint(*cx, ex);
                             out.add_point(midx, *cy - ry);
                             out.add_point(midx, *cy + ry);
-                            let _ = rx;
+                        } else if (*cx - ex).abs() < 1e-9 {
+                            // Same for vertical chords (tilted cylinder caps).
+                            let midy = f64::midpoint(*cy, ey);
+                            out.add_point(*cx - rx, midy);
+                            out.add_point(*cx + rx, midy);
                         }
                         *cx = ex;
                         *cy = ey;
@@ -491,7 +495,7 @@ fn path_bbox(d: &str, out: &mut SkAcc) {
             flush(cmd, &nums, &mut cx, &mut cy, out);
             nums.clear();
             cmd = if c == 'Z' || c == 'z' { ' ' } else { c };
-        } else if c == ',' || c == ' ' {
+        } else if c == ',' || c.is_whitespace() {
             push_num(&mut num_buf, &mut nums);
         } else if c == '-'
             && !num_buf.is_empty()

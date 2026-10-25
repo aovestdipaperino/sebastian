@@ -226,6 +226,26 @@ pub fn node_intersect(node: &RenderNode, point: Point) -> Point {
             }
             pos
         }
+        IntersectShape::TiltedCylinder { rx, ry } => {
+            let mut pos = intersect_rect(node, point);
+            let y = pos.y - node.y;
+            if *ry != 0.0
+                && (y.abs() < node.height / 2.0
+                    || (y.abs() == node.height / 2.0
+                        && (pos.x - node.x).abs() > node.width / 2.0 - rx))
+            {
+                let mut x = rx * rx * (1.0 - (y * y) / (ry * ry));
+                if x != 0.0 {
+                    x = x.abs().sqrt();
+                }
+                x = rx - x;
+                if point.x - node.x > 0.0 {
+                    x = -x;
+                }
+                pos.x += x;
+            }
+            pos
+        }
     }
 }
 

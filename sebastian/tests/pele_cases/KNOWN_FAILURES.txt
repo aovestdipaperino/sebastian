@@ -39,14 +39,8 @@ flowchart/flowchart-docs006
 flowchart/flowchart-docs007
 flowchart/flowchart-docs011
 flowchart/flowchart-docs026
-flowchart/flowchart-docs033
-flowchart/flowchart-docs037
-flowchart/flowchart-docs038
-flowchart/flowchart-docs040
-flowchart/flowchart-docs041
 flowchart/flowchart-docs050
 flowchart/flowchart-docs051
-flowchart/flowchart-docs056
 flowchart/flowchart-docs102
 flowchart/flowchart-docs111
 flowchart/flowchart-docs112

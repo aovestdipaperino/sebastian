@@ -1171,6 +1171,206 @@ pub fn insert_node_shape(
             n.intersect = Some(IntersectShape::Circle { radius });
             shape_svg
         }
+        "filledCircle" => {
+            let theme = &config.computed_theme;
+            let v = |k: &str| super::themes::get(theme, k);
+            let main_bkg = v("mainBkg");
+            let node_border = v("nodeBorder");
+            let n = node.borrow();
+            let shape_svg = append(parent, "g");
+            set_attr(&shape_svg, "class", get_node_classes(node));
+            set_attr(&shape_svg, "id", n.dom_id.clone());
+            drop(n);
+            let g = insert_first(&shape_svg, "g");
+            let d = rough_ellipse_d(7.0, 7.0);
+            rough_path_pair(&g, &d, &main_bkg, &node_border, "1.3");
+            set_path_styles(&g, &format!("fill: {node_border} !important;"));
+            let bounds = super::bbox::element_bbox(&g);
+            let mut n = node.borrow_mut();
+            n.width = f32q(bounds.width());
+            n.height = f32q(bounds.height());
+            let radius = n.width / 2.0;
+            n.intersect = Some(IntersectShape::Circle { radius });
+            shape_svg
+        }
+        "text" => {
+            let result = label_helper(
+                parent,
+                node,
+                Some(&get_node_classes(node)),
+                measurer,
+                config,
+            );
+            let mut n = node.borrow_mut();
+            let total_width = result.bbox.width + n.padding;
+            let total_height = result.bbox.height + n.padding;
+            let rect = insert_first(&result.shape_svg, "rect");
+            set_attr(&rect, "class", "text");
+            set_attr(&rect, "style", &node_styles);
+            set_attr(&rect, "rx", "0");
+            set_attr(&rect, "ry", "0");
+            set_attr(&rect, "x", js_num(-total_width / 2.0));
+            set_attr(&rect, "y", js_num(-total_height / 2.0));
+            set_attr(&rect, "width", js_num(total_width));
+            set_attr(&rect, "height", js_num(total_height));
+            n.width = f32q(total_width);
+            n.height = f32q(total_height);
+            n.intersect = Some(IntersectShape::Rect);
+            result.shape_svg
+        }
+        "card" => {
+            let result = label_helper(
+                parent,
+                node,
+                Some(&get_node_classes(node)),
+                measurer,
+                config,
+            );
+            let mut n = node.borrow_mut();
+            let notch = 12.0;
+            let h = result.bbox.height + n.padding;
+            let w = result.bbox.width + n.padding + notch;
+            let points = vec![
+                Point { x: notch, y: -h },
+                Point { x: w, y: -h },
+                Point { x: w, y: 0.0 },
+                Point { x: 0.0, y: 0.0 },
+                Point {
+                    x: 0.0,
+                    y: -h + notch,
+                },
+                Point { x: notch, y: -h },
+            ];
+            insert_polygon_shape(&result.shape_svg, w, h, &points);
+            n.width = f32q(w);
+            n.height = f32q(h);
+            n.intersect = Some(IntersectShape::Polygon(points));
+            result.shape_svg
+        }
+        "tiltedCylinder" => {
+            let result = label_helper(
+                parent,
+                node,
+                Some(&get_node_classes(node)),
+                measurer,
+                config,
+            );
+            let mut n = node.borrow_mut();
+            let label_padding = n.padding / 2.0;
+            let h = result.bbox.height + label_padding;
+            let ry = h / 2.0;
+            let rx = ry / (2.5 + h / 50.0);
+            let w = result.bbox.width + rx + label_padding;
+            let d = format!(
+                "M0,0\n    a{rx},{ry} 0,0,1 0,{nh}\n    l{w},0\n    a{rx},{ry} 0,0,1 0,{h}\n    M{w},{nh}\n    a{rx},{ry} 0,0,0 0,{h}\n    l{nw},0",
+                rx = js_num(rx),
+                ry = js_num(ry),
+                nh = js_num(-h),
+                w = js_num(w),
+                h = js_num(h),
+                nw = js_num(-w),
+            );
+            let path = insert_first(&result.shape_svg, "path");
+            set_attr(&path, "d", d);
+            set_attr(&path, "class", "basic label-container outer-path");
+            set_attr(&path, "style", node_styles.clone());
+            set_attr(
+                &path,
+                "transform",
+                format!("translate({}, {} )", js_num(-w / 2.0), js_num(h / 2.0)),
+            );
+            set_attr(
+                &result.label,
+                "transform",
+                format!(
+                    "translate({}, {})",
+                    js_num(-(result.bbox.width / 2.0) - rx),
+                    js_num(-(result.bbox.height / 2.0))
+                ),
+            );
+            n.width = f32q(w + 2.0 * rx);
+            n.height = f32q(h);
+            n.intersect = Some(IntersectShape::TiltedCylinder { rx, ry });
+            result.shape_svg
+        }
+        "linedCylinder" => {
+            let result = label_helper(
+                parent,
+                node,
+                Some(&get_node_classes(node)),
+                measurer,
+                config,
+            );
+            let mut n = node.borrow_mut();
+            let pad = n.padding;
+            let w = result.bbox.width + pad * 2.0;
+            let rx = w / 2.0;
+            let ry = rx / (2.5 + w / 50.0);
+            let h = result.bbox.height + ry + pad * 2.0;
+            let outer_offset = h * 0.1;
+            let d = format!(
+                "M0,{ry0} a{rx},{ry} 0,0,0 {w},0 a{rx},{ry} 0,0,0 {nw},0 l0,{h} a{rx},{ry} 0,0,0 {w},0 l0,{nh} M0,{ry1} a{rx},{ry} 0,0,0 {w},0",
+                ry0 = js_num(ry),
+                ry1 = js_num(ry + outer_offset),
+                rx = js_num(rx),
+                ry = js_num(ry),
+                w = js_num(w),
+                nw = js_num(-w),
+                h = js_num(h),
+                nh = js_num(-h),
+            );
+            let path = insert_first(&result.shape_svg, "path");
+            set_attr(&path, "d", d);
+            set_attr(&path, "class", "basic label-container outer-path");
+            set_attr(&path, "style", node_styles.clone());
+            set_attr(
+                &path,
+                "transform",
+                format!(
+                    "translate({}, {})",
+                    js_num(-w / 2.0),
+                    js_num(-(h / 2.0 + ry))
+                ),
+            );
+            set_attr(
+                &result.label,
+                "transform",
+                format!(
+                    "translate({}, {})",
+                    js_num(-(result.bbox.width / 2.0)),
+                    js_num(-(result.bbox.height / 2.0) + ry)
+                ),
+            );
+            let bounds = super::bbox::element_bbox(&path);
+            n.width = f32q(bounds.width());
+            n.height = f32q(bounds.height());
+            n.intersect = Some(IntersectShape::Cylinder { rx, ry });
+            result.shape_svg
+        }
+        "datastore" => {
+            let padding = node.borrow().padding;
+            let g = draw_rect(
+                parent,
+                node,
+                0.0,
+                padding * 2.0,
+                padding,
+                measurer,
+                &node_styles,
+                config,
+            );
+            if let Some(rect) = crate::svg::child_elements(&g)
+                .into_iter()
+                .find(|c| c.borrow().tag == "rect")
+                && let (Some(w), Some(h)) = (
+                    crate::svg::get_attr(&rect, "width"),
+                    crate::svg::get_attr(&rect, "height"),
+                )
+            {
+                set_attr(&rect, "stroke-dasharray", format!("{w} {h}"));
+            }
+            g
+        }
         "note" => {
             let theme = &config.computed_theme;
             let note_bkg = super::themes::get(theme, "noteBkgColor");

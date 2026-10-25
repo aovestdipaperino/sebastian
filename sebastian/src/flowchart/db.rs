@@ -751,6 +751,13 @@ impl FlowDb {
             "trap-t" | "manual" | "trapezoid-top" | "inv-trapezoid" => "inv_trapezoid",
             "dbl-circ" | "double-circle" => "doublecircle",
             "proc" | "process" | "rectangle" => "squareRect",
+            "sm-circ" | "small-circle" | "start" => "stateStart",
+            "framed-circle" | "stop" => "stateEnd",
+            "das" | "h-cyl" | "horizontal-cylinder" => "tiltedCylinder",
+            "lin-cyl" | "disk" | "lined-cylinder" => "linedCylinder",
+            "datastore" | "data-store" => "datastore",
+            "notch-rect" | "notched-rectangle" => "card",
+            "f-circ" | "filled-circle" | "junction" => "filledCircle",
             other => other,
         }
     }

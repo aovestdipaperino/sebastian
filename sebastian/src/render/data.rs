@@ -78,6 +78,11 @@ pub enum IntersectShape {
         rx: f64,
         ry: f64,
     },
+    /// Horizontal (tilted) cylinder: the x offset follows the end caps.
+    TiltedCylinder {
+        rx: f64,
+        ry: f64,
+    },
 }
 
 pub type NodeRef = Rc<RefCell<RenderNode>>;
