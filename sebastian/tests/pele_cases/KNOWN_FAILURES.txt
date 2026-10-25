@@ -108,16 +108,6 @@ mindmap/mindmap-spec020
 mindmap/mindmap-spec021
 mindmap/mindmap-spec022
 mindmap/mindmap-spec023
-packet/packet-docs000
-packet/packet-docs002
-pie/pie-docs001
-pie/pie-spec003
-pie/pie-spec007
-radar/radar-docs000
-radar/radar-docs002
-radar/radar-spec000
-radar/radar-spec001
-radar/radar-spec002
 sankey/sankey-docs000
 sequence/sequence-docs017
 sequence/sequence-docs030

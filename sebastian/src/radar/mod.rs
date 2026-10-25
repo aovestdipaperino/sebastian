@@ -314,14 +314,26 @@ fn closed_round_curve(points: &[(f64, f64)], tension: f64) -> String {
 /// # Errors
 /// Returns a [`RadarParseError`] when the source is not a valid radar diagram.
 pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
+    let cfg = crate::render::config::detect_init(source);
+    let c = |key: &str, d: f64| cfg.section_f64("radar", key).unwrap_or(d);
+    let (width, height) = (c("width", WIDTH), c("height", HEIGHT));
+    let (margin_top, margin_right, margin_bottom, margin_left) = (
+        c("marginTop", MARGIN_TOP),
+        c("marginRight", MARGIN_RIGHT),
+        c("marginBottom", MARGIN_BOTTOM),
+        c("marginLeft", MARGIN_LEFT),
+    );
+    let axis_scale_factor = c("axisScaleFactor", AXIS_SCALE_FACTOR);
+    let axis_label_factor = c("axisLabelFactor", AXIS_LABEL_FACTOR);
+    let curve_tension = c("curveTension", CURVE_TENSION);
     let config = crate::render::config::detect_init(source);
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
     let db = parse(source)?;
 
-    let total_width = WIDTH + MARGIN_LEFT + MARGIN_RIGHT;
-    let total_height = HEIGHT + MARGIN_TOP + MARGIN_BOTTOM;
-    let center_x = MARGIN_LEFT + WIDTH / 2.0;
-    let center_y = MARGIN_TOP + HEIGHT / 2.0;
+    let total_width = width + margin_left + margin_right;
+    let total_height = height + margin_top + margin_bottom;
+    let center_x = margin_left + width / 2.0;
+    let center_y = margin_top + height / 2.0;
 
     let svg = crate::svg::new_element("svg");
     set_attr(&svg, "id", id);
@@ -347,7 +359,7 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
     let style_el = append(&svg, "style");
     set_text(
         &style_el,
-        &crate::render::css::themed_radar_css(id, &theme_vars),
+        &crate::render::css::themed_radar_css(id, &theme_vars, &config.theme_variables),
     );
     let _empty = append(&svg, "g");
 
@@ -359,7 +371,7 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
     );
 
     let num_axes = db.axes.len();
-    let radius = WIDTH.min(HEIGHT) / 2.0;
+    let radius = width.min(height) / 2.0;
     let max_value = db.options.max.unwrap_or_else(|| {
         db.curves
             .iter()
@@ -408,24 +420,24 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
         set_attr(
             &line,
             "x2",
-            js_num(radius * AXIS_SCALE_FACTOR * crate::mathx::cos(angle)),
+            js_num(radius * axis_scale_factor * crate::mathx::cos(angle)),
         );
         set_attr(
             &line,
             "y2",
-            js_num(radius * AXIS_SCALE_FACTOR * crate::mathx::sin(angle)),
+            js_num(radius * axis_scale_factor * crate::mathx::sin(angle)),
         );
         set_attr(&line, "class", "radarAxisLine");
         let text = append(&g, "text");
         set_attr(
             &text,
             "x",
-            js_num(radius * AXIS_LABEL_FACTOR * crate::mathx::cos(angle)),
+            js_num(radius * axis_label_factor * crate::mathx::cos(angle)),
         );
         set_attr(
             &text,
             "y",
-            js_num(radius * AXIS_LABEL_FACTOR * crate::mathx::sin(angle)),
+            js_num(radius * axis_label_factor * crate::mathx::sin(angle)),
         );
         set_attr(&text, "class", "radarAxisLabel");
         set_text(&text, &axis.label);
@@ -448,7 +460,7 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
             .collect();
         if db.options.graticule == "circle" {
             let path = append(&g, "path");
-            set_attr(&path, "d", closed_round_curve(&points, CURVE_TENSION));
+            set_attr(&path, "d", closed_round_curve(&points, curve_tension));
             set_attr(&path, "class", format!("radarCurve-{index}"));
         } else if db.options.graticule == "polygon" {
             let pts: Vec<String> = points
@@ -463,8 +475,8 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
 
     // Legend.
     if db.options.show_legend {
-        let legend_x = (WIDTH / 2.0 + MARGIN_RIGHT) * 3.0 / 4.0;
-        let legend_y = -(HEIGHT / 2.0 + MARGIN_TOP) * 3.0 / 4.0;
+        let legend_x = (width / 2.0 + margin_right) * 3.0 / 4.0;
+        let legend_y = -(height / 2.0 + margin_top) * 3.0 / 4.0;
         let line_height = 20.0;
         for (index, curve) in db.curves.iter().enumerate() {
             let item: Element = append(&g, "g");
@@ -496,7 +508,7 @@ pub fn render_radar(source: &str, id: &str) -> Result<String, RadarParseError> {
         set_text(&title, &db.title);
     }
     set_attr(&title, "x", "0");
-    set_attr(&title, "y", js_num(-HEIGHT / 2.0 - MARGIN_TOP));
+    set_attr(&title, "y", js_num(-height / 2.0 - margin_top));
 
     let mut out = String::new();
     serialize(&svg, &mut out);

@@ -980,14 +980,43 @@ pub fn themed_sankey_css(id: &str, vars: &Map<String, Value>) -> String {
 /// The radar stylesheet (port of `diagrams/radar/styles.ts`). Radar sub-option
 /// numeric defaults are theme constants; `axisColor` follows `lineColor`.
 #[must_use]
-pub fn themed_radar_css(id: &str, vars: &Map<String, Value>) -> String {
-    let v = |key: &str| super::themes::get(vars, key);
+pub fn themed_radar_css(id: &str, vars: &Map<String, Value>, user: &Map<String, Value>) -> String {
     let i = format!("#{id}");
     let mut o = String::new();
     css_prefix(&mut o, &i, vars);
+    // Scalar variables follow the active theme; the nested `radar` options
+    // come from the default theme unless the user sets them.
+    let default_vars = super::themes::theme_variables("default", &Map::new());
+    let v = |key: &str| super::themes::get(vars, key);
+    let radar_opt = |key: &str, default: &str| -> String {
+        user.get("radar").and_then(|r| r.get(key)).map_or_else(
+            || default.to_owned(),
+            |x| match x {
+                Value::String(s) => s.clone(),
+                other => other.to_string(),
+            },
+        )
+    };
     let font_size = v("fontSize");
     let title_color = v("titleColor");
-    let axis_color = v("lineColor");
+    let axis_color = radar_opt(
+        "axisColor",
+        &if user.contains_key("radar") {
+            // A user `radar` object replaces the theme-computed one, which
+            // leaves the default theme's line colour.
+            super::themes::get(&default_vars, "lineColor")
+        } else {
+            v("lineColor")
+        },
+    );
+    let axis_stroke = radar_opt("axisStrokeWidth", "2");
+    let axis_label_size = radar_opt("axisLabelFontSize", "12");
+    let curve_opacity = radar_opt("curveOpacity", "0.5");
+    let curve_stroke = radar_opt("curveStrokeWidth", "2");
+    let grat_color = radar_opt("graticuleColor", "#DEDEDE");
+    let grat_stroke = radar_opt("graticuleStrokeWidth", "1");
+    let grat_opacity = radar_opt("graticuleOpacity", "0.3");
+    let legend_size = radar_opt("legendFontSize", "12");
     rule(
         &mut o,
         &i,
@@ -1000,25 +1029,29 @@ pub fn themed_radar_css(id: &str, vars: &Map<String, Value>) -> String {
         &mut o,
         &i,
         &[" .radarAxisLine"],
-        &format!("stroke:{axis_color};stroke-width:2;"),
+        &format!("stroke:{axis_color};stroke-width:{axis_stroke};"),
     );
     rule(
         &mut o,
         &i,
         &[" .radarAxisLabel"],
-        &format!("dominant-baseline:middle;text-anchor:middle;font-size:12px;color:{axis_color};"),
+        &format!(
+            "dominant-baseline:middle;text-anchor:middle;font-size:{axis_label_size}px;color:{axis_color};"
+        ),
     );
     rule(
         &mut o,
         &i,
         &[" .radarGraticule"],
-        "fill:#DEDEDE;fill-opacity:0.3;stroke:#DEDEDE;stroke-width:1;",
+        &format!(
+            "fill:{grat_color};fill-opacity:{grat_opacity};stroke:{grat_color};stroke-width:{grat_stroke};"
+        ),
     );
     rule(
         &mut o,
         &i,
         &[" .radarLegendText"],
-        "text-anchor:start;font-size:12px;dominant-baseline:hanging;",
+        &format!("text-anchor:start;font-size:{legend_size}px;dominant-baseline:hanging;"),
     );
     for n in 0..12i32 {
         let c = v(&format!("cScale{n}"));
@@ -1026,13 +1059,15 @@ pub fn themed_radar_css(id: &str, vars: &Map<String, Value>) -> String {
             &mut o,
             &i,
             &[&format!(" .radarCurve-{n}")],
-            &format!("color:{c};fill:{c};fill-opacity:0.5;stroke:{c};stroke-width:2;"),
+            &format!(
+                "color:{c};fill:{c};fill-opacity:{curve_opacity};stroke:{c};stroke-width:{curve_stroke};"
+            ),
         );
         rule(
             &mut o,
             &i,
             &[&format!(" .radarLegendBox-{n}")],
-            &format!("fill:{c};fill-opacity:0.5;stroke:{c};"),
+            &format!("fill:{c};fill-opacity:{curve_opacity};stroke:{c};"),
         );
     }
     css_suffix(&mut o, &i, id, vars);

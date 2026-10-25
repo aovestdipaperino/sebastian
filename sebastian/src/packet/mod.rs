@@ -28,7 +28,16 @@ const ROW_HEIGHT: f64 = 32.0;
 const PADDING_X: f64 = 5.0;
 const PADDING_Y: f64 = 15.0;
 const BIT_WIDTH: f64 = 32.0;
-const BITS_PER_ROW: i64 = 32;
+const DEFAULT_BITS_PER_ROW: i64 = 32;
+
+thread_local! {
+    static BITS: std::cell::Cell<i64> = const { std::cell::Cell::new(DEFAULT_BITS_PER_ROW) };
+}
+
+/// `packet.bitsPerRow` of the diagram being parsed or drawn.
+fn bits_per_row() -> i64 {
+    BITS.with(std::cell::Cell::get)
+}
 const MAX_PACKET_SIZE: usize = 10_000;
 
 /// A laid-out block within a word: inclusive bit range and its label.
@@ -114,11 +123,11 @@ fn parse_block_line(line: &str) -> Result<RawBlock, PacketParseError> {
 /// Port of `getNextFittingBlock`: split a block at the row boundary if it
 /// overflows the current row.
 fn next_fitting_block(block: &Block, row: i64) -> (Block, Option<Block>) {
-    if block.end < row * BITS_PER_ROW {
+    if block.end < row * bits_per_row() {
         return (block.clone(), None);
     }
-    let row_end = row * BITS_PER_ROW - 1;
-    let row_start = row * BITS_PER_ROW;
+    let row_end = row * bits_per_row() - 1;
+    let row_start = row * bits_per_row();
     (
         Block {
             start: block.start,
@@ -203,11 +212,11 @@ fn parse(source: &str) -> Result<Db, PacketParseError> {
             end: e,
             label: rb.label,
         };
-        while word.len() <= (BITS_PER_ROW + 1) as usize && words.len() < MAX_PACKET_SIZE {
+        while word.len() <= (bits_per_row() + 1) as usize && words.len() < MAX_PACKET_SIZE {
             let (block, next) = next_fitting_block(&cur, row);
             let block_end = block.end;
             word.push(block);
-            if block_end + 1 == row * BITS_PER_ROW {
+            if block_end + 1 == row * bits_per_row() {
                 if !word.is_empty() {
                     words.push(std::mem::take(&mut word));
                 }
@@ -226,10 +235,16 @@ fn parse(source: &str) -> Result<Db, PacketParseError> {
     Ok(Db { title, words })
 }
 
-fn draw_word(group: &crate::svg::Element, word: &[Block], row_number: usize, hand_drawn: bool) {
+fn draw_word(
+    group: &crate::svg::Element,
+    word: &[Block],
+    row_number: usize,
+    hand_drawn: bool,
+    show_bits: bool,
+) {
     let word_y = row_number as f64 * (ROW_HEIGHT + PADDING_Y) + PADDING_Y;
     for block in word {
-        let block_x = (block.start % BITS_PER_ROW) as f64 * BIT_WIDTH + 1.0;
+        let block_x = (block.start % bits_per_row()) as f64 * BIT_WIDTH + 1.0;
         let width = (block.end - block.start + 1) as f64 * BIT_WIDTH - PADDING_X;
 
         let rect = append(group, "rect");
@@ -259,7 +274,9 @@ fn draw_word(group: &crate::svg::Element, word: &[Block], row_number: usize, han
         set_attr(&label, "text-anchor", "middle");
         set_text(&label, &block.label);
 
-        // showBits is always true for the default config.
+        if !show_bits {
+            continue;
+        }
         let is_single = block.end == block.start;
         let bit_number_y = word_y - 2.0;
         let start_text = append(group, "text");
@@ -298,13 +315,30 @@ pub fn render_packet(source: &str, id: &str) -> Result<String, PacketParseError>
     let config = crate::render::config::detect_init(source);
     let hand_drawn = config.is_hand_drawn();
     let theme_vars = crate::render::themes::theme_variables(&config.theme, &config.theme_variables);
-    let db = parse(source)?;
+    let bits = config
+        .section_f64("packet", "bitsPerRow")
+        .map_or(DEFAULT_BITS_PER_ROW, |b| b as i64);
+    BITS.with(|c| c.set(bits));
+    let show_bits = config
+        .raw
+        .get("packet")
+        .and_then(|c| c.get("showBits"))
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(true);
+    let parsed = parse(source);
+    let db = match parsed {
+        Ok(db) => db,
+        Err(e) => {
+            BITS.with(|c| c.set(DEFAULT_BITS_PER_ROW));
+            return Err(e);
+        }
+    };
 
     let total_row_height = ROW_HEIGHT + PADDING_Y;
     let title_present = !db.title.is_empty();
     let svg_height = total_row_height * (db.words.len() as f64 + 1.0)
         - if title_present { 0.0 } else { ROW_HEIGHT };
-    let svg_width = BIT_WIDTH * BITS_PER_ROW as f64 + 2.0;
+    let svg_width = BIT_WIDTH * bits_per_row() as f64 + 2.0;
 
     let svg = crate::svg::new_element("svg");
     set_attr(&svg, "id", id);
@@ -336,7 +370,7 @@ pub fn render_packet(source: &str, id: &str) -> Result<String, PacketParseError>
 
     for (row_number, word) in db.words.iter().enumerate() {
         let group = append(&svg, "g");
-        draw_word(&group, word, row_number, hand_drawn);
+        draw_word(&group, word, row_number, hand_drawn, show_bits);
     }
 
     let title = append(&svg, "text");
@@ -351,5 +385,6 @@ pub fn render_packet(source: &str, id: &str) -> Result<String, PacketParseError>
 
     let mut out = String::new();
     serialize(&svg, &mut out);
+    BITS.with(|c| c.set(DEFAULT_BITS_PER_ROW));
     Ok(out)
 }

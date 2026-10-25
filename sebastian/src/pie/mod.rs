@@ -152,7 +152,6 @@ fn arc_path(r1: f64, start_angle: f64, end_angle: f64) -> String {
             round3(x0),
             round3(y0)
         ));
-        push("L0,0".to_owned());
     } else {
         let x01 = r1 * cos(a0);
         let y01 = r1 * sin(a0);
@@ -198,9 +197,12 @@ pub fn render_pie(source: &str, id: &str) -> Result<String, PieParseError> {
     const LEGEND_SPACING: f64 = 4.0;
     const HEIGHT: f64 = 450.0;
     let pie_width = HEIGHT;
-    let text_position = 0.75;
+    let text_position = config.section_f64("pie", "textPosition").unwrap_or(0.75);
     let radius = pie_width.min(HEIGHT) / 2.0 - MARGIN;
-    let outer_stroke_width = 2.0;
+    let outer_stroke_width = crate::render::themes::get(&theme_vars, "pieOuterStrokeWidth")
+        .trim_end_matches("px")
+        .parse::<f64>()
+        .unwrap_or(2.0);
 
     let svg = crate::svg::new_element("svg");
     set_attr(&svg, "id", id);

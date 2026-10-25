@@ -606,6 +606,54 @@ fn update_base(vars: &mut Vars) {
     set(vars, "specialStateColor", get(vars, "lineColor"));
     set_if(vars, "errorBkgColor", |v| get(v, "tertiaryColor"));
     set_if(vars, "errorTextColor", |v| get(v, "tertiaryTextColor"));
+    // Colour scale: set once per updateColors pass, then darkened.
+    set_if(vars, "cScale0", |v| get(v, "primaryColor"));
+    set_if(vars, "cScale1", |v| get(v, "secondaryColor"));
+    set_if(vars, "cScale2", |v| get(v, "tertiaryColor"));
+    for (i, h, l) in [
+        (3, 30.0, 0.0),
+        (4, 60.0, 0.0),
+        (5, 90.0, 0.0),
+        (6, 120.0, 0.0),
+        (7, 150.0, 0.0),
+        (8, 210.0, 150.0),
+        (9, 270.0, 0.0),
+        (10, 300.0, 0.0),
+        (11, 330.0, 0.0),
+    ] {
+        set_if(vars, &format!("cScale{i}"), |v| {
+            if l == 0.0 {
+                adjust(&get(v, "primaryColor"), &[('h', h)])
+            } else {
+                adjust(&get(v, "primaryColor"), &[('h', h), ('l', l)])
+            }
+        });
+    }
+    for i in 0..12 {
+        let key = format!("cScale{i}");
+        let amount = if dm { 75.0 } else { 25.0 };
+        let darkened = darken(&get(vars, &key), amount);
+        set(vars, &key, darkened);
+    }
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleInv{i}"), |v| {
+            invert(&get(v, &format!("cScale{i}")))
+        });
+        set_if(vars, &format!("cScalePeer{i}"), |v| {
+            let c = get(v, &format!("cScale{i}"));
+            if dm {
+                lighten(&c, 10.0)
+            } else {
+                darken(&c, 10.0)
+            }
+        });
+    }
+    set_if(vars, "scaleLabelColor", |v| get(v, "labelTextColor"));
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleLabel{i}"), |v| {
+            get(v, "scaleLabelColor")
+        });
+    }
     set(vars, "gradientStart", get(vars, "primaryBorderColor"));
     set(vars, "gradientStop", get(vars, "secondaryBorderColor"));
 }

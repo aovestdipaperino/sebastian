@@ -8,6 +8,7 @@
 
 use crate::flowchart::parser::{ParseError, parse};
 use crate::render::{self, DiagramChrome, render_unified};
+use std::fmt::Write as _;
 
 /// Detects the mermaid diagram type of `source` from its header keyword.
 #[must_use]
@@ -186,6 +187,31 @@ fn render_diagram_inner(source: &str, id: &str) -> Result<String, Box<dyn std::e
     let fm_title = crate::frontmatter::title(source);
     // accTitle / accDescr become <title>/<desc> after rendering.
     let (stripped, a11y) = crate::a11y::extract(&normalized);
+    // Diagrams whose grammar has a `title` statement take the front-matter
+    // title through it.
+    let stripped = match (&fm_title, detect_diagram_type(&stripped)) {
+        (Some(t), "radar" | "packet")
+            if !stripped
+                .lines()
+                .any(|l| l.trim_start().starts_with("title")) =>
+        {
+            let mut out = String::new();
+            let mut done = false;
+            for line in stripped.split_inclusive('\n') {
+                out.push_str(line);
+                let t_line = line.trim();
+                if !done && !t_line.is_empty() && !t_line.starts_with("%%") {
+                    done = true;
+                    if !line.ends_with('\n') {
+                        out.push('\n');
+                    }
+                    let _ = writeln!(out, "title {t}");
+                }
+            }
+            out
+        }
+        _ => stripped,
+    };
     let source = stripped.as_str();
     // HAND-DRAWN EXTENSION: the handwritten label font applies to every
     // diagram type, so it is injected once here instead of in each renderer.
