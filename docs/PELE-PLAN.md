@@ -58,7 +58,24 @@ Exit: written comparison in FINDINGS.md plus targeted fixes.
 cynefin, railroad, usecase, swimlane, agentflow behind `mermaid-extensions`,
 only if wanted. Original renderers, no byte-exact claim.
 
+### Goal: support mermaid 12.1.0
+Mermaid 11.15.0 stays the byte-exact baseline until a 12.1.0 harness exists.
+Then, in order:
+1. Add a second pinned harness (`scripts/setup-harness.sh` option for 12.1.0)
+   and render every corpus source with it into a separate reference set.
+2. Diff the 11.15.0 and 12.1.0 references per diagram type to list what
+   changed (CSS, theme variables, shapes, layout, new diagram types).
+3. Make the renderer version-selectable (config or `--mermaid-version`),
+   defaulting to 11.15.0, and port the 12.1.0 deltas behind it.
+4. Run the pele corpus against both reference sets, each with its own
+   `KNOWN_FAILURES` ratchet.
+5. Decide per new type (cynefin, railroad, usecase, swimlane, agentflow)
+   whether 12.1.0 ships it; if so, port it from the harness source.
+Exit: the corpus matches 12.1.0 byte for byte at the level 11.15.0 does today,
+and the README states which versions are supported.
+
 ## Rules
 - Attribute pele (MIT, kepano) in a NOTICE entry for any ported logic.
-- Byte-exact target is always mermaid 11.15.0 from the harness, never pele.
+- Byte-exact target is mermaid 11.15.0 from the harness (12.1.0 once its
+  harness lands, see the goal above), never pele.
 - Each type: fixtures, corpus test, README row, CHANGELOG entry, clippy clean.
