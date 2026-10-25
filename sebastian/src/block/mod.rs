@@ -28,6 +28,7 @@
 )]
 
 use std::collections::HashMap;
+use std::fmt::Write;
 
 use crate::render::shapes::measure_label_sized;
 use crate::svg::{
@@ -74,6 +75,8 @@ struct Block {
     styles: Vec<String>,
     classes: Vec<String>,
     size: Option<Size>,
+    /// Block-arrow directions (`<["x"]>(right, down)`).
+    directions: Vec<String>,
     /// True once `label` has been assigned (mirrors JS truthiness checks).
     label_set: bool,
 }
@@ -91,6 +94,7 @@ impl Block {
             styles: Vec::new(),
             classes: Vec::new(),
             size: None,
+            directions: Vec::new(),
             label_set: false,
         }
     }
@@ -109,12 +113,15 @@ enum Stmt {
         typ: String,
         label: Option<String>,
         width_in_columns: f64,
+        directions: Vec<String>,
     },
     Column(i64),
     Space(i64),
     /// A composite: (explicit id or None, children statements).
     Composite {
         id: Option<String>,
+        label: Option<String>,
+        width_in_columns: f64,
         children: Vec<Stmt>,
     },
     ClassDef {
@@ -207,7 +214,9 @@ const SHAPE_STARTS: &[(&str, &str)] = &[
     ("((", "))"),
     ("{{", "}}"),
     ("[/", "/]"),
+    ("[/", "\\]"),
     ("[\\", "\\]"),
+    ("[\\", "/]"),
     ("[", "]"),
     ("(", ")"),
     ("{", "}"),
@@ -310,8 +319,35 @@ impl<'a> Parser<'a> {
 
     /// Attempts to read a shape `nodeShapeNLabel` at the current position,
     /// returning (typeStr, label).
-    fn read_shape(&mut self) -> Option<(String, String)> {
+    fn read_shape(&mut self) -> Option<(String, String, Vec<String>)> {
         let rest = &self.src[self.pos..];
+        if rest.starts_with("<[") {
+            let save = self.pos;
+            self.pos += 2;
+            self.skip_ws_inline();
+            if self.pos < self.s.len() && self.s[self.pos] == b'"' {
+                let label = self.read_string();
+                self.skip_ws_inline();
+                if self.src[self.pos..].starts_with("]>") {
+                    self.pos += 2;
+                    self.skip_ws_inline();
+                    if self.src[self.pos..].starts_with('(')
+                        && let Some(close) = self.src[self.pos..].find(')')
+                    {
+                        let inner = &self.src[self.pos + 1..self.pos + close];
+                        let dirs: Vec<String> = inner
+                            .split(',')
+                            .map(|d| d.trim().to_owned())
+                            .filter(|d| !d.is_empty())
+                            .collect();
+                        self.pos += close + 1;
+                        return Some(("<[]>".to_owned(), label, dirs));
+                    }
+                }
+            }
+            self.pos = save;
+            return None;
+        }
         for (start, end) in SHAPE_STARTS {
             if rest.starts_with(start) {
                 let save = self.pos;
@@ -323,7 +359,7 @@ impl<'a> Parser<'a> {
                     if self.src[self.pos..].starts_with(end) {
                         self.pos += end.len();
                         let type_str = format!("{start}{end}");
-                        return Some((type_str, label));
+                        return Some((type_str, label, Vec::new()));
                     }
                 }
                 self.pos = save;
@@ -402,7 +438,7 @@ impl<'a> Parser<'a> {
 
 fn parse(src: &str) -> Result<Vec<Stmt>, BlockParseError> {
     // prepareTextForParsing: trim each row, collapse blank lines, trim.
-    let prepared = prepare_text(src);
+    let prepared = decode_numeric_entities(&strip_style_semicolons(&prepare_text(src)));
     let mut p = Parser::new(&prepared);
     p.skip_ws();
     // BLOCK_DIAGRAM_KEY
@@ -509,16 +545,34 @@ fn parse_statement(p: &mut Parser) -> Result<Vec<Stmt>, BlockParseError> {
         if after < p.s.len() && p.s[after] == b':' {
             p.pos = after + 1;
             p.skip_ws_inline();
-            let id = p.read_node_id();
+            // `block:` takes a full nodeStatement: id, shape label, span.
+            let mut head = Vec::new();
+            parse_single_node(p, &mut head)?;
+            let Some(Stmt::Node {
+                id,
+                label,
+                width_in_columns,
+                ..
+            }) = head.pop()
+            else {
+                return Err(BlockParseError("bad block id".into()));
+            };
             let children = parse_document(p, true)?;
             return Ok(vec![Stmt::Composite {
                 id: Some(id),
+                label,
+                width_in_columns,
                 children,
             }]);
         }
         p.pos = after;
         let children = parse_document(p, true)?;
-        return Ok(vec![Stmt::Composite { id: None, children }]);
+        return Ok(vec![Stmt::Composite {
+            id: None,
+            label: None,
+            width_in_columns: 1.0,
+            children,
+        }]);
     }
     // node statement (with optional link chains)
     parse_node_statement(p)
@@ -569,10 +623,10 @@ fn parse_single_node(p: &mut Parser, out: &mut Vec<Stmt>) -> Result<String, Bloc
             p.pos
         )));
     }
-    let (typ, label) = if let Some((type_str, label)) = p.read_shape() {
-        (type_str_to_type(&type_str).to_owned(), Some(label))
+    let (typ, label, directions) = if let Some((type_str, label, dirs)) = p.read_shape() {
+        (type_str_to_type(&type_str).to_owned(), Some(label), dirs)
     } else {
-        ("na".to_owned(), None)
+        ("na".to_owned(), None, Vec::new())
     };
     // optional :N size
     let mut width_in_columns = 1.0;
@@ -588,6 +642,7 @@ fn parse_single_node(p: &mut Parser, out: &mut Vec<Stmt>) -> Result<String, Bloc
         typ,
         label,
         width_in_columns,
+        directions,
     });
     Ok(id)
 }
@@ -749,12 +804,14 @@ fn populate(db: &mut Db, stmts: &[Stmt], parent: usize) -> Vec<usize> {
                 typ,
                 label,
                 width_in_columns,
+                directions,
             } => {
                 let mut b = Block::new(id);
                 b.typ = typ.clone();
+                b.directions.clone_from(directions);
                 b.width_in_columns = *width_in_columns;
                 if let Some(l) = label {
-                    b.label = l.clone();
+                    b.label = crate::flowchart::db::decode_html_entities(l);
                     b.label_set = true;
                 } else {
                     b.label = id.clone();
@@ -767,12 +824,15 @@ fn populate(db: &mut Db, stmts: &[Stmt], parent: usize) -> Vec<usize> {
             }
             Stmt::Composite {
                 id: comp_id,
+                label: comp_label,
+                width_in_columns: comp_width,
                 children: comp_children,
             } => {
                 let id = comp_id.clone().unwrap_or_else(|| db.generate_id());
                 let mut b = Block::new(&id);
                 b.typ = "composite".to_owned();
-                b.label = String::new();
+                b.label = comp_label.clone().unwrap_or_default();
+                b.width_in_columns = *comp_width;
                 b.label_set = true;
                 let idx = insert_or_merge(db, b);
                 if let Some(i) = idx {
@@ -801,6 +861,7 @@ fn insert_or_merge(db: &mut Db, b: Block) -> Option<usize> {
     if let Some(&existing) = db.index.get(&b.id) {
         if b.typ != "na" {
             db.blocks[existing].typ = b.typ.clone();
+            db.blocks[existing].directions = b.directions.clone();
         }
         if b.label != b.id {
             db.blocks[existing].label = b.label.clone();
@@ -878,13 +939,300 @@ fn get_max_child_size(db: &Db, idx: usize) -> (f64, f64) {
 
 /// The label bbox for a node (createLabel path: width = Infinity → no wrap).
 fn label_bbox(measurer: &TextMeasurer, label: &str) -> (f64, f64) {
+    // A whitespace-only label collapses to nothing in the table-cell div.
+    if !label.is_empty() && label.chars().all(|c| c == ' ') {
+        return (0.0, 0.0);
+    }
     let b = measure_label_sized(measurer, label, f64::INFINITY, FONT_SIZE);
     (b.width, b.height)
 }
 
+/// `getArrowPoints` (blockArrowHelper.ts): the outline of a block arrow.
+fn arrow_points(
+    dirs: &[String],
+    bbox_w: f64,
+    padding: f64,
+    width: Option<f64>,
+    bbox_h: f64,
+) -> Vec<(f64, f64)> {
+    let has = |d: &str| {
+        dirs.iter().any(|x| {
+            x == d
+                || (x == "x" && (d == "right" || d == "left"))
+                || (x == "y" && (d == "up" || d == "down"))
+        })
+    };
+    let (right, left, up, down) = (has("right"), has("left"), has("up"), has("down"));
+    let height = bbox_h + 2.0 * padding;
+    let midpoint = height / 2.0;
+    let width = width.unwrap_or(bbox_w + 2.0 * midpoint + padding);
+    let pad = padding / 2.0;
+    if right && left && up && down {
+        return vec![
+            (0.0, 0.0),
+            (midpoint, 0.0),
+            (width / 2.0, 2.0 * pad),
+            (width - midpoint, 0.0),
+            (width, 0.0),
+            (width, -height / 3.0),
+            (width + 2.0 * pad, -height / 2.0),
+            (width, (-2.0 * height) / 3.0),
+            (width, -height),
+            (width - midpoint, -height),
+            (width / 2.0, -height - 2.0 * pad),
+            (midpoint, -height),
+            (0.0, -height),
+            (0.0, (-2.0 * height) / 3.0),
+            (-2.0 * pad, -height / 2.0),
+            (0.0, -height / 3.0),
+        ];
+    }
+    if right && left && up {
+        return vec![
+            (midpoint, 0.0),
+            (width - midpoint, 0.0),
+            (width, -height / 2.0),
+            (width - midpoint, -height),
+            (midpoint, -height),
+            (0.0, -height / 2.0),
+        ];
+    }
+    if right && left && down {
+        return vec![
+            (0.0, 0.0),
+            (midpoint, -height),
+            (width - midpoint, -height),
+            (width, 0.0),
+        ];
+    }
+    if right && up && down {
+        return vec![
+            (0.0, 0.0),
+            (width, -midpoint),
+            (width, -height + midpoint),
+            (0.0, -height),
+        ];
+    }
+    if left && up && down {
+        return vec![
+            (width, 0.0),
+            (0.0, -midpoint),
+            (0.0, -height + midpoint),
+            (width, -height),
+        ];
+    }
+    if right && left {
+        return vec![
+            (midpoint, 0.0),
+            (midpoint, -pad),
+            (width - midpoint, -pad),
+            (width - midpoint, 0.0),
+            (width, -height / 2.0),
+            (width - midpoint, -height),
+            (width - midpoint, -height + pad),
+            (midpoint, -height + pad),
+            (midpoint, -height),
+            (0.0, -height / 2.0),
+        ];
+    }
+    if up && down {
+        return vec![
+            (width / 2.0, 0.0),
+            (0.0, -pad),
+            (midpoint, -pad),
+            (midpoint, -height + pad),
+            (0.0, -height + pad),
+            (width / 2.0, -height),
+            (width, -height + pad),
+            (width - midpoint, -height + pad),
+            (width - midpoint, -pad),
+            (width, -pad),
+        ];
+    }
+    if right && up {
+        return vec![(0.0, 0.0), (width, -midpoint), (0.0, -height)];
+    }
+    if right && down {
+        return vec![(0.0, 0.0), (width, 0.0), (0.0, -height)];
+    }
+    if left && up {
+        return vec![(width, 0.0), (0.0, -midpoint), (width, -height)];
+    }
+    if left && down {
+        return vec![(width, 0.0), (0.0, 0.0), (width, -height)];
+    }
+    if right {
+        return vec![
+            (midpoint, -pad),
+            (midpoint, -pad),
+            (width - midpoint, -pad),
+            (width - midpoint, 0.0),
+            (width, -height / 2.0),
+            (width - midpoint, -height),
+            (width - midpoint, -height + pad),
+            (midpoint, -height + pad),
+            (midpoint, -height + pad),
+        ];
+    }
+    if left {
+        return vec![
+            (midpoint, 0.0),
+            (midpoint, -pad),
+            (width - midpoint, -pad),
+            (width - midpoint, -height + pad),
+            (midpoint, -height + pad),
+            (midpoint, -height),
+            (0.0, -height / 2.0),
+        ];
+    }
+    if up {
+        return vec![
+            (midpoint, -pad),
+            (midpoint, -height + pad),
+            (0.0, -height + pad),
+            (width / 2.0, -height),
+            (width, -height + pad),
+            (width - midpoint, -height + pad),
+            (width - midpoint, -pad),
+        ];
+    }
+    if down {
+        return vec![
+            (width / 2.0, 0.0),
+            (0.0, -pad),
+            (midpoint, -pad),
+            (midpoint, -height + pad),
+            (width - midpoint, -height + pad),
+            (width - midpoint, -pad),
+            (width, -pad),
+        ];
+    }
+    vec![(0.0, 0.0)]
+}
+
+/// Drawn width, height and outline points of a polygon-based shape.
+type PolygonGeom = (f64, f64, Vec<(f64, f64)>);
+
+/// Polygon outline, drawn width and height for the polygon-based shapes of
+/// `dagre-wrapper/nodes.js`. `positioned` carries the layout size and the
+/// column span for the second (drawing) pass.
+fn polygon_geom(b: &Block, lw: f64, lh: f64, positioned: Option<&Size>) -> Option<PolygonGeom> {
+    let w = lw + PADDING;
+    let h = lh + PADDING;
+    Some(match b.typ.as_str() {
+        "hexagon" => {
+            let h = positioned.map_or(h, |s| s.height);
+            let m = h / 4.0;
+            let w = positioned.map_or(lw + 2.0 * m + PADDING, |s| s.width);
+            (
+                w,
+                h,
+                vec![
+                    (m, 0.0),
+                    (w - m, 0.0),
+                    (w, -h / 2.0),
+                    (w - m, -h),
+                    (m, -h),
+                    (0.0, -h / 2.0),
+                ],
+            )
+        }
+        "block_arrow" => {
+            let ah = lh + 2.0 * PADDING;
+            let natural = lw + 2.0 * (ah / 2.0) + PADDING;
+            let aw = match positioned {
+                Some(s) if b.width_in_columns > 1.0 && s.width > natural => s.width,
+                _ => natural,
+            };
+            (
+                aw,
+                ah,
+                arrow_points(&b.directions, lw, PADDING, Some(aw), lh),
+            )
+        }
+        "rect_left_inv_arrow" => (
+            w,
+            h,
+            vec![
+                (-h / 2.0, 0.0),
+                (w, 0.0),
+                (w, -h),
+                (-h / 2.0, -h),
+                (0.0, -h / 2.0),
+            ],
+        ),
+        "lean_right" => (
+            w,
+            h,
+            vec![
+                ((-2.0 * h) / 6.0, 0.0),
+                (w - h / 6.0, 0.0),
+                (w + (2.0 * h) / 6.0, -h),
+                (h / 6.0, -h),
+            ],
+        ),
+        "lean_left" => (
+            w,
+            h,
+            vec![
+                ((2.0 * h) / 6.0, 0.0),
+                (w + h / 6.0, 0.0),
+                (w - (2.0 * h) / 6.0, -h),
+                (-h / 6.0, -h),
+            ],
+        ),
+        "trapezoid" => (
+            w,
+            h,
+            vec![
+                ((-2.0 * h) / 6.0, 0.0),
+                (w + (2.0 * h) / 6.0, 0.0),
+                (w - h / 6.0, -h),
+                (h / 6.0, -h),
+            ],
+        ),
+        "inv_trapezoid" => (
+            w,
+            h,
+            vec![
+                (h / 6.0, 0.0),
+                (w - h / 6.0, 0.0),
+                (w + (2.0 * h) / 6.0, -h),
+                ((-2.0 * h) / 6.0, -h),
+            ],
+        ),
+        _ => return None,
+    })
+}
+
+/// `cylinder` (nodes.js): width, ellipse ry and body height.
+fn cylinder_dims(lw: f64, lh: f64) -> (f64, f64, f64) {
+    let w = lw + PADDING;
+    let rx = w / 2.0;
+    let ry = rx / (2.5 + w / 50.0);
+    (w, ry, lh + ry + PADDING)
+}
+
 /// The rendered node's `getBBox` size for a given shape (sizing pass).
-fn node_bbox_size(typ: &str, lw: f64, lh: f64) -> (f64, f64) {
+fn node_bbox_size(b: &Block, lw: f64, lh: f64) -> (f64, f64) {
+    if let Some((_, _, pts)) = polygon_geom(b, lw, lh, None) {
+        // Chrome keeps polygon coordinates and the resulting box in f32.
+        let (mut x0, mut x1, mut y0, mut y1) = (f32::MAX, f32::MIN, f32::MAX, f32::MIN);
+        for &(x, y) in &pts {
+            let (x, y) = (x as f32, y as f32);
+            x0 = x0.min(x);
+            x1 = x1.max(x);
+            y0 = y0.min(y);
+            y1 = y1.max(y);
+        }
+        return (f64::from(x1 - x0), f64::from(y1 - y0));
+    }
+    let typ = b.typ.as_str();
     match typ {
+        "cylinder" => {
+            let (w, ry, h) = cylinder_dims(lw, lh);
+            (w, f64::from((h + 2.0 * ry) as f32))
+        }
         "circle" => {
             let d = lw + PADDING;
             (d, d)
@@ -903,6 +1251,8 @@ fn node_bbox_size(typ: &str, lw: f64, lh: f64) -> (f64, f64) {
             (w, h)
         }
         "subroutine" => (lw + PADDING + 16.0, lh + PADDING),
+        // Composites are built with node.padding = 0.
+        "composite" => (lw, lh),
         // rect / composite / square / round / na …
         _ => (lw + PADDING, lh + PADDING),
     }
@@ -915,7 +1265,7 @@ fn calculate_block_sizes(db: &mut Db, children: &[usize], measurer: &TextMeasure
     for &c in children {
         if db.blocks[c].typ != "group" {
             let (lw, lh) = label_bbox(measurer, &db.blocks[c].label);
-            let (w, h) = node_bbox_size(&db.blocks[c].typ, lw, lh);
+            let (w, h) = node_bbox_size(&db.blocks[c], lw, lh);
             db.blocks[c].size = Some(Size {
                 width: w,
                 height: h,
@@ -1144,6 +1494,75 @@ fn find_bounds(db: &Db, idx: usize, bounds: (f64, f64, f64, f64)) -> (f64, f64, 
 /// Port of `getStylesFromArray`: returns (style, labelStyle). `color:` and
 /// `text-align:` declarations go to labelStyle; the rest to style. Each keeps a
 /// trailing `;`.
+/// Browser serialisation of a CSS colour value: hex colours become `rgb()`.
+fn css_color(v: &str) -> String {
+    let hex = v.strip_prefix('#').unwrap_or("");
+    let digits: Option<Vec<u32>> = hex.chars().map(|c| c.to_digit(16)).collect();
+    match (digits, hex.len()) {
+        (Some(d), 3) => format!("rgb({}, {}, {})", d[0] * 17, d[1] * 17, d[2] * 17),
+        (Some(d), 6) => format!(
+            "rgb({}, {}, {})",
+            d[0] * 16 + d[1],
+            d[2] * 16 + d[3],
+            d[4] * 16 + d[5]
+        ),
+        _ => v.to_owned(),
+    }
+}
+
+/// `encodeEntities`: on a `style` / `classDef` line with a colon, a hash
+/// value and a later `;`, the line's last `;` is dropped before entities are
+/// encoded (`/style.*:\S*#.*;/`).
+fn strip_style_semicolons(text: &str) -> String {
+    let strip = |line: &str| -> Option<String> {
+        for key in ["style", "classDef"] {
+            let Some(at) = line.find(key) else { continue };
+            let rest = &line[at + key.len()..];
+            for (ci, _) in rest.match_indices(':') {
+                let after = &rest[ci + 1..];
+                let run = after.find(char::is_whitespace).unwrap_or(after.len());
+                if let Some(h) = after[..run].find('#')
+                    && let Some(semi) = after[h..].rfind(';')
+                {
+                    let abs = line.len() - after.len() + h + semi;
+                    let mut out = line.to_owned();
+                    out.remove(abs);
+                    return Some(out);
+                }
+            }
+        }
+        None
+    };
+    text.lines()
+        .map(|l| strip(l).unwrap_or_else(|| l.to_owned()))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Mermaid encodes `#123;` as an entity before parsing, so a numeric `#NNN;`
+/// in a style value ends up as that character.
+fn decode_numeric_entities(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(i) = rest.find('#') {
+        out.push_str(&rest[..i]);
+        let tail = &rest[i + 1..];
+        let digits = tail.bytes().take_while(u8::is_ascii_digit).count();
+        if digits > 0
+            && tail.as_bytes().get(digits) == Some(&b';')
+            && let Some(c) = tail[..digits].parse::<u32>().ok().and_then(char::from_u32)
+        {
+            out.push(c);
+            rest = &tail[digits + 1..];
+        } else {
+            out.push('#');
+            rest = tail;
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 fn styles_from_array(arr: &[String]) -> (String, String) {
     let mut style = String::new();
     let mut label_style = String::new();
@@ -1168,13 +1587,24 @@ fn build_label(shape_svg: &Element, label: &str, lw: f64, lh: f64, label_style: 
     set_attr(&fo, "width", js_num(lw));
     set_attr(&fo, "height", js_num(lh));
     let div = append_xhtml(&fo, "div");
-    set_attr(&div, "xmlns", "http://www.w3.org/1999/xhtml");
-    set_attr(
-        &div,
-        "style",
-        "display: table-cell; white-space: nowrap; line-height: 1.5;",
-    );
+    let div_style = "display: table-cell; white-space: nowrap; line-height: 1.5;";
+    if label_style.is_empty() {
+        set_attr(&div, "xmlns", "http://www.w3.org/1999/xhtml");
+        set_attr(&div, "style", div_style);
+    } else {
+        // `applyStyle` sets the CSS properties before the namespace, and the
+        // browser serialises them normalised ahead of the fixed ones.
+        let mut props = String::new();
+        for (k, v) in label_style.split(';').filter_map(|d| d.split_once(':')) {
+            let _ = write!(props, "{}: {}; ", k.trim(), css_color(v.trim()));
+        }
+        set_attr(&div, "style", format!("{props}{div_style}"));
+        set_attr(&div, "xmlns", "http://www.w3.org/1999/xhtml");
+    }
     let span = append_xhtml(&div, "span");
+    if !label_style.is_empty() {
+        set_attr(&span, "style", label_style);
+    }
     set_attr(&span, "class", "nodeLabel");
     if !label.is_empty() {
         let p = append_xhtml(&span, "p");
@@ -1217,7 +1647,7 @@ fn insert_block(parent: &Element, db: &Db, idx: usize, diagram_id: &str, measure
     // getStylesFromArray: split into shape style and label style.
     let (style, label_style) = styles_from_array(&b.styles);
     build_label(&g, &b.label, lw, lh, &label_style);
-    insert_shape(&g, &b.typ, lw, lh, &size, &style);
+    insert_shape(&g, b, lw, lh, &size, &style);
 
     // positionNode: translate(x, y)
     set_attr(
@@ -1228,9 +1658,39 @@ fn insert_block(parent: &Element, db: &Db, idx: usize, diagram_id: &str, measure
 }
 
 /// Inserts the shape element as first-child of the shapeSvg group.
-fn insert_shape(g: &Element, typ: &str, lw: f64, lh: f64, size: &Size, style: &str) {
+fn insert_shape(g: &Element, b: &Block, lw: f64, lh: f64, size: &Size, style: &str) {
     let half_padding = PADDING / 2.0;
+    let typ = b.typ.as_str();
+    if let Some((w, h, points)) = polygon_geom(b, lw, lh, Some(size)) {
+        insert_polygon(g, w, h, &points, style);
+        return;
+    }
     match typ {
+        "cylinder" => {
+            let (w, ry, h) = cylinder_dims(lw, lh);
+            let rx = w / 2.0;
+            let (rxs, rys, ws, hs) = (js_num(rx), js_num(ry), js_num(w), js_num(h));
+            let path = insert_first(g, "path");
+            set_attr(&path, "style", style);
+            set_attr(
+                &path,
+                "d",
+                format!(
+                    "M 0,{rys} a {rxs},{rys} 0,0,0 {ws} 0 a {rxs},{rys} 0,0,0 {} 0 l 0,{hs} a {rxs},{rys} 0,0,0 {ws} 0 l 0,{}",
+                    js_num(-w),
+                    js_num(-h)
+                ),
+            );
+            set_attr(
+                &path,
+                "transform",
+                format!(
+                    "translate({},{})",
+                    js_num(-w / 2.0),
+                    js_num(-(h / 2.0 + ry))
+                ),
+            );
+        }
         "circle" => {
             let c = insert_first(g, "circle");
             set_attr(&c, "style", style);
@@ -1242,6 +1702,12 @@ fn insert_shape(g: &Element, typ: &str, lw: f64, lh: f64, size: &Size, style: &s
         }
         "doublecircle" => {
             let group = insert_first(g, "g");
+            let node_class = if b.classes.is_empty() {
+                "default".to_owned()
+            } else {
+                b.classes.join(" ")
+            };
+            set_attr(&group, "class", format!("{node_class} flowchart-label"));
             let outer = append(&group, "circle");
             let inner = append(&group, "circle");
             for (circ, extra) in [(&outer, 5.0f64), (&inner, 0.0)] {
