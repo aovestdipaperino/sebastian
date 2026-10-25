@@ -347,7 +347,7 @@ pub fn render_timeline(source: &str, id: &str) -> Result<String, TimelineParseEr
     let style_el = append(&svg, "style");
     set_text(
         &style_el,
-        &crate::render::css::themed_timeline_css(id, &theme_vars),
+        &crate::render::css::themed_timeline_css(id, &theme_vars, config.theme == "neutral"),
     );
     let _scaffold_g = append(&svg, "g");
     let _draw_g = append(&svg, "g");

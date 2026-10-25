@@ -88,7 +88,12 @@ fn hsl_to_rgb(value: &str) -> Option<String> {
         _ => (c, 0.0, x),
     };
     let m = l - c / 2.0;
-    let to8 = |v: f64| ((v + m) * 255.0).round().clamp(0.0, 255.0);
+    // Blink converts in f32, which nudges exact .5 cases up (212.4999… in f64).
+    let to8 = |v: f64| {
+        #[allow(clippy::cast_possible_truncation)]
+        let scaled = f64::from(((v + m) as f32) * 255.0f32);
+        scaled.round().clamp(0.0, 255.0)
+    };
     Some(format!("rgb({}, {}, {})", to8(r1), to8(g1), to8(b1)))
 }
 
@@ -450,7 +455,7 @@ fn css_suffix(o: &mut String, i: &str, id: &str, vars: &Map<String, Value>) {
 /// The timeline stylesheet (port of `diagrams/timeline/styles.js`,
 /// classic non-redux sections).
 #[must_use]
-pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
+pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>, neutral: bool) -> String {
     let v = |key: &str| super::themes::get(vars, key);
     let i = format!("#{id}");
     let mut o = String::new();
@@ -536,7 +541,7 @@ pub fn themed_timeline_css(id: &str, vars: &Map<String, Value>) -> String {
             }),
         );
     }
-    if super::themes::get_bool(vars, "useGradient") {
+    if super::themes::get_bool(vars, "useGradient") && !neutral {
         for n in 0..12i32 {
             let s = n - 1;
             let main_bkg = v("mainBkg");
@@ -2672,14 +2677,14 @@ pub fn themed_statediagram_css(id: &str, vars: &Map<String, Value>) -> String {
     let radius = v("radius");
     let drop_shadow = v("dropShadow");
     let neo_cluster_stroke = if use_gradient {
-        format!("url({id}-gradient)")
+        format!("url(#{id}-gradient)")
     } else {
         state_border.clone()
     };
     let neo_filter = if drop_shadow.is_empty() {
         "none".to_owned()
     } else {
-        drop_shadow.replace("url(#drop-shadow)", &format!("url({id}-drop-shadow)"))
+        drop_shadow.replace("url(#drop-shadow)", &format!("url(#{id}-drop-shadow)"))
     };
 
     let i = format!("#{id}");

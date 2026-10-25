@@ -74,6 +74,10 @@ pub fn theme_variables(theme: &str, overrides: &Vars) -> Vars {
             ctor_forest(&mut vars);
             calculate(&mut vars, overrides, update_forest);
         }
+        "neutral" => {
+            ctor_neutral(&mut vars);
+            calculate(&mut vars, overrides, update_neutral);
+        }
         _ => {
             // default (and the fallback for unknown themes via config.ts)
             ctor_default(&mut vars);
@@ -808,6 +812,507 @@ fn update_dark(vars: &mut Vars) {
     set_if(vars, "errorBkgColor", |v| get(v, "tertiaryColor"));
     set_if(vars, "errorTextColor", |v| get(v, "tertiaryTextColor"));
     set_if(vars, "nodeBorder", |_| "#999".to_owned());
+    // Colour scale: explicit dark palette for 1..12, primary for 0.
+    for (n, c) in [
+        (1, "#0b0000"),
+        (2, "#4d1037"),
+        (3, "#3f5258"),
+        (4, "#4f2f1b"),
+        (5, "#6e0a0a"),
+        (6, "#3b0048"),
+        (7, "#995a01"),
+        (8, "#154706"),
+        (9, "#161722"),
+        (10, "#00296f"),
+        (11, "#01629c"),
+        (12, "#010029"),
+    ] {
+        set_if(vars, &format!("cScale{n}"), |_| c.to_owned());
+    }
+    set_if(vars, "cScale0", |v| get(v, "primaryColor"));
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleInv{i}"), |v| {
+            invert(&get(v, &format!("cScale{i}")))
+        });
+        set_if(vars, &format!("cScalePeer{i}"), |v| {
+            lighten(&get(v, &format!("cScale{i}")), 10.0)
+        });
+    }
+    set_if(vars, "scaleLabelColor", |v| {
+        if dark_mode(v) {
+            "black".to_owned()
+        } else {
+            get(v, "labelTextColor")
+        }
+    });
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleLabel{i}"), |v| {
+            get(v, "scaleLabelColor")
+        });
+    }
+    // git colours
+    let pick = |v: &Vars, key: &str, fallback: String| {
+        let p = get(v, key);
+        if p.is_empty() { fallback } else { p }
+    };
+    let git: [(usize, String, f64); 8] = [
+        (0, get(vars, "secondaryColor"), 20.0),
+        (1, pick(vars, "pie2", get(vars, "secondaryColor")), 20.0),
+        (2, pick(vars, "pie3", get(vars, "tertiaryColor")), 20.0),
+        (
+            3,
+            pick(
+                vars,
+                "pie4",
+                adjust(&get(vars, "primaryColor"), &[('h', -30.0)]),
+            ),
+            20.0,
+        ),
+        (
+            4,
+            pick(
+                vars,
+                "pie5",
+                adjust(&get(vars, "primaryColor"), &[('h', -60.0)]),
+            ),
+            20.0,
+        ),
+        (
+            5,
+            pick(
+                vars,
+                "pie6",
+                adjust(&get(vars, "primaryColor"), &[('h', -90.0)]),
+            ),
+            10.0,
+        ),
+        (
+            6,
+            pick(
+                vars,
+                "pie7",
+                adjust(&get(vars, "primaryColor"), &[('h', 60.0)]),
+            ),
+            10.0,
+        ),
+        (
+            7,
+            pick(
+                vars,
+                "pie8",
+                adjust(&get(vars, "primaryColor"), &[('h', 120.0)]),
+            ),
+            20.0,
+        ),
+    ];
+    for (n, base, amount) in git {
+        set(vars, &format!("git{n}"), lighten(&base, amount));
+    }
+    for n in 0..8 {
+        set_if(vars, &format!("gitInv{n}"), |v| {
+            invert(&get(v, &format!("git{n}")))
+        });
+    }
+    for n in 0..8 {
+        set_if(vars, &format!("gitBranchLabel{n}"), |v| {
+            let l = get(v, "labelTextColor");
+            if n == 0 || n == 3 { invert(&l) } else { l }
+        });
+    }
+}
+
+fn ctor_neutral(vars: &mut Vars) {
+    set(vars, "primaryColor", "#eee");
+    set(vars, "contrast", "#707070");
+    set(vars, "secondaryColor", lighten("#707070", 55.0));
+    set(vars, "background", "#ffffff");
+    let dm = dark_mode(vars);
+    set(
+        vars,
+        "tertiaryColor",
+        adjust(&get(vars, "primaryColor"), &[('h', -160.0)]),
+    );
+    set(
+        vars,
+        "primaryBorderColor",
+        mk_border(&get(vars, "primaryColor"), dm),
+    );
+    set(
+        vars,
+        "secondaryBorderColor",
+        mk_border(&get(vars, "secondaryColor"), dm),
+    );
+    set(
+        vars,
+        "tertiaryBorderColor",
+        mk_border(&get(vars, "tertiaryColor"), dm),
+    );
+    set(vars, "primaryTextColor", invert(&get(vars, "primaryColor")));
+    set(
+        vars,
+        "secondaryTextColor",
+        invert(&get(vars, "secondaryColor")),
+    );
+    set(
+        vars,
+        "tertiaryTextColor",
+        invert(&get(vars, "tertiaryColor")),
+    );
+    set(vars, "textColor", invert(&get(vars, "background")));
+    set(vars, "mainBkg", "#eee");
+    set(vars, "lineColor", "#666");
+    set(vars, "border1", "#999");
+    set(vars, "note", "#ffa");
+    set(vars, "text", "#333");
+    set(vars, "critical", "#d42");
+    set(vars, "done", "#bbb");
+    set(vars, "arrowheadColor", "#333333");
+    set(vars, "fontFamily", FONT_FAMILY);
+    set(vars, "fontSize", "16px");
+    vars.insert("radius".to_owned(), Value::from(5));
+    vars.insert("strokeWidth".to_owned(), Value::from(1));
+    set(vars, "edgeLabelBackground", "white");
+    set(vars, "activationBorderColor", "#666");
+    set(vars, "activationBkgColor", "#f4f4f4");
+    set(vars, "sequenceNumberColor", "white");
+    set(vars, "altSectionBkgColor", "white");
+    set(vars, "excludeBkgColor", "#eeeeee");
+    set(vars, "taskTextLightColor", "white");
+    set(vars, "taskTextClickableColor", "#003163");
+    set(vars, "personBorder", get(vars, "primaryBorderColor"));
+    set(vars, "personBkg", get(vars, "mainBkg"));
+    set(vars, "archEdgeWidth", "3");
+    set(
+        vars,
+        "archGroupBorderColor",
+        get(vars, "primaryBorderColor"),
+    );
+    set(vars, "archGroupBorderWidth", "2px");
+    set(vars, "noteFontWeight", "normal");
+    set(vars, "fontWeight", "normal");
+    set(vars, "rowOdd", lighten(&get(vars, "mainBkg"), 75.0));
+    set(vars, "rowEven", "#f4f4f4");
+    set(vars, "labelColor", "black");
+    set(vars, "errorBkgColor", "#552222");
+    set(vars, "errorTextColor", "#552222");
+    set_bool(vars, "useGradient", true);
+    set(vars, "gradientStart", get(vars, "primaryBorderColor"));
+    set(vars, "gradientStop", get(vars, "secondaryBorderColor"));
+    set(
+        vars,
+        "dropShadow",
+        "drop-shadow( 1px 2px 2px rgba(185,185,185,1))",
+    );
+}
+
+#[allow(clippy::too_many_lines)]
+fn update_neutral(vars: &mut Vars) {
+    let dm = dark_mode(vars);
+    let contrast = get(vars, "contrast");
+    set(vars, "secondBkg", lighten(&contrast, 55.0));
+    set(vars, "border2", contrast.clone());
+
+    // Sequence diagram.
+    set(vars, "actorBorder", lighten(&get(vars, "border1"), 23.0));
+    set(vars, "actorBkg", get(vars, "mainBkg"));
+    set(vars, "actorTextColor", get(vars, "text"));
+    set(vars, "actorLineColor", get(vars, "actorBorder"));
+    set(vars, "signalColor", get(vars, "text"));
+    set(vars, "signalTextColor", get(vars, "text"));
+    set(vars, "labelBoxBkgColor", get(vars, "actorBkg"));
+    set(vars, "labelBoxBorderColor", get(vars, "actorBorder"));
+    set(vars, "labelTextColor", get(vars, "text"));
+    set(vars, "loopTextColor", get(vars, "text"));
+    set(vars, "noteBorderColor", "#999");
+    set(vars, "noteBkgColor", "#666");
+    set(vars, "noteTextColor", "#fff");
+
+    // Colour scale.
+    for (n, c) in [
+        (0, "#555"),
+        (1, "#F4F4F4"),
+        (2, "#555"),
+        (3, "#BBB"),
+        (4, "#777"),
+        (5, "#999"),
+        (6, "#DDD"),
+        (7, "#FFF"),
+        (8, "#DDD"),
+        (9, "#BBB"),
+        (10, "#999"),
+        (11, "#777"),
+    ] {
+        set_if(vars, &format!("cScale{n}"), |_| c.to_owned());
+    }
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleInv{i}"), |v| {
+            invert(&get(v, &format!("cScale{i}")))
+        });
+        set_if(vars, &format!("cScalePeer{i}"), |v| {
+            let c = get(v, &format!("cScale{i}"));
+            if dm {
+                lighten(&c, 10.0)
+            } else {
+                darken(&c, 10.0)
+            }
+        });
+    }
+    set_if(vars, "scaleLabelColor", |v| {
+        if dm {
+            "black".to_owned()
+        } else {
+            get(v, "labelTextColor")
+        }
+    });
+    set_if(vars, "cScaleLabel0", |v| get(v, "cScale1"));
+    set_if(vars, "cScaleLabel2", |v| get(v, "cScale1"));
+    for i in 0..12 {
+        set_if(vars, &format!("cScaleLabel{i}"), |v| {
+            get(v, "scaleLabelColor")
+        });
+    }
+    for i in 0..5 {
+        let main = get(vars, "mainBkg");
+        let fi = f64::from(i);
+        set_if(vars, &format!("surface{i}"), |_| {
+            adjust(&main, &[('l', -(5.0 + fi * 5.0))])
+        });
+        set_if(vars, &format!("surfacePeer{i}"), |_| {
+            adjust(&main, &[('l', -(8.0 + fi * 5.0))])
+        });
+    }
+
+    // Flowchart.
+    set(vars, "nodeBkg", get(vars, "mainBkg"));
+    set(vars, "nodeBorder", get(vars, "border1"));
+    set(vars, "clusterBkg", get(vars, "secondBkg"));
+    set(vars, "clusterBorder", get(vars, "border2"));
+    set(vars, "defaultLinkColor", get(vars, "lineColor"));
+    set(vars, "titleColor", get(vars, "text"));
+
+    // Gantt.
+    set(vars, "sectionBkgColor", lighten(&contrast, 30.0));
+    set(vars, "sectionBkgColor2", lighten(&contrast, 30.0));
+    set(vars, "taskBorderColor", darken(&contrast, 10.0));
+    set(vars, "taskBkgColor", contrast.clone());
+    set(vars, "taskTextColor", get(vars, "taskTextLightColor"));
+    set(vars, "taskTextDarkColor", get(vars, "text"));
+    set(vars, "taskTextOutsideColor", get(vars, "taskTextDarkColor"));
+    set(vars, "activeTaskBorderColor", get(vars, "taskBorderColor"));
+    set(vars, "activeTaskBkgColor", get(vars, "mainBkg"));
+    set(vars, "gridColor", lighten(&get(vars, "border1"), 30.0));
+    set(vars, "doneTaskBkgColor", get(vars, "done"));
+    set(vars, "doneTaskBorderColor", get(vars, "lineColor"));
+    set(vars, "critBkgColor", get(vars, "critical"));
+    set(
+        vars,
+        "critBorderColor",
+        darken(&get(vars, "critBkgColor"), 10.0),
+    );
+    set(vars, "todayLineColor", get(vars, "critBkgColor"));
+    set(vars, "vertLineColor", get(vars, "critBkgColor"));
+    set(vars, "archEdgeColor", get(vars, "lineColor"));
+    set(vars, "archEdgeArrowColor", get(vars, "lineColor"));
+
+    // State colours.
+    set_if(vars, "transitionColor", |_| "#000".to_owned());
+    set_if(vars, "transitionLabelColor", |v| get(v, "textColor"));
+    set_if(vars, "stateLabelColor", |v| {
+        let sb = get(v, "stateBkg");
+        if sb.is_empty() {
+            get(v, "primaryTextColor")
+        } else {
+            sb
+        }
+    });
+    set_if(vars, "stateBkg", |v| get(v, "mainBkg"));
+    set_if(vars, "labelBackgroundColor", |v| get(v, "stateBkg"));
+    set_if(vars, "compositeBackground", |v| {
+        let bg = get(v, "background");
+        if bg.is_empty() {
+            get(v, "tertiaryColor")
+        } else {
+            bg
+        }
+    });
+    set_if(vars, "altBackground", |_| "#f4f4f4".to_owned());
+    set_if(vars, "compositeTitleBackground", |v| get(v, "mainBkg"));
+    set_if(vars, "stateBorder", |_| "#000".to_owned());
+    set(vars, "innerEndBackground", get(vars, "primaryBorderColor"));
+    set(vars, "specialStateColor", "#222");
+    set_if(vars, "errorBkgColor", |v| get(v, "tertiaryColor"));
+    set_if(vars, "errorTextColor", |v| get(v, "tertiaryTextColor"));
+
+    // Class, journey.
+    set(vars, "classText", get(vars, "primaryTextColor"));
+    set(vars, "fillType0", get(vars, "primaryColor"));
+    set(vars, "fillType1", get(vars, "secondaryColor"));
+    set(
+        vars,
+        "fillType2",
+        adjust(&get(vars, "primaryColor"), &[('h', 64.0)]),
+    );
+    set(
+        vars,
+        "fillType3",
+        adjust(&get(vars, "secondaryColor"), &[('h', 64.0)]),
+    );
+    set(
+        vars,
+        "fillType4",
+        adjust(&get(vars, "primaryColor"), &[('h', -64.0)]),
+    );
+    set(
+        vars,
+        "fillType5",
+        adjust(&get(vars, "secondaryColor"), &[('h', -64.0)]),
+    );
+    set(
+        vars,
+        "fillType6",
+        adjust(&get(vars, "primaryColor"), &[('h', 128.0)]),
+    );
+    set(
+        vars,
+        "fillType7",
+        adjust(&get(vars, "secondaryColor"), &[('h', 128.0)]),
+    );
+
+    // Pie (pie0..11 mirror the colour scale; pie12 repeats pie0).
+    for i in 0..12 {
+        let c = get(vars, &format!("cScale{i}"));
+        set(vars, &format!("pie{i}"), c);
+    }
+    set(vars, "pie12", get(vars, "pie0"));
+    set_if(vars, "pieTitleTextSize", |_| "25px".to_owned());
+    set_if(vars, "pieTitleTextColor", |v| get(v, "taskTextDarkColor"));
+    set_if(vars, "pieSectionTextSize", |_| "17px".to_owned());
+    set_if(vars, "pieSectionTextColor", |v| get(v, "textColor"));
+    set_if(vars, "pieLegendTextSize", |_| "17px".to_owned());
+    set_if(vars, "pieLegendTextColor", |v| get(v, "taskTextDarkColor"));
+    set_if(vars, "pieStrokeColor", |_| "black".to_owned());
+    set_if(vars, "pieStrokeWidth", |_| "2px".to_owned());
+    set_if(vars, "pieOuterStrokeWidth", |_| "2px".to_owned());
+    set_if(vars, "pieOuterStrokeColor", |_| "black".to_owned());
+    set_if(vars, "pieOpacity", |_| "0.7".to_owned());
+
+    // Venn.
+    for i in 0..8 {
+        set_if(vars, &format!("venn{}", i + 1), |v| {
+            get(v, &format!("cScale{i}"))
+        });
+    }
+    set_if(vars, "vennTitleTextColor", |v| get(v, "titleColor"));
+    set_if(vars, "vennSetTextColor", |v| get(v, "textColor"));
+
+    // Quadrant chart.
+    let primary = get(vars, "primaryColor");
+    let primary_text = get(vars, "primaryTextColor");
+    set_if(vars, "quadrant1Fill", |_| primary.clone());
+    set_if(vars, "quadrant2Fill", |_| {
+        adjust(&primary, &[('r', 5.0), ('g', 5.0), ('b', 5.0)])
+    });
+    set_if(vars, "quadrant3Fill", |_| {
+        adjust(&primary, &[('r', 10.0), ('g', 10.0), ('b', 10.0)])
+    });
+    set_if(vars, "quadrant4Fill", |_| {
+        adjust(&primary, &[('r', 15.0), ('g', 15.0), ('b', 15.0)])
+    });
+    set_if(vars, "quadrant1TextFill", |_| primary_text.clone());
+    set_if(vars, "quadrant2TextFill", |_| {
+        adjust(&primary_text, &[('r', -5.0), ('g', -5.0), ('b', -5.0)])
+    });
+    set_if(vars, "quadrant3TextFill", |_| {
+        adjust(&primary_text, &[('r', -10.0), ('g', -10.0), ('b', -10.0)])
+    });
+    set_if(vars, "quadrant4TextFill", |_| {
+        adjust(&primary_text, &[('r', -15.0), ('g', -15.0), ('b', -15.0)])
+    });
+    // Upstream precedence quirk: darken/lighten without an amount.
+    set_if(vars, "quadrantPointFill", |v| {
+        let q1 = get(v, "quadrant1Fill");
+        if super::khroma::is_dark(&q1) {
+            lighten(&q1, f64::NAN)
+        } else {
+            darken(&q1, f64::NAN)
+        }
+    });
+    for key in [
+        "quadrantPointTextFill",
+        "quadrantXAxisTextFill",
+        "quadrantYAxisTextFill",
+        "quadrantTitleFill",
+    ] {
+        set_if(vars, key, |_| primary_text.clone());
+    }
+    let primary_border = get(vars, "primaryBorderColor");
+    set_if(vars, "quadrantInternalBorderStrokeFill", |_| {
+        primary_border.clone()
+    });
+    set_if(vars, "quadrantExternalBorderStrokeFill", |_| {
+        primary_border.clone()
+    });
+
+    // Requirement diagram.
+    set_if(vars, "requirementBackground", |v| get(v, "primaryColor"));
+    set_if(vars, "requirementBorderColor", |v| {
+        get(v, "primaryBorderColor")
+    });
+    set_if(vars, "requirementBorderSize", |_| "1".to_owned());
+    set_if(vars, "requirementTextColor", |v| get(v, "primaryTextColor"));
+    set_if(vars, "relationColor", |v| get(v, "lineColor"));
+    set_if(vars, "relationLabelBackground", |v| {
+        get(v, "edgeLabelBackground")
+    });
+    set_if(vars, "relationLabelColor", |v| get(v, "actorTextColor"));
+
+    // Git (the git0 expression is `darken(pie1, 25) || primaryColor`).
+    set(vars, "git0", darken(&get(vars, "pie1"), 25.0));
+    for (n, fallback) in [
+        (1, get(vars, "secondaryColor")),
+        (2, get(vars, "tertiaryColor")),
+        (3, adjust(&primary, &[('h', -30.0)])),
+        (4, adjust(&primary, &[('h', -60.0)])),
+        (5, adjust(&primary, &[('h', -90.0)])),
+        (6, adjust(&primary, &[('h', 60.0)])),
+        (7, adjust(&primary, &[('h', 120.0)])),
+    ] {
+        let pie = get(vars, &format!("pie{}", n + 1));
+        set(
+            vars,
+            &format!("git{n}"),
+            if pie.is_empty() { fallback } else { pie },
+        );
+    }
+    for n in 0..8 {
+        set_if(vars, &format!("gitInv{n}"), |v| {
+            invert(&get(v, &format!("git{n}")))
+        });
+    }
+    set_if(vars, "branchLabelColor", |v| get(v, "labelTextColor"));
+    for n in 0..8 {
+        let value = if n == 1 || n == 3 {
+            "white".to_owned()
+        } else {
+            get(vars, "branchLabelColor")
+        };
+        set(vars, &format!("gitBranchLabel{n}"), value);
+    }
+    set_if(vars, "tagLabelColor", |v| get(v, "primaryTextColor"));
+    set_if(vars, "tagLabelBackground", |v| get(v, "primaryColor"));
+    let tag_border = {
+        let t = get(vars, "tagBorder");
+        if t.is_empty() {
+            get(vars, "primaryBorderColor")
+        } else {
+            t
+        }
+    };
+    set(vars, "tagLabelBorder", tag_border);
+    set_if(vars, "tagLabelFontSize", |_| "10px".to_owned());
+    set_if(vars, "commitLabelColor", |v| get(v, "secondaryTextColor"));
+    set_if(vars, "commitLabelBackground", |v| get(v, "secondaryColor"));
+    set_if(vars, "commitLabelFontSize", |_| "10px".to_owned());
 }
 
 fn ctor_forest(vars: &mut Vars) {

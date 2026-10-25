@@ -115,8 +115,6 @@ state/state-docs019
 state/state-docs020
 state/state-docs021
 timeline/timeline-docs005
-timeline/timeline-docs011
-timeline/timeline-docs013
 venn/venn-docs000
 venn/venn-docs001
 venn/venn-docs002
