@@ -42,8 +42,6 @@ flowchart/flowchart-docs026
 flowchart/flowchart-docs050
 flowchart/flowchart-docs051
 flowchart/flowchart-docs102
-flowchart/flowchart-docs111
-flowchart/flowchart-docs112
 gantt/gantt-docs002
 gantt/gantt-docs004
 gantt/gantt-docs010

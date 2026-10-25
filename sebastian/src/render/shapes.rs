@@ -179,14 +179,20 @@ pub fn measure_label_sized(
             wrapped: false,
         };
     }
-    let source_lines = split_lines(label);
+    let raw_lines = split_lines(label);
+    let icon_widths: Vec<f64> = raw_lines
+        .iter()
+        .map(|l| icons_width(l, font_size))
+        .collect();
+    let source_lines: Vec<String> = raw_lines.iter().map(|l| without_icons(l)).collect();
     // Chrome's table-cell clamps at max-width whenever the max-content width
     // reaches it — even for unbreakable text — which triggers the
     // table/break-spaces switch in addHtmlSpan.
     let wrapped = wrap_width.is_finite()
         && source_lines
             .iter()
-            .any(|line| measurer.measure_width(line, font_size) > wrap_width);
+            .zip(&icon_widths)
+            .any(|(line, iw)| measurer.measure_width(line, font_size) + iw > wrap_width);
     // After the switch the div gets `width: 200px`, but a table box expands
     // to its min-content width (the longest unbreakable word) when larger.
     let effective_width = if wrapped {
@@ -205,9 +211,10 @@ pub fn measure_label_sized(
     let width = if wrapped {
         effective_width
     } else {
+        let extra = icon_widths.iter().copied().fold(0.0, f64::max);
         lines
             .iter()
-            .map(|l| measurer.measure_width(l, font_size))
+            .map(|l| measurer.measure_width(l, font_size) + extra)
             .fold(0.0, f64::max)
     };
     #[allow(clippy::cast_precision_loss)]
@@ -266,6 +273,70 @@ pub(crate) fn build_html_label_classed(
     fo
 }
 
+/// Splits a label line at mermaid's `replaceIconSubstring` matches
+/// (`fa:fa-name`, `fab:fa-name`, ...): `(text before, icon class)` pairs plus
+/// the trailing text.
+fn split_icons(line: &str) -> (Vec<(String, String)>, String) {
+    let bytes = line.as_bytes();
+    let mut out = Vec::new();
+    let mut last = 0;
+    let mut i = 0;
+    while i + 8 <= bytes.len() {
+        if bytes[i] == b'f' && bytes[i + 1] == b'a' {
+            let mut j = i + 2;
+            if j < bytes.len() && matches!(bytes[j], b'b' | b'k' | b'l' | b'r' | b's') {
+                j += 1;
+            }
+            if line[j..].starts_with(":fa-") {
+                let name_start = j + 4;
+                let name_len = line[name_start..]
+                    .bytes()
+                    .take_while(|b| b.is_ascii_alphanumeric() || *b == b'_' || *b == b'-')
+                    .count();
+                if name_len > 0 {
+                    let prefix = &line[i..j];
+                    let name = &line[name_start..name_start + name_len];
+                    out.push((line[last..i].to_owned(), format!("{prefix} fa-{name}")));
+                    i = name_start + name_len;
+                    last = i;
+                    continue;
+                }
+            }
+        }
+        i += 1;
+    }
+    (out, line[last..].to_owned())
+}
+
+/// Advance of a Font Awesome icon in the reference browser: solid glyphs the
+/// stylesheet knows are 1em wide, a brand glyph under the solid `fa` class
+/// falls back to a 12px system glyph, and unknown names render nothing.
+fn icon_advance(class: &str, font_size: f64) -> f64 {
+    let (prefix, name) = class.split_once(" fa-").unwrap_or((class, ""));
+    match (prefix, name) {
+        ("fa" | "fas", "ban" | "spinner" | "camera-retro") => font_size,
+        ("fa", "twitter") => 12.0,
+        _ => 0.0,
+    }
+}
+
+/// Total icon advance of a label line.
+fn icons_width(line: &str, font_size: f64) -> f64 {
+    split_icons(line)
+        .0
+        .iter()
+        .map(|(_, class)| icon_advance(class, font_size))
+        .sum()
+}
+
+/// The visible text of a label line once icons became empty `<i>` elements.
+fn without_icons(line: &str) -> String {
+    let (icons, rest) = split_icons(line);
+    let mut s: String = icons.into_iter().map(|(t, _)| t).collect();
+    s.push_str(&rest);
+    s
+}
+
 /// Writes `<p>` content with `<br/>` tags as elements.
 pub fn write_label_paragraph(span: &Element, label: &str) {
     if label.is_empty() {
@@ -277,8 +348,16 @@ pub fn write_label_paragraph(span: &Element, label: &str) {
         if i > 0 {
             append_xhtml(&p, "br");
         }
-        if !line.is_empty() {
-            crate::svg::set_text_append(&p, line);
+        let (icons, rest) = split_icons(line);
+        for (text, class) in icons {
+            if !text.is_empty() {
+                crate::svg::set_text_append(&p, &text);
+            }
+            let icon = append_xhtml(&p, "i");
+            set_attr(&icon, "class", class);
+        }
+        if !rest.is_empty() {
+            crate::svg::set_text_append(&p, &rest);
         }
     }
 }
