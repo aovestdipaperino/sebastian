@@ -34,11 +34,6 @@ c4/c4-spec023
 c4/c4-spec024
 c4/c4-spec025
 er/er-docs005
-er/er-docs015
-er/er-docs016
-er/er-docs018
-er/er-docs019
-er/er-docs020
 flowchart/flowchart-docs003
 flowchart/flowchart-docs006
 flowchart/flowchart-docs007

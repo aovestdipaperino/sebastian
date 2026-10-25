@@ -37,6 +37,8 @@ struct Entity {
     label: String,
     alias: String,
     attributes: Vec<Attribute>,
+    /// `style` declarations (`fill:#f9f`, ...).
+    styles: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -207,6 +209,22 @@ fn parse(source: &str) -> Result<ErDb, ErParseError> {
                 message: format!("expected erDiagram header, got {line:?}"),
             });
         }
+        // `style a,b fill:#f9f,stroke:#333`
+        if let Some(rest) = line.strip_prefix("style ") {
+            let rest = rest.trim();
+            let (ids, decls) = rest.split_once(char::is_whitespace).unwrap_or((rest, ""));
+            let styles: Vec<String> = decls
+                .split(',')
+                // The grammar's style tokens carry no whitespace.
+                .map(|d| d.split_whitespace().collect::<String>())
+                .filter(|d| !d.is_empty())
+                .collect();
+            for id in ids.split(',') {
+                db.add_entity(id.trim());
+                db.entities[id.trim()].styles.extend(styles.iter().cloned());
+            }
+            continue;
+        }
         if let Some(rest) = line.strip_prefix("direction ") {
             rest.trim().clone_into(&mut db.direction);
             continue;
@@ -244,16 +262,15 @@ fn parse(source: &str) -> Result<ErDb, ErParseError> {
             });
             continue;
         }
-        // Standalone entity declaration (a quoted name may hold spaces).
-        if line.len() >= 2 && line.starts_with('"') && line.ends_with('"') {
-            db.add_entity(&line[1..line.len() - 1]);
-            continue;
-        }
-        let (name, alias) = split_alias(line);
-        if !name.is_empty() && !name.contains(char::is_whitespace) {
-            db.add_entity(&name);
-            if !alias.is_empty() {
-                db.entities[&name].alias = alias;
+        // Standalone entity declarations: whitespace-separated names, each a
+        // bare word or a quoted string. (`subgraph X ... end` is not part of
+        // the grammar, so its words become entities.)
+        if let Some(names) = standalone_names(line) {
+            for (name, alias) in names {
+                db.add_entity(&name);
+                if !alias.is_empty() {
+                    db.entities[&name].alias = alias;
+                }
             }
             continue;
         }
@@ -267,6 +284,29 @@ fn parse(source: &str) -> Result<ErDb, ErParseError> {
         });
     }
     Ok(db)
+}
+
+/// Splits a statement line into entity names (`NAME`, `NAME["alias"]`, `"quoted name"`).
+fn standalone_names(line: &str) -> Option<Vec<(String, String)>> {
+    let mut out = Vec::new();
+    let mut rest = line.trim();
+    while !rest.is_empty() {
+        if let Some(q) = rest.strip_prefix('"') {
+            let end = q.find('"')?;
+            out.push((q[..end].to_owned(), String::new()));
+            rest = q[end + 1..].trim_start();
+            continue;
+        }
+        let end = rest.find(char::is_whitespace).unwrap_or(rest.len());
+        let token = &rest[..end];
+        let (name, alias) = split_alias(token);
+        if name.is_empty() {
+            return None;
+        }
+        out.push((name, alias));
+        rest = rest[end..].trim_start();
+    }
+    (!out.is_empty()).then_some(out)
 }
 
 /// `NAME["alias"]` → (NAME, alias).
@@ -327,6 +367,7 @@ pub fn get_layout_data(source: &str, id: &str) -> Result<LayoutData, ErParseErro
             dom_id: entity.id.clone(),
             css_classes: "default".to_owned(),
             look: "classic".to_owned(),
+            css_styles: entity.styles.clone(),
             er_alias: entity.alias.clone(),
             er_attributes: entity
                 .attributes
