@@ -109,3 +109,34 @@ fn edge_label_fill_overrides_label_background() {
     let plain = render_flowchart(SRC, "my-svg").expect("render");
     assert!(!plain.contains(".edgeLabel rect{fill:#FFFFFFFF"));
 }
+
+/// A hand-drawn cylinder used to fall through to the classic plain `<path>`,
+/// which has no `fill` attribute and no CSS rule under `rough-node`, so
+/// rasterizers painted it solid black. It must get a filled sketchy body plus
+/// an unfilled rim stroke, with its SVG-text label centred at x = 0.
+#[test]
+fn cylinder_is_filled_and_sketchy() {
+    let init = "%%{init: {'look':'handDrawn', 'htmlLabels': false, 'flowchart': {'htmlLabels': false}}}%%\n";
+    let svg = render_flowchart(&format!("{init}flowchart TB\n  DB[(Chip RAM)]\n"), "my-svg")
+        .expect("render");
+    let node = svg
+        .find("id=\"my-svg-flowchart-DB-")
+        .expect("cylinder node");
+    let tail = &svg[node..];
+    let label = tail.find("<g class=\"label\"").expect("label group");
+    let shape = &tail[..label];
+    assert!(shape.contains("class=\"basic label-container outer-path\""));
+    assert!(
+        shape.contains(" fill=\"#") || shape.contains(" fill=\"rgb"),
+        "body has no fill"
+    );
+    assert!(shape.contains("fill=\"none\""), "rim stroke missing");
+    assert!(
+        !shape.contains(" a"),
+        "classic arc path leaked into hand-drawn look"
+    );
+    assert!(
+        tail[label..].contains("transform=\"translate(0, "),
+        "label not centred"
+    );
+}

@@ -487,6 +487,12 @@ pub struct LabelResult {
     pub bbox: BBox,
     pub half_padding: f64,
     pub label: Element,
+    /// `(bbox.x - (bbox.left ?? 0), bbox.y - (bbox.top ?? 0))` from mermaid's
+    /// shapes: zero for HTML labels (a `DOMRect` has `left`/`top` equal to
+    /// `x`/`y`), and the SVG text's `getBBox()` origin otherwise. Shapes that
+    /// place the label themselves subtract it, which cancels the half-width
+    /// shift of a text centred by `text-anchor: middle`.
+    pub origin: (f64, f64),
 }
 
 /// Removes every `prop value` declaration from a style string, mirroring the
@@ -579,7 +585,7 @@ pub fn label_helper(
     if styled_italic {
         measurer.set_italic(true);
     }
-    let bbox = if config.node_html_labels() {
+    let (bbox, origin) = if config.node_html_labels() {
         let md_lines = (n.label_type == "markdown")
             .then(|| super::svg_label::markdown_html_lines(&n.label))
             .filter(|lines| {
@@ -617,7 +623,7 @@ pub fn label_helper(
                 js_num(-bbox.height / 2.0)
             ),
         );
-        bbox
+        (bbox, (0.0, 0.0))
     } else {
         // createText with useHtmlLabels=false, isNode=true: SVG text label.
         // addSvgBackground is false for plain nodes; centerText = !isNode =
@@ -661,7 +667,15 @@ pub fn label_helper(
             format!("translate(0, {})", js_num(-bbox.height / 2.0))
         };
         set_attr(&label_el, "transform", transform);
-        bbox
+        // getBBox() of the text: flowchart CSS centres node text with
+        // `text-anchor: middle`, so it starts at -w/2; the `centerLabel`
+        // diagrams have no such rule and their text starts at 0.
+        let origin_x = if n.center_label {
+            0.0
+        } else {
+            f64::from((-bbox.width / 2.0) as f32)
+        };
+        (bbox, (origin_x, ft.label_bbox.y))
     };
     if styled_bold {
         measurer.set_bold(false);
@@ -678,6 +692,7 @@ pub fn label_helper(
         bbox,
         half_padding,
         label: label_el,
+        origin,
     }
 }
 
@@ -1015,37 +1030,85 @@ pub fn insert_node_shape(
             let rx = w / 2.0;
             let ry = rx / (2.5 + w / 50.0);
             let h = result.bbox.height + label_padding_x + ry;
-            let d = format!(
-                "M{},{} a{},{} 0,0,0 {},0 a{},{} 0,0,0 {},0 l0,{} a{},{} 0,0,0 {},0 l0,{}",
-                js_num(0.0),
-                js_num(ry),
-                js_num(rx),
-                js_num(ry),
-                js_num(w),
-                js_num(rx),
-                js_num(ry),
-                js_num(-w),
-                js_num(h),
-                js_num(rx),
-                js_num(ry),
-                js_num(w),
-                js_num(-h)
-            );
-            let path = insert_first(&result.shape_svg, "path");
-            set_attr(&path, "d", d);
-            set_attr(&path, "class", "basic label-container outer-path");
-            set_attr(&path, "style", node_styles.clone());
-            // (cylinder sets label-offset-y in mermaid, but DOMPurify strips
-            // the non-standard attribute from the final SVG)
-            set_attr(
-                &path,
-                "transform",
-                format!(
-                    "translate({}, {})",
-                    js_num(-w / 2.0),
-                    js_num(-(h / 2.0 + ry))
-                ),
-            );
+            if n.look == "handDrawn" {
+                // Silhouette (top ellipse's back arc, the sides, the bottom
+                // front arc) as a sketchy filled polygon, plus the front half
+                // of the top ellipse as an open sketchy stroke: the rim.
+                const SEGMENTS: usize = 16;
+                #[allow(clippy::cast_precision_loss)]
+                let arc = |cy: f64, from: f64, to: f64| -> Vec<Point> {
+                    (0..=SEGMENTS)
+                        .map(|k| {
+                            let t = from + (to - from) * k as f64 / SEGMENTS as f64;
+                            Point {
+                                x: rx * t.cos(),
+                                y: cy + ry * t.sin(),
+                            }
+                        })
+                        .collect()
+                };
+                let pi = std::f64::consts::PI;
+                let (top, bottom) = (-h / 2.0, h / 2.0);
+                let mut outline = arc(top, pi, 2.0 * pi);
+                outline.extend(arc(bottom, 0.0, pi));
+                let (fill, stroke) = hd_theme_colors(config);
+                let seed = super::handdrawn::seed_from(w, h);
+                let g = super::handdrawn::hd_polygon(
+                    &result.shape_svg,
+                    &outline,
+                    &fill,
+                    &stroke,
+                    HD_STROKE_WIDTH,
+                    &node_styles,
+                    seed,
+                );
+                set_attr(&g, "class", "basic label-container outer-path");
+                let rim = append(&g, "path");
+                set_attr(
+                    &rim,
+                    "d",
+                    super::handdrawn::hd_edge_d(&arc(top, pi, 0.0), seed.wrapping_add(1)),
+                );
+                set_attr(&rim, "stroke", &stroke);
+                set_attr(&rim, "stroke-width", HD_STROKE_WIDTH);
+                set_attr(&rim, "fill", "none");
+                let rim_style = remove_style_decl(&node_styles, "fill");
+                if !rim_style.is_empty() {
+                    set_attr(&rim, "style", rim_style);
+                }
+            } else {
+                let d = format!(
+                    "M{},{} a{},{} 0,0,0 {},0 a{},{} 0,0,0 {},0 l0,{} a{},{} 0,0,0 {},0 l0,{}",
+                    js_num(0.0),
+                    js_num(ry),
+                    js_num(rx),
+                    js_num(ry),
+                    js_num(w),
+                    js_num(rx),
+                    js_num(ry),
+                    js_num(-w),
+                    js_num(h),
+                    js_num(rx),
+                    js_num(ry),
+                    js_num(w),
+                    js_num(-h)
+                );
+                let path = insert_first(&result.shape_svg, "path");
+                set_attr(&path, "d", d);
+                set_attr(&path, "class", "basic label-container outer-path");
+                set_attr(&path, "style", node_styles.clone());
+                // (cylinder sets label-offset-y in mermaid, but DOMPurify strips
+                // the non-standard attribute from the final SVG)
+                set_attr(
+                    &path,
+                    "transform",
+                    format!(
+                        "translate({}, {})",
+                        js_num(-w / 2.0),
+                        js_num(-(h / 2.0 + ry))
+                    ),
+                );
+            }
             n.width = f32q(w);
             n.height = f32q(h + 2.0 * ry);
             set_attr(
@@ -1053,8 +1116,8 @@ pub fn insert_node_shape(
                 "transform",
                 format!(
                     "translate({}, {})",
-                    js_num(-result.bbox.width / 2.0),
-                    js_num(-result.bbox.height / 2.0 + n.padding / 1.5)
+                    js_num(-result.bbox.width / 2.0 - result.origin.0),
+                    js_num(-result.bbox.height / 2.0 + n.padding / 1.5 - result.origin.1)
                 ),
             );
             n.intersect = Some(IntersectShape::Cylinder { rx, ry });
@@ -1189,8 +1252,8 @@ pub fn insert_node_shape(
                 "transform",
                 format!(
                     "translate({}, {})",
-                    js_num(-result.bbox.width / 2.0),
-                    js_num(-result.bbox.height / 2.0)
+                    js_num(-result.bbox.width / 2.0 - result.origin.0),
+                    js_num(-result.bbox.height / 2.0 - result.origin.1)
                 ),
             );
             n.width = f32q(0.1);
@@ -1300,8 +1363,8 @@ pub fn insert_node_shape(
                 "transform",
                 format!(
                     "translate({}, {})",
-                    js_num(-notch / 2.0 - result.bbox.width / 2.0),
-                    js_num(-result.bbox.height / 2.0)
+                    js_num(-notch / 2.0 - result.bbox.width / 2.0 - result.origin.0),
+                    js_num(-result.bbox.height / 2.0 - result.origin.1)
                 ),
             );
             let (bw, bh) = polygon_bbox(&points);
@@ -1474,8 +1537,8 @@ pub fn insert_node_shape(
                 "transform",
                 format!(
                     "translate({}, {})",
-                    js_num(-(result.bbox.width / 2.0) - rx),
-                    js_num(-(result.bbox.height / 2.0))
+                    js_num(-(result.bbox.width / 2.0) - rx - result.origin.0),
+                    js_num(-(result.bbox.height / 2.0) - result.origin.1)
                 ),
             );
             n.width = f32q(w + 2.0 * rx);
@@ -1527,8 +1590,8 @@ pub fn insert_node_shape(
                 "transform",
                 format!(
                     "translate({}, {})",
-                    js_num(-(result.bbox.width / 2.0)),
-                    js_num(-(result.bbox.height / 2.0) + ry)
+                    js_num(-(result.bbox.width / 2.0) - result.origin.0),
+                    js_num(-(result.bbox.height / 2.0) + ry - result.origin.1)
                 ),
             );
             let bounds = super::bbox::element_bbox(&path);

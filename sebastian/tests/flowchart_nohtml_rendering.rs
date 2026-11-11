@@ -49,3 +49,34 @@ cases!(
 // multi-line height) because Chrome sizes SVG-text nodes from glyph ink
 // extents (`getBBox`) while this port uses advance widths. The difference is
 // invisible when rasterized; see PORTING_NOTES.md.
+
+/// The label `transform` of node `id` in a rendered SVG.
+fn label_transform(svg: &str, id: &str) -> String {
+    let node = svg
+        .find(&format!("id=\"my-svg-flowchart-{id}-"))
+        .unwrap_or_else(|| panic!("node {id} not found"));
+    let tail = &svg[node..];
+    let label = tail.find("<g class=\"label\"").expect("label group");
+    let tail = &tail[label..];
+    let start = tail.find("transform=\"").expect("label transform") + 11;
+    let end = tail[start..].find('"').expect("closing quote");
+    tail[start..start + end].to_owned()
+}
+
+/// Mermaid's cylinder shapes subtract the label's `getBBox()` origin. With
+/// SVG text labels that origin is `-width/2` (the text is centred by
+/// `text-anchor: middle`), so the label sits at x = 0, as the plain
+/// rectangle's does; it used to be shifted left by half its width.
+#[test]
+fn cylinder_svg_label_is_centred() {
+    let src = format!(
+        "{INIT}flowchart TB\n    A[(\"Chip RAM<br/>256 to 512 KB\")]\n    \
+         B@{{ shape: lin-cyl, label: \"Lined cylinder\" }}\n    \
+         C[\"Box\"]\n"
+    );
+    let svg = render_flowchart(&src, "my-svg").expect("render");
+    for id in ["A", "B", "C"] {
+        let t = label_transform(&svg, id);
+        assert!(t.starts_with("translate(0, "), "{id}: {t}");
+    }
+}

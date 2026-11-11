@@ -40,7 +40,6 @@ flowchart/flowchart-docs026
 flowchart/flowchart-docs050
 flowchart/flowchart-docs051
 gantt/gantt-docs002
-gantt/gantt-docs004
 gantt/gantt-docs010
 mindmap/mindmap-docs000
 mindmap/mindmap-docs001
